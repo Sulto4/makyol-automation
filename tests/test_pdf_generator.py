@@ -47,3 +47,56 @@ def test_supplier_summary_pdf():
 
     # Verify it starts with PDF signature
     assert pdf_content.startswith(b'%PDF')
+
+
+def test_document_inventory_pdf():
+    """Test generation of Document Inventory PDF report."""
+    # Initialize generator
+    generator = PDFGenerator()
+
+    # Sample document inventory data
+    # Table format: Supplier | Document Type | Status | Validity Date | Certificate #
+    document_data = [
+        {
+            'supplier_name': 'ABC Construction Ltd.',
+            'document_type': 'ISO 9001 Certification',
+            'status': 'valid',
+            'validity_date': '2025-06-30',
+            'certificate_number': 'ISO-9001-2024-001'
+        },
+        {
+            'supplier_name': 'ABC Construction Ltd.',
+            'document_type': 'Tax Clearance',
+            'status': 'expiring',
+            'validity_date': '2026-05-15',
+            'certificate_number': 'TAX-2024-456'
+        },
+        {
+            'supplier_name': 'XYZ Engineering Co.',
+            'document_type': 'ISO 9001 Certification',
+            'status': 'valid',
+            'validity_date': '2027-01-20',
+            'certificate_number': 'ISO-9001-2024-002'
+        },
+        {
+            'supplier_name': 'BuildTech Industries',
+            'document_type': 'Insurance Certificate',
+            'status': 'expired',
+            'validity_date': '2025-12-31',
+            'certificate_number': 'INS-2024-789'
+        }
+    ]
+
+    # Generate report
+    pdf_buffer = generator.generate_document_inventory_pdf(
+        document_data=document_data,
+        preparer="Test User"
+    )
+
+    # Verify buffer is created and has content
+    assert isinstance(pdf_buffer, BytesIO)
+    pdf_content = pdf_buffer.getvalue()
+    assert len(pdf_content) > 0
+
+    # Verify it starts with PDF signature
+    assert pdf_content.startswith(b'%PDF')

@@ -304,3 +304,80 @@ class PDFGenerator:
         # Reset buffer position
         buffer.seek(0)
         return buffer
+
+    def generate_document_inventory_pdf(
+        self,
+        document_data: list[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Document Inventory PDF report.
+
+        Args:
+            document_data: List of document dictionaries with keys:
+                - supplier_name: Name of the supplier
+                - document_type: Type of document
+                - status: Document status (valid, expiring, expired, missing)
+                - validity_date: Validity date (YYYY-MM-DD format or date string)
+                - certificate_number: Certificate/document number
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the PDF
+
+        Example:
+            document_data = [
+                {
+                    'supplier_name': 'ABC Construction Ltd.',
+                    'document_type': 'ISO 9001 Certification',
+                    'status': 'valid',
+                    'validity_date': '2025-06-30',
+                    'certificate_number': 'ISO-9001-2024-001'
+                }
+            ]
+        """
+        # Create report info
+        report_info = {
+            'Report Type': 'Document Inventory',
+            'Total Documents': str(len(document_data)),
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        # Create document
+        buffer, doc, story = self.create_document(
+            report_title="Document Inventory Report",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+        # Prepare table data
+        # Header row
+        table_data = [
+            ['Supplier', 'Document Type', 'Status', 'Validity Date', 'Certificate #']
+        ]
+
+        # Data rows
+        for document in document_data:
+            table_data.append([
+                document.get('supplier_name', 'N/A'),
+                document.get('document_type', 'N/A'),
+                document.get('status', 'N/A').title(),
+                document.get('validity_date', 'N/A'),
+                document.get('certificate_number', 'N/A')
+            ])
+
+        # Add table to story
+        col_widths = [1.8 * inch, 2.0 * inch, 1.0 * inch, 1.3 * inch, 1.9 * inch]
+        self.add_table(
+            story,
+            data=table_data,
+            col_widths=col_widths,
+            title="Document Details"
+        )
+
+        # Finalize document
+        self.finalize_document(doc, story, preparer)
+
+        # Reset buffer position
+        buffer.seek(0)
+        return buffer
