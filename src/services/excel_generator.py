@@ -468,3 +468,350 @@ class ExcelGenerator:
 
         # Save to buffer
         return self.save_to_buffer()
+
+    def generate_supplier_summary_excel(
+        self,
+        supplier_data: List[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Supplier Summary Excel report.
+
+        Args:
+            supplier_data: List of supplier dictionaries with keys:
+                'name', 'status', 'document_count', 'expiring_soon'
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the Excel file
+
+        Table format: Supplier Name | Status | Document Count | Expiring Soon
+        """
+        # Prepare table data
+        table_data = [
+            ['Supplier Name', 'Status', 'Document Count', 'Expiring Soon']
+        ]
+
+        for supplier in supplier_data:
+            table_data.append([
+                supplier['name'],
+                supplier['status'].title(),
+                supplier['document_count'],
+                supplier['expiring_soon']
+            ])
+
+        # Generate report info
+        report_info = {
+            'Report Type': 'Supplier Summary',
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Total Suppliers': len(supplier_data)
+        }
+
+        # Generate report
+        return self.generate_basic_report(
+            report_title="Supplier Compliance Summary",
+            data=table_data,
+            sheet_name="Supplier Summary",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+    def generate_document_inventory_excel(
+        self,
+        document_data: List[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Document Inventory Excel report.
+
+        Args:
+            document_data: List of document dictionaries with keys:
+                'supplier_name', 'document_type', 'status', 'validity_date', 'certificate_number'
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the Excel file
+
+        Table format: Supplier | Document Type | Status | Validity Date | Certificate #
+        """
+        # Prepare table data
+        table_data = [
+            ['Supplier', 'Document Type', 'Status', 'Validity Date', 'Certificate #']
+        ]
+
+        for doc in document_data:
+            table_data.append([
+                doc['supplier_name'],
+                doc['document_type'],
+                doc['status'].title(),
+                doc['validity_date'],
+                doc['certificate_number']
+            ])
+
+        # Generate report info
+        report_info = {
+            'Report Type': 'Document Inventory',
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Total Documents': len(document_data)
+        }
+
+        # Generate report
+        return self.generate_basic_report(
+            report_title="Document Inventory Report",
+            data=table_data,
+            sheet_name="Document Inventory",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+    def generate_expiring_certificates_excel(
+        self,
+        certificate_data: List[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Expiring Certificates Excel report.
+
+        Args:
+            certificate_data: List of certificate dictionaries with keys:
+                'supplier_name', 'document_type', 'validity_date', 'days_until_expiry', 'certificate_number'
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the Excel file
+
+        Table format: Supplier | Document Type | Validity Date | Days Until Expiry | Certificate #
+        """
+        # Prepare table data
+        table_data = [
+            ['Supplier', 'Document Type', 'Validity Date', 'Days Until Expiry', 'Certificate #']
+        ]
+
+        for cert in certificate_data:
+            table_data.append([
+                cert['supplier_name'],
+                cert['document_type'],
+                cert['validity_date'],
+                cert['days_until_expiry'],
+                cert['certificate_number']
+            ])
+
+        # Generate report info
+        report_info = {
+            'Report Type': 'Expiring Certificates',
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Total Expiring': len(certificate_data)
+        }
+
+        # Generate report
+        return self.generate_basic_report(
+            report_title="Expiring Certificates Report",
+            data=table_data,
+            sheet_name="Expiring Certificates",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+    def generate_missing_documents_excel(
+        self,
+        missing_data: List[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Missing Documents Excel report.
+
+        Args:
+            missing_data: List of missing document dictionaries with keys:
+                'supplier_name', 'document_type', 'required', 'status'
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the Excel file
+
+        Table format: Supplier | Document Type | Required | Status
+        """
+        # Prepare table data
+        table_data = [
+            ['Supplier', 'Document Type', 'Required', 'Status']
+        ]
+
+        for doc in missing_data:
+            table_data.append([
+                doc['supplier_name'],
+                doc['document_type'],
+                doc['required'],
+                doc['status']
+            ])
+
+        # Generate report info
+        report_info = {
+            'Report Type': 'Missing Documents',
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'Total Missing': len(missing_data)
+        }
+
+        # Generate report
+        return self.generate_basic_report(
+            report_title="Missing Documents Report",
+            data=table_data,
+            sheet_name="Missing Documents",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+    def generate_full_audit_excel(
+        self,
+        supplier_data: List[dict],
+        document_data: List[dict],
+        certificate_data: List[dict],
+        missing_data: List[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Full Audit Excel report with multiple worksheets.
+
+        Args:
+            supplier_data: List of supplier dictionaries
+            document_data: List of document dictionaries
+            certificate_data: List of expiring certificate dictionaries
+            missing_data: List of missing document dictionaries
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the Excel file with multiple sheets
+        """
+        # Create workbook with summary sheet
+        self.create_workbook(sheet_name="Executive Summary")
+
+        # Add executive summary
+        generation_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        summary_data = [
+            ['Full Compliance Audit Report'],
+            [''],
+            ['Report Information'],
+            ['Generated On', generation_date],
+            ['Prepared By', preparer or 'N/A'],
+            [''],
+            ['Summary Statistics'],
+            ['Total Suppliers', len(supplier_data)],
+            ['Total Documents', len(document_data)],
+            ['Expiring Certificates', len(certificate_data)],
+            ['Missing Documents', len(missing_data)],
+            [''],
+            ['This report contains the following sections:'],
+            ['1. Supplier Summary - Overview of all suppliers and their compliance status'],
+            ['2. Document Inventory - Complete list of all supplier documents'],
+            ['3. Expiring Certificates - Documents expiring within the specified period'],
+            ['4. Missing Documents - Required documents that are not on file']
+        ]
+
+        # Write executive summary
+        for row_idx, row_data in enumerate(summary_data, start=1):
+            if isinstance(row_data, list):
+                for col_idx, value in enumerate(row_data, start=1):
+                    cell = self.current_sheet.cell(row=row_idx, column=col_idx, value=value)
+
+                    # Style section headers
+                    if row_idx == 1:
+                        cell.font = Font(name='Calibri', size=16, bold=True, color=self.MAKYOL_PRIMARY)
+                    elif row_idx in [3, 7, 13]:
+                        cell.font = Font(name='Calibri', size=12, bold=True, color=self.MAKYOL_SECONDARY)
+                    else:
+                        cell.font = Font(name='Calibri', size=10)
+
+        # Auto-adjust columns for summary
+        self.auto_adjust_column_width(self.current_sheet)
+
+        # Add Supplier Summary worksheet
+        self.add_worksheet("Supplier Summary")
+        supplier_table = [
+            ['Supplier Name', 'Status', 'Document Count', 'Expiring Soon']
+        ]
+        for supplier in supplier_data:
+            supplier_table.append([
+                supplier['name'],
+                supplier['status'].title(),
+                supplier['document_count'],
+                supplier['expiring_soon']
+            ])
+
+        self.create_table(
+            self.current_sheet,
+            data=supplier_table,
+            apply_formatting=True,
+            apply_filters=True,
+            freeze_header=True
+        )
+
+        # Add Document Inventory worksheet
+        self.add_worksheet("Document Inventory")
+        document_table = [
+            ['Supplier', 'Document Type', 'Status', 'Validity Date', 'Certificate #']
+        ]
+        for doc in document_data:
+            document_table.append([
+                doc['supplier_name'],
+                doc['document_type'],
+                doc['status'].title(),
+                doc['validity_date'],
+                doc['certificate_number']
+            ])
+
+        self.create_table(
+            self.current_sheet,
+            data=document_table,
+            apply_formatting=True,
+            apply_filters=True,
+            freeze_header=True
+        )
+
+        # Add Expiring Certificates worksheet
+        self.add_worksheet("Expiring Certificates")
+        certificate_table = [
+            ['Supplier', 'Document Type', 'Validity Date', 'Days Until Expiry', 'Certificate #']
+        ]
+        for cert in certificate_data:
+            certificate_table.append([
+                cert['supplier_name'],
+                cert['document_type'],
+                cert['validity_date'],
+                cert['days_until_expiry'],
+                cert['certificate_number']
+            ])
+
+        self.create_table(
+            self.current_sheet,
+            data=certificate_table,
+            apply_formatting=True,
+            apply_filters=True,
+            freeze_header=True
+        )
+
+        # Add Missing Documents worksheet
+        self.add_worksheet("Missing Documents")
+        missing_table = [
+            ['Supplier', 'Document Type', 'Required', 'Status']
+        ]
+        for doc in missing_data:
+            missing_table.append([
+                doc['supplier_name'],
+                doc['document_type'],
+                doc['required'],
+                doc['status']
+            ])
+
+        self.create_table(
+            self.current_sheet,
+            data=missing_table,
+            apply_formatting=True,
+            apply_filters=True,
+            freeze_header=True
+        )
+
+        # Add footer to all worksheets
+        for sheet in self.workbook.worksheets:
+            self.add_footer(sheet, preparer)
+
+        # Save to buffer
+        return self.save_to_buffer()
