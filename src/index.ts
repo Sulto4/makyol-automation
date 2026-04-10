@@ -4,11 +4,14 @@ import { appConfig } from './config/app';
 import { databaseConfig } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { createDocumentRoutes } from './routes/documents';
 
 /**
  * Create and configure Express application
+ *
+ * @param pool - PostgreSQL connection pool for dependency injection
  */
-function createApp(): Express {
+function createApp(pool: Pool): Express {
   const app = express();
 
   // Body parsing middleware
@@ -39,9 +42,8 @@ function createApp(): Express {
     });
   });
 
-  // API routes will be mounted here
-  // TODO: Add document routes once created
-  // app.use(`${appConfig.api.prefix}/documents`, documentRoutes);
+  // API routes
+  app.use(`${appConfig.api.prefix}/documents`, createDocumentRoutes(pool));
 
   // 404 handler (must be after all routes)
   app.use(notFoundHandler);
@@ -74,11 +76,11 @@ function createDatabasePool(): Pool {
  */
 async function startServer(): Promise<void> {
   try {
-    // Create Express app
-    const app = createApp();
-
     // Initialize database connection
     const pool = createDatabasePool();
+
+    // Create Express app with database pool
+    const app = createApp(pool);
 
     // Test database connection
     try {
