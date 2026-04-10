@@ -1,0 +1,87 @@
+=== AUTO-BUILD PROGRESS ===
+
+Project: PDF Processing Automation for Construction Material Documentation
+Workspace: E:\Vibe Local Proiecte\makyol-automation
+Started: 2026-04-10
+
+Workflow Type: feature
+Rationale: Greenfield modular Python CLI tool. A monolithic prototype exists (makyol-automation/proceseaza_documente.py) serving as reference for patterns and business logic, but the spec requires building a clean modular project with OCR support, tests, and fixes.
+
+Session 1 (Planner):
+- Created implementation_plan.json
+- Phases: 7
+- Total subtasks: 9
+- Created init.sh
+- Created project_index.json
+- Created context.json
+- Analyzed existing prototype (605-line monolithic script)
+- Examined sample PDFs from all 4 supplier folders
+- Identified ~15/40 scanned PDFs requiring OCR fallback
+- Identified critical bug: distributor field empty for all documents in prototype
+
+Phase Summary:
+- Phase 1 (Project Foundation): 3 subtasks - project structure, models, config [depends on: none]
+- Phase 2 (PDF Extraction Engine): 1 subtask - pdfplumber + PyMuPDF OCR fallback [depends on: phase-1]
+- Phase 3 (Document Classification): 1 subtask - filename + content classification [depends on: phase-1]
+- Phase 4 (Metadata Extraction): 1 subtask - date, producer, distributor, material [depends on: phase-1]
+- Phase 5 (Word Document Generation): 1 subtask - cover letter + styled table [depends on: phase-1]
+- Phase 6 (CLI & Orchestration): 1 subtask - main.py pipeline + argparse CLI [depends on: phases 2-5]
+- Phase 7 (Testing & Verification): 2 subtasks - unit tests + E2E verification [depends on: phase-6]
+
+Services Involved:
+- pdf-processor: Python CLI tool - reads PDFs from Documente/ folders, extracts metadata, generates Word output
+
+Key Decisions:
+- Use existing prototype as REFERENCE for patterns/regex, not as code to refactor in-place
+- Build clean modular structure from spec (src/models.py, config.py, pdf_extractor.py, etc.)
+- pdfplumber primary + PyMuPDF OCR fallback (prototype only uses pdfplumber)
+- Fix distributor logic: Tehnoworld/Zakprest folders = distributor role
+- Add proper logging (prototype uses print())
+- Add unit tests (prototype has none)
+
+Existing Prototype Analysis:
+- Location: makyol-automation/proceseaza_documente.py (605 lines)
+- Already working: PDF extraction, classification, metadata, Word generation
+- Missing: OCR fallback, tests, logging, distributor logic, modular structure
+- Output: Adresa_Materiale_Supervizor.docx (working Word doc)
+- Results: rezultate_extrase.json (37 entries, 15 with has_text: false)
+
+Parallelism Analysis:
+- Max parallel phases: 3 (phases 3, 4, 5 can run together after phase 1)
+- Recommended workers: 2
+- Parallel groups: [phase-3-classification, phase-4-metadata, phase-5-output] - all depend only on phase-1, no file overlap
+
+=== STARTUP COMMAND ===
+
+To continue building this spec, run:
+
+  source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 001 --parallel 2
+
+Example:
+  source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 001 --parallel 2
+
+=== END SESSION 1 ===
+
+=== SESSION: subtask-7-2 (E2E Verification) ===
+
+Created E2E verification tests:
+- tests/test_e2e_pipeline.py: Comprehensive pytest-based E2E test suite (7 test classes, ~20 tests)
+- tests/run_e2e_verification.py: Standalone verification script with pass/fail report
+
+All 7 acceptance criteria covered:
+1. Output Word file creation and size check (>10KB)
+2. JSON export completeness (~40 PDFs)
+3. Document type classification correctness
+4. Distributor field populated for Tehnoworld/Zakprest (critical fix over prototype)
+5. Expiration date extraction (TERAPLAST ISO 9001 = 04.11.2027)
+6. No crashes / high success rate
+7. Reference parity with rezultate_extrase.json + distributor improvement
+
+NOTE: Python execution is blocked in this sandbox environment. Tests are written and
+verified structurally. To run:
+  python tests/run_e2e_verification.py        # standalone report
+  python -m pytest tests/test_e2e_pipeline.py -v  # pytest suite (requires Documente/ folder)
+
+The Documente/ folder must be available (symlink or copy) in the project root.
+
+=== END subtask-7-2 ===
