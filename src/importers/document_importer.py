@@ -3,7 +3,7 @@
 import hashlib
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -14,6 +14,119 @@ from src.models.supplier import Supplier
 from src.importers.document_classifier import DocumentClassifier, ClassificationResult
 
 logger = logging.getLogger(__name__)
+
+
+class ImportSummary:
+    """Track import statistics for document importer.
+
+    Tracks overall counts and per-supplier breakdown for documents
+    found, imported, skipped, classified, and unclassified.
+
+    Attributes:
+        found: Total documents found
+        imported: Total documents successfully imported
+        skipped: Total documents skipped (duplicates)
+        classified: Total documents with successful classification
+        unclassified: Total documents without classification
+        by_supplier: Per-supplier breakdown dictionary
+    """
+
+    def __init__(self):
+        """Initialize import summary counters."""
+        # Overall counters
+        self.found = 0
+        self.imported = 0
+        self.skipped = 0
+        self.classified = 0
+        self.unclassified = 0
+
+        # Per-supplier breakdown: {supplier_name: {found: X, imported: Y, ...}}
+        self.by_supplier: Dict[str, Dict[str, int]] = {}
+
+    def add_found(self, supplier_name: Optional[str] = None):
+        """Increment found counter.
+
+        Args:
+            supplier_name: Optional supplier name for per-supplier tracking
+        """
+        self.found += 1
+        if supplier_name:
+            self._ensure_supplier(supplier_name)
+            self.by_supplier[supplier_name]['found'] += 1
+
+    def add_imported(self, supplier_name: Optional[str] = None, is_classified: bool = True):
+        """Increment imported counter and classification counters.
+
+        Args:
+            supplier_name: Optional supplier name for per-supplier tracking
+            is_classified: Whether the document was successfully classified
+        """
+        self.imported += 1
+        if is_classified:
+            self.classified += 1
+        else:
+            self.unclassified += 1
+
+        if supplier_name:
+            self._ensure_supplier(supplier_name)
+            self.by_supplier[supplier_name]['imported'] += 1
+            if is_classified:
+                self.by_supplier[supplier_name]['classified'] += 1
+            else:
+                self.by_supplier[supplier_name]['unclassified'] += 1
+
+    def add_skipped(self, supplier_name: Optional[str] = None):
+        """Increment skipped counter.
+
+        Args:
+            supplier_name: Optional supplier name for per-supplier tracking
+        """
+        self.skipped += 1
+        if supplier_name:
+            self._ensure_supplier(supplier_name)
+            self.by_supplier[supplier_name]['skipped'] += 1
+
+    def _ensure_supplier(self, supplier_name: str):
+        """Ensure supplier entry exists in breakdown dictionary.
+
+        Args:
+            supplier_name: Supplier name to ensure exists
+        """
+        if supplier_name not in self.by_supplier:
+            self.by_supplier[supplier_name] = {
+                'found': 0,
+                'imported': 0,
+                'skipped': 0,
+                'classified': 0,
+                'unclassified': 0
+            }
+
+    def __str__(self) -> str:
+        """Return formatted summary report.
+
+        Returns:
+            str: Multi-line formatted summary with overall and per-supplier stats
+        """
+        lines = [
+            "Import Summary:",
+            f"  Total Found: {self.found}",
+            f"  Imported: {self.imported}",
+            f"  Skipped (duplicates): {self.skipped}",
+            f"  Classified: {self.classified}",
+            f"  Unclassified: {self.unclassified}"
+        ]
+
+        if self.by_supplier:
+            lines.append("\nPer Supplier:")
+            for supplier, stats in sorted(self.by_supplier.items()):
+                lines.append(f"  {supplier}:")
+                lines.append(f"    Found: {stats['found']}")
+                lines.append(f"    Imported: {stats['imported']}")
+                lines.append(f"    Skipped: {stats['skipped']}")
+                lines.append(f"    Classified: {stats['classified']}")
+                lines.append(f"    Unclassified: {stats['unclassified']}")
+
+        return '\n'.join(lines)
 
 
 class DocumentImporter:
