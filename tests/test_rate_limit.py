@@ -19,9 +19,6 @@ class TestRateLimitEnforcement:
     def test_rate_limit_blocks_excessive_requests(self, client, auth_headers):
         """
         Requests exceeding the rate limit should be blocked with 429.
-
-        Note: This test makes requests until rate limited.
-        It runs first to verify rate limiting works.
         """
         # Make requests until we hit the rate limit
         success_count = 0
@@ -36,6 +33,9 @@ class TestRateLimitEnforcement:
             elif response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
                 rate_limited = True
                 break
+
+            # Small delay to avoid test client timing issues
+            time.sleep(0.01)  # 10ms delay
 
         # We should have been rate limited at some point
         assert rate_limited, f"Expected to be rate limited, but made {success_count} successful requests without hitting limit"

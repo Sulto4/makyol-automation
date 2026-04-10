@@ -6,7 +6,7 @@ Catches common HTTP exceptions and returns standardized JSON error responses.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -50,7 +50,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
             "message": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
             "details": None,
             "path": str(request.url.path),
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "request_id": str(uuid.uuid4())
         }
     )
@@ -88,7 +88,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 "validation_errors": errors
             },
             "path": str(request.url.path),
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "request_id": str(uuid.uuid4())
         }
     )
@@ -126,7 +126,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
             "message": error_message,
             "details": None,
             "path": str(request.url.path),
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "request_id": str(uuid.uuid4())
         }
     )

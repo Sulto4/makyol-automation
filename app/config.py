@@ -5,7 +5,7 @@ Loads configuration from environment variables using Pydantic Settings.
 Provides type-safe access to application settings.
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
 
@@ -40,10 +40,11 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False
+    )
 
     def get_api_keys_list(self) -> List[str]:
         """Parse comma-separated API keys into a list."""

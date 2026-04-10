@@ -8,3 +8,15 @@
 .worktrees/
 .security-key
 logs/security/
+
+# Environment variables
+.env
+.env.local
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
