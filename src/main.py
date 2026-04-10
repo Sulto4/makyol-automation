@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from src.config import get_settings
 from src.database import init_db
+from src.routers import reports
 
 settings = get_settings()
 
@@ -33,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(reports.router)
 
 
 @app.get("/")
