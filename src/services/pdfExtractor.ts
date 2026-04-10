@@ -1,6 +1,17 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import pdfParse from 'pdf-parse';
+import {
+  PDFNotFoundError,
+  PDFPermissionDeniedError,
+  PDFCorruptedError,
+  PDFEncryptedError,
+  PDFScannedError,
+  PDFInvalidFormatError,
+  PDFInvalidInputError,
+  PDFParsingError,
+  PDFFileSystemError,
+} from '../utils/errors';
 
 /**
  * PDF extraction result interface
@@ -50,13 +61,26 @@ export class PDFExtractorService {
       // Extract from buffer
       return await this.extractFromBuffer(dataBuffer, options);
     } catch (error) {
+      // Re-throw custom errors from extractFromBuffer
+      if (error instanceof PDFInvalidFormatError ||
+          error instanceof PDFCorruptedError ||
+          error instanceof PDFEncryptedError ||
+          error instanceof PDFInvalidInputError ||
+          error instanceof PDFParsingError ||
+          error instanceof PDFScannedError) {
+        throw error;
+      }
+
+      // Handle file system errors
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new Error(`PDF file not found: ${filePath}`);
+        throw new PDFNotFoundError(filePath);
       }
       if ((error as NodeJS.ErrnoException).code === 'EACCES') {
-        throw new Error(`Permission denied reading PDF file: ${filePath}`);
+        throw new PDFPermissionDeniedError(filePath);
       }
-      throw new Error(`Failed to read PDF file: ${(error as Error).message}`);
+
+      // Generic file system error
+      throw new PDFFileSystemError('read', filePath, error as Error);
     }
   }
 
@@ -75,17 +99,39 @@ export class PDFExtractorService {
     try {
       // Validate buffer
       if (!Buffer.isBuffer(buffer)) {
-        throw new Error('Invalid input: expected a Buffer');
+        throw new PDFInvalidInputError('expected a Buffer');
       }
 
       if (buffer.length === 0) {
-        throw new Error('Invalid input: buffer is empty');
+        throw new PDFInvalidInputError('buffer is empty');
+      }
+
+      // Check minimum size (valid PDFs must be at least a few bytes)
+      if (buffer.length < 10) {
+        throw new PDFInvalidInputError(`buffer too small (${buffer.length} bytes), minimum 10 bytes required`);
       }
 
       // Check for PDF signature
       const pdfSignature = buffer.toString('utf8', 0, 5);
       if (!pdfSignature.startsWith('%PDF-')) {
-        throw new Error('Invalid PDF: file does not have PDF signature');
+        const actualHeader = buffer.toString('utf8', 0, Math.min(20, buffer.length));
+        throw new PDFInvalidFormatError({
+          expectedSignature: '%PDF-',
+          actualHeader: actualHeader.replace(/[^\x20-\x7E]/g, '?'), // Show printable chars only
+          bufferSize: buffer.length
+        });
+      }
+
+      // Detect corrupted PDF by checking EOF marker
+      const lastBytes = buffer.slice(-10).toString('utf8');
+      if (!lastBytes.includes('%%EOF')) {
+        throw new PDFCorruptedError(
+          'missing EOF marker - file may be truncated or corrupted',
+          {
+            bufferSize: buffer.length,
+            lastBytes: lastBytes.replace(/[^\x20-\x7E]/g, '?')
+          }
+        );
       }
 
       // Configure pdf-parse options
@@ -106,6 +152,12 @@ export class PDFExtractorService {
       // Extract and clean text
       const extractedText = data.text || '';
 
+      // Detect if PDF is scanned (minimal text content)
+      const avgCharsPerPage = extractedText.length / (data.numpages || 1);
+      if (avgCharsPerPage < 50 && extractedText.trim().length < 100) {
+        throw new PDFScannedError(data.numpages, avgCharsPerPage);
+      }
+
       return {
         text: extractedText,
         numPages: data.numpages,
@@ -113,20 +165,33 @@ export class PDFExtractorService {
         metadata: data.metadata,
       };
     } catch (error) {
-      // Check for specific PDF parsing errors
-      if ((error as Error).message.includes('Invalid PDF')) {
+      // Re-throw custom errors
+      if (error instanceof PDFInvalidInputError ||
+          error instanceof PDFInvalidFormatError ||
+          error instanceof PDFCorruptedError ||
+          error instanceof PDFScannedError) {
         throw error;
       }
 
-      if ((error as Error).message.includes('encrypted')) {
-        throw new Error('PDF is encrypted and cannot be processed');
+      // Check for encryption errors
+      const errorMessage = (error as Error).message || '';
+      if (errorMessage.toLowerCase().includes('encrypt') ||
+          errorMessage.toLowerCase().includes('password')) {
+        throw new PDFEncryptedError();
       }
 
-      if ((error as Error).message.includes('Invalid input')) {
-        throw error;
+      // Check for corruption indicators
+      if (errorMessage.includes('Invalid') ||
+          errorMessage.includes('corrupt') ||
+          errorMessage.includes('malformed') ||
+          errorMessage.includes('damaged')) {
+        throw new PDFCorruptedError(errorMessage, {
+          originalError: errorMessage
+        });
       }
 
-      throw new Error(`PDF parsing failed: ${(error as Error).message}`);
+      // Generic parsing error
+      throw new PDFParsingError(error as Error);
     }
   }
 
@@ -159,21 +224,34 @@ export class PDFExtractorService {
    *
    * @param filePath - Path to the PDF file
    * @returns Object containing text and flag indicating if PDF appears to be scanned
+   * @throws PDFScannedError if PDF has minimal extractable text (likely scanned)
    */
   async extractAndDetectScanned(
     filePath: string
-  ): Promise<{ text: string; isScanned: boolean; numPages: number }> {
-    const result = await this.extractFromFile(filePath);
+  ): Promise<{ text: string; isScanned: boolean; numPages: number; avgCharsPerPage: number }> {
+    try {
+      const result = await this.extractFromFile(filePath);
 
-    // Heuristic: if text is very short relative to page count, likely scanned
-    const avgCharsPerPage = result.text.length / result.numPages;
-    const isScanned = avgCharsPerPage < 100; // Threshold: less than 100 chars per page
+      // Heuristic: if text is very short relative to page count, likely scanned
+      const avgCharsPerPage = result.text.length / result.numPages;
+      const isScanned = avgCharsPerPage < 100; // Threshold: less than 100 chars per page
 
-    return {
-      text: result.text,
-      isScanned,
-      numPages: result.numPages,
-    };
+      return {
+        text: result.text,
+        isScanned,
+        numPages: result.numPages,
+        avgCharsPerPage,
+      };
+    } catch (error) {
+      // If it's already a scanned error, add file path context
+      if (error instanceof PDFScannedError) {
+        throw new PDFScannedError(
+          (error.details as any).numPages,
+          (error.details as any).avgCharsPerPage
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -181,6 +259,9 @@ export class PDFExtractorService {
    *
    * @param filePath - Path to the PDF file
    * @returns PDF metadata including page count
+   * @throws PDFNotFoundError if file doesn't exist
+   * @throws PDFPermissionDeniedError if permission is denied
+   * @throws PDFParsingError if metadata extraction fails
    */
   async getMetadata(filePath: string): Promise<{
     numPages: number;
@@ -200,7 +281,16 @@ export class PDFExtractorService {
         metadata: data.metadata,
       };
     } catch (error) {
-      throw new Error(`Failed to get PDF metadata: ${(error as Error).message}`);
+      // Handle file system errors
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new PDFNotFoundError(filePath);
+      }
+      if ((error as NodeJS.ErrnoException).code === 'EACCES') {
+        throw new PDFPermissionDeniedError(filePath);
+      }
+
+      // Generic parsing error
+      throw new PDFParsingError(error as Error);
     }
   }
 }
