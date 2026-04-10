@@ -1,0 +1,62 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist
+build
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs
+
+# Test files
+tests
+*.test.ts
+*.spec.ts
+coverage
+.nyc_output
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Auto-claude files
+.auto-claude
+.auto-claude-*
+.claude_settings.json
+
+# Uploads and temporary files
+uploads
+tmp
+temp
+*.log
+
+# Other
+.npmrc
