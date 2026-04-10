@@ -27,15 +27,92 @@ from app.middleware.error_handler import (
 from app.routers import test, suppliers, compliance, documents, alerts, reports
 
 
-# Initialize FastAPI app
+# Initialize FastAPI app with comprehensive OpenAPI documentation
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="REST API for querying Makyol compliance data. "
-                "Supports supplier compliance status, document inventory, expiry alerts, and compliance reports.",
+    description="""
+## Makyol Compliance API
+
+REST API for querying supplier compliance data and integrating with external systems.
+
+### Features
+- 🔐 **Secure Access**: API key authentication on all endpoints
+- ⚡ **Rate Limited**: 100 requests/minute to prevent abuse
+- 📊 **Rich Data**: Comprehensive compliance, supplier, and document information
+- 🔍 **Flexible Querying**: Filtering, pagination, and search capabilities
+- 📝 **Well Documented**: OpenAPI/Swagger specification with examples
+
+### Use Cases
+- **ERP Integration**: Check supplier compliance before generating purchase orders
+- **Procurement Automation**: Automate supplier verification workflows
+- **Project Management**: Display compliance status in project dashboards
+- **Reporting & Analytics**: Extract compliance data for business intelligence tools
+
+### Authentication
+All API endpoints (except `/health` and `/`) require authentication using an API key.
+Include your API key in the `X-API-Key` header:
+
+```
+X-API-Key: your-api-key-here
+```
+
+### Rate Limiting
+API requests are limited to **100 requests per minute** per API key.
+Exceeding this limit will result in a `429 Too Many Requests` response.
+    """,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    contact={
+        "name": "Makyol IT Department",
+        "email": "it@makyol.com",
+        "url": "https://makyol.com"
+    },
+    license_info={
+        "name": "Proprietary",
+        "url": "https://makyol.com/license"
+    },
+    servers=[
+        {
+            "url": "http://localhost:8000",
+            "description": "Local Development Server"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Development Environment"
+        }
+    ],
+    openapi_tags=[
+        {
+            "name": "System",
+            "description": "System health and API information endpoints"
+        },
+        {
+            "name": "Test",
+            "description": "Test endpoints for API key validation and connectivity checks"
+        },
+        {
+            "name": "Suppliers",
+            "description": "Query and filter supplier information. Supports pagination and search by name, category, or registration number."
+        },
+        {
+            "name": "Compliance",
+            "description": "Retrieve supplier compliance status including audit dates, document counts, and compliance scores."
+        },
+        {
+            "name": "Documents",
+            "description": "Access document inventory with filtering by supplier, type, status, and expiry dates."
+        },
+        {
+            "name": "Alerts",
+            "description": "Get proactive alerts for expiring documents and compliance issues."
+        },
+        {
+            "name": "Reports",
+            "description": "Generate comprehensive compliance reports with statistics and insights. Supports multiple output formats."
+        }
+    ]
 )
 
 # Configure Rate Limiting
