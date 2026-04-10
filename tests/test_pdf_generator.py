@@ -195,3 +195,108 @@ def test_missing_documents_pdf():
 
     # Verify it starts with PDF signature
     assert pdf_content.startswith(b'%PDF')
+
+
+def test_full_audit_pdf():
+    """Test generation of Full Audit PDF report."""
+    # Initialize generator
+    generator = PDFGenerator()
+
+    # Sample data for full audit (combines all report types)
+    # Supplier summary data
+    supplier_data = [
+        {
+            'name': 'ABC Construction Ltd.',
+            'status': 'active',
+            'document_count': 12,
+            'expiring_soon': 2
+        },
+        {
+            'name': 'XYZ Engineering Co.',
+            'status': 'active',
+            'document_count': 8,
+            'expiring_soon': 0
+        },
+        {
+            'name': 'BuildTech Industries',
+            'status': 'pending',
+            'document_count': 5,
+            'expiring_soon': 1
+        }
+    ]
+
+    # Document inventory data
+    document_data = [
+        {
+            'supplier_name': 'ABC Construction Ltd.',
+            'document_type': 'ISO 9001 Certification',
+            'status': 'valid',
+            'validity_date': '2025-06-30',
+            'certificate_number': 'ISO-9001-2024-001'
+        },
+        {
+            'supplier_name': 'ABC Construction Ltd.',
+            'document_type': 'Tax Clearance',
+            'status': 'expiring',
+            'validity_date': '2026-05-15',
+            'certificate_number': 'TAX-2024-456'
+        },
+        {
+            'supplier_name': 'XYZ Engineering Co.',
+            'document_type': 'ISO 9001 Certification',
+            'status': 'valid',
+            'validity_date': '2027-01-20',
+            'certificate_number': 'ISO-9001-2024-002'
+        }
+    ]
+
+    # Expiring certificates data
+    certificate_data = [
+        {
+            'supplier_name': 'ABC Construction Ltd.',
+            'document_type': 'Tax Clearance',
+            'validity_date': '2026-05-15',
+            'days_until_expiry': 35,
+            'certificate_number': 'TAX-2024-456'
+        },
+        {
+            'supplier_name': 'BuildTech Industries',
+            'document_type': 'Insurance Certificate',
+            'validity_date': '2026-04-25',
+            'days_until_expiry': 15,
+            'certificate_number': 'INS-2024-789'
+        }
+    ]
+
+    # Missing documents data
+    missing_data = [
+        {
+            'supplier_name': 'ABC Construction Ltd.',
+            'document_type': 'Environmental Compliance Certificate',
+            'required': 'Always Required',
+            'status': 'Missing'
+        },
+        {
+            'supplier_name': 'BuildTech Industries',
+            'document_type': 'Safety Certification',
+            'required': 'Always Required',
+            'status': 'Missing'
+        }
+    ]
+
+    # Generate full audit report
+    pdf_buffer = generator.generate_full_audit_pdf(
+        supplier_data=supplier_data,
+        document_data=document_data,
+        certificate_data=certificate_data,
+        missing_data=missing_data,
+        preparer="Test User"
+    )
+
+    # Verify buffer is created and has content
+    assert isinstance(pdf_buffer, BytesIO)
+    pdf_content = pdf_buffer.getvalue()
+    assert len(pdf_content) > 0
+
+    # Verify it starts with PDF signature
+    assert pdf_content.startswith(b'%PDF')

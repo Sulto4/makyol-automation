@@ -532,3 +532,220 @@ class PDFGenerator:
         # Reset buffer position
         buffer.seek(0)
         return buffer
+
+    def generate_full_audit_pdf(
+        self,
+        supplier_data: list[dict],
+        document_data: list[dict],
+        certificate_data: list[dict],
+        missing_data: list[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Full Audit PDF report combining all compliance data.
+
+        This comprehensive report includes an executive summary and detailed sections
+        for supplier compliance, document inventory, expiring certificates, and
+        missing documents. Suitable for regulatory submission and audit preparation.
+
+        Args:
+            supplier_data: List of supplier dictionaries with keys:
+                - name: Supplier name
+                - status: Supplier status (active, inactive, pending)
+                - document_count: Total number of documents
+                - expiring_soon: Number of documents expiring soon
+            document_data: List of document dictionaries with keys:
+                - supplier_name: Name of the supplier
+                - document_type: Type of document
+                - status: Document status (valid, expiring, expired, missing)
+                - validity_date: Validity date (YYYY-MM-DD format or date string)
+                - certificate_number: Certificate/document number
+            certificate_data: List of certificate dictionaries with keys:
+                - supplier_name: Name of the supplier
+                - document_type: Type of document/certificate
+                - validity_date: Validity/expiry date (YYYY-MM-DD format or date string)
+                - days_until_expiry: Number of days until expiration
+                - certificate_number: Certificate/document number
+            missing_data: List of missing document dictionaries with keys:
+                - supplier_name: Name of the supplier
+                - document_type: Type of document that is missing
+                - required: When the document is required (e.g., 'Always Required', date)
+                - status: Status of the document (typically 'Missing')
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the PDF
+
+        Example:
+            pdf = generator.generate_full_audit_pdf(
+                supplier_data=[{...}],
+                document_data=[{...}],
+                certificate_data=[{...}],
+                missing_data=[{...}],
+                preparer="Compliance Engineer"
+            )
+        """
+        # Calculate summary statistics
+        total_suppliers = len(supplier_data)
+        total_documents = len(document_data)
+        total_expiring = len(certificate_data)
+        total_missing = len(missing_data)
+
+        # Calculate active suppliers
+        active_suppliers = sum(1 for s in supplier_data if s.get('status', '').lower() == 'active')
+
+        # Create report info
+        report_info = {
+            'Report Type': 'Full Compliance Audit',
+            'Total Suppliers': str(total_suppliers),
+            'Active Suppliers': str(active_suppliers),
+            'Total Documents': str(total_documents),
+            'Documents Expiring Soon': str(total_expiring),
+            'Missing Documents': str(total_missing),
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        # Create document
+        buffer, doc, story = self.create_document(
+            report_title="Full Compliance Audit Report",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+        # Executive Summary Section
+        self.add_section(
+            story,
+            title="Executive Summary",
+            content=(
+                f"This comprehensive audit report covers {total_suppliers} suppliers with "
+                f"{total_documents} total documents tracked. {total_expiring} certificates are "
+                f"expiring soon and require renewal action. {total_missing} required documents "
+                f"are currently missing and need immediate attention. This report is suitable "
+                f"for regulatory submission and compliance verification."
+            )
+        )
+
+        # Add page break before first major section
+        story.append(PageBreak())
+
+        # Section 1: Supplier Compliance Summary
+        self.add_section(
+            story,
+            title="1. Supplier Compliance Summary"
+        )
+
+        # Prepare supplier summary table
+        supplier_table_data = [
+            ['Supplier Name', 'Status', 'Document Count', 'Expiring Soon']
+        ]
+        for supplier in supplier_data:
+            supplier_table_data.append([
+                supplier.get('name', 'N/A'),
+                supplier.get('status', 'N/A').title(),
+                str(supplier.get('document_count', 0)),
+                str(supplier.get('expiring_soon', 0))
+            ])
+
+        col_widths = [3.5 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch]
+        self.add_table(
+            story,
+            data=supplier_table_data,
+            col_widths=col_widths,
+            title="Supplier Overview"
+        )
+
+        # Add page break before next section
+        story.append(PageBreak())
+
+        # Section 2: Document Inventory
+        self.add_section(
+            story,
+            title="2. Document Inventory"
+        )
+
+        # Prepare document inventory table
+        document_table_data = [
+            ['Supplier', 'Document Type', 'Status', 'Validity Date', 'Certificate #']
+        ]
+        for document in document_data:
+            document_table_data.append([
+                document.get('supplier_name', 'N/A'),
+                document.get('document_type', 'N/A'),
+                document.get('status', 'N/A').title(),
+                document.get('validity_date', 'N/A'),
+                document.get('certificate_number', 'N/A')
+            ])
+
+        col_widths = [1.8 * inch, 2.0 * inch, 1.0 * inch, 1.3 * inch, 1.9 * inch]
+        self.add_table(
+            story,
+            data=document_table_data,
+            col_widths=col_widths,
+            title="Complete Document Listing"
+        )
+
+        # Add page break before next section
+        story.append(PageBreak())
+
+        # Section 3: Expiring Certificates
+        self.add_section(
+            story,
+            title="3. Expiring Certificates"
+        )
+
+        # Prepare expiring certificates table
+        certificate_table_data = [
+            ['Supplier', 'Document Type', 'Validity Date', 'Days Until Expiry', 'Certificate #']
+        ]
+        for certificate in certificate_data:
+            certificate_table_data.append([
+                certificate.get('supplier_name', 'N/A'),
+                certificate.get('document_type', 'N/A'),
+                certificate.get('validity_date', 'N/A'),
+                str(certificate.get('days_until_expiry', 'N/A')),
+                certificate.get('certificate_number', 'N/A')
+            ])
+
+        col_widths = [1.8 * inch, 2.0 * inch, 1.2 * inch, 1.3 * inch, 1.7 * inch]
+        self.add_table(
+            story,
+            data=certificate_table_data,
+            col_widths=col_widths,
+            title="Action Required: Renewals Needed"
+        )
+
+        # Add page break before final section
+        story.append(PageBreak())
+
+        # Section 4: Missing Documents
+        self.add_section(
+            story,
+            title="4. Missing Documents"
+        )
+
+        # Prepare missing documents table
+        missing_table_data = [
+            ['Supplier', 'Document Type', 'Required', 'Status']
+        ]
+        for missing in missing_data:
+            missing_table_data.append([
+                missing.get('supplier_name', 'N/A'),
+                missing.get('document_type', 'N/A'),
+                missing.get('required', 'N/A'),
+                missing.get('status', 'Missing')
+            ])
+
+        col_widths = [2.5 * inch, 2.5 * inch, 1.5 * inch, 1.5 * inch]
+        self.add_table(
+            story,
+            data=missing_table_data,
+            col_widths=col_widths,
+            title="Compliance Gaps Requiring Immediate Action"
+        )
+
+        # Finalize document
+        self.finalize_document(doc, story, preparer)
+
+        # Reset buffer position
+        buffer.seek(0)
+        return buffer
