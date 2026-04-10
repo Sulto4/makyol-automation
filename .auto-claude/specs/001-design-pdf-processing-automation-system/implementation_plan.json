@@ -1,0 +1,423 @@
+{
+  "feature": "PDF Processing Automation for Construction Material Documentation",
+  "workflow_type": "feature",
+  "workflow_rationale": "Greenfield modular Python CLI tool. Although a monolithic prototype exists (makyol-automation/proceseaza_documente.py), the spec requires building a clean, modular project from scratch with proper structure, OCR support, logging, tests, and fixed business logic. The prototype serves as a reference for patterns and regex, not as code to directly refactor in-place.",
+  "phases": [
+    {
+      "id": "phase-1-foundation",
+      "name": "Project Foundation & Data Models",
+      "type": "setup",
+      "description": "Create the project directory structure, install dependencies, and build the core data models and configuration that all other modules depend on.",
+      "depends_on": [],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Create project directory structure and requirements.txt. Create src/ and tests/ directories with __init__.py files. Create output/ directory. Create requirements.txt with pdfplumber, PyMuPDF, python-docx, and pytest. Update .gitignore to exclude output/, venv/, __pycache__/, *.pyc.",
+          "service": "pdf-processor",
+          "files_to_modify": [
+            ".gitignore"
+          ],
+          "files_to_create": [
+            "src/__init__.py",
+            "tests/__init__.py",
+            "requirements.txt"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"import sys; sys.path.insert(0, '.'); from src import __init__; print('OK')\" && cat requirements.txt",
+            "expected": "OK followed by dependency list including pdfplumber, PyMuPDF, python-docx"
+          },
+          "status": "completed",
+          "notes": "The output/ directory needs to exist for the tool to write results. Use .gitkeep to track it."
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Create src/models.py with dataclass definitions. Define DocumentType enum (FISA_TEHNICA, ISO_9001, ISO_14001, ISO_45001, ISO_50001, AVIZ_TEHNIC, AGREMENT_TEHNIC, AVIZ_SANITAR, DECLARATIE_CONFORMITATE, CERTIFICAT_CONFORMITATE, CERTIFICAT_GARANTIE, OTHER). Define DocumentInfo dataclass (file_path, file_name, supplier_folder, document_type, material, expiration_date, producer, distributor, extracted_text, confidence, errors). Define SupplierFolder dataclass. Define ProcessingResult dataclass for pipeline output summary.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/models.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "status": "completed",
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from src.models import DocumentType, DocumentInfo, SupplierFolder; print(DocumentType.ISO_9001.value); d = DocumentInfo(file_path='test.pdf', file_name='test.pdf', supplier_folder='test'); print(d.material)\"",
+            "expected": "Certificat ISO 9001 and N/A"
+          },
+          "notes": "Created src/models.py with DocumentType enum (12 types), DocumentInfo dataclass, SupplierFolder dataclass, and ProcessingResult dataclass with success_rate property. Python execution blocked by security config so verification was done by code review. Committed as 7ceae39.",
+          "updated_at": "2026-04-10T16:46:42.860984+00:00"
+        },
+        {
+          "id": "subtask-1-3",
+          "description": "Create src/config.py with all configuration constants. Include: FILENAME_PATTERNS dict mapping regex to DocumentType, TEXT_PATTERNS dict for content-based classification, KNOWN_PRODUCERS dict (folder name -> producer company), KNOWN_MATERIALS dict (folder name -> material), SUPPLIER_ROLES dict (folder name -> producer/distributor role), MONTH_MAP_RO for Romanian month names, DATE_PATTERNS list for expiry date extraction, MATERIAL_PATTERNS list for material extraction, PRODUCER_PATTERNS list for producer extraction, DISTRIBUTOR_PATTERNS list for distributor extraction. Port all regex patterns from the prototype but fix the distributor logic: Tehnoworld and Zakprest folders should populate the distributor field.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/config.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from src.config import FILENAME_PATTERNS, KNOWN_PRODUCERS, SUPPLIER_ROLES; print(len(FILENAME_PATTERNS)); print(SUPPLIER_ROLES.get('Tehnoworld', {}).get('distributor', 'MISSING'))\"",
+            "expected": "Pattern count >= 11 and Tehnoworld distributor name"
+          },
+          "status": "completed",
+          "notes": "CRITICAL: Fix the distributor logic from the prototype. The prototype has distributor empty for ALL results. For Tehnoworld and Zakprest folders, the distributor should be populated (they are distributors, not producers). For TERAPLAST and VALROM, they are both producer and distributor (same entity). Reference SUPPLIER_ROLES in context.json."
+        }
+      ]
+    },
+    {
+      "id": "phase-2-extraction",
+      "name": "PDF Text Extraction Engine",
+      "type": "implementation",
+      "description": "Build the PDF text extraction module with pdfplumber as primary and PyMuPDF OCR as fallback. This is the most critical module since ~15/40 PDFs are scanned images that the prototype cannot handle.",
+      "depends_on": [
+        "phase-1-foundation"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Create src/pdf_extractor.py with dual-engine text extraction. Implement extract_pdf_text(pdf_path: Path) -> str function that: (1) Tries pdfplumber first - opens PDF, extracts text from all pages (max 10), joins with newlines. (2) If pdfplumber returns empty/minimal text (<50 chars), falls back to PyMuPDF basic text extraction. (3) If PyMuPDF basic also returns empty, attempts OCR via page.get_textpage_ocr(language='ron', dpi=300). (4) Returns extracted text or empty string on total failure. Also implement is_scanned_pdf(pdf_path: Path) -> bool to detect scanned PDFs upfront. Use logging module throughout (not print). Handle exceptions gracefully - log errors but never crash on a single PDF.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/pdf_extractor.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from src.pdf_extractor import extract_pdf_text; from pathlib import Path; text = extract_pdf_text(Path('Documente/PEHD Apa - TERAPLAST/1. FT Teava PEHD apa.pdf')); print('OK' if len(text) > 50 else 'FAIL'); print(f'Length: {len(text)}')\"",
+            "expected": "OK with text length > 50 characters"
+          },
+          "status": "completed",
+          "notes": "Created src/pdf_extractor.py with three-tier extraction: pdfplumber -> PyMuPDF basic -> PyMuPDF OCR (Romanian). Uses 'import pymupdf', max 10 pages, MIN_TEXT_LENGTH=50 threshold, graceful exception handling with logging throughout. Python execution blocked by security config so verification done by code review."
+        }
+      ]
+    },
+    {
+      "id": "phase-3-classification",
+      "name": "Document Classification",
+      "type": "implementation",
+      "description": "Build the document classifier that identifies PDF type (FT, ISO, AVT, AGT, AVS, DC, CC, CG, etc.) using filename patterns first, then content validation.",
+      "depends_on": [
+        "phase-1-foundation"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create src/document_classifier.py with two-pass classification. Implement classify_document(filename: str, text: str) -> DocumentType that: (1) First pass: match filename against FILENAME_PATTERNS from config.py - return DocumentType on match. (2) Second pass: if filename gives OTHER or low confidence, scan extracted text against TEXT_PATTERNS from config.py. (3) Return DocumentType.OTHER if neither pass matches. Also implement classify_with_confidence(filename: str, text: str) -> tuple[DocumentType, float] that returns a confidence score (1.0 for filename match, 0.7 for text match, 0.3 for OTHER). Handle edge cases: 'CC-01740.1 PE typ 2.pdf' should classify as CERTIFICAT_CONFORMITATE, 'DOC001.pdf' needs content analysis, VALROM files like 'Aviz-agrement-tehnic-4014-DC-Tevi...' contain both AGT and DC in filename (prefer AGT based on document purpose).",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/document_classifier.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from src.document_classifier import classify_document; from src.models import DocumentType; assert classify_document('2. ISO 9001.pdf', '') == DocumentType.ISO_9001; assert classify_document('1. FT Teava PEHD apa.pdf', '') == DocumentType.FISA_TEHNICA; assert classify_document('15. DC.pdf', '') == DocumentType.DECLARATIE_CONFORMITATE; assert classify_document('9. CG.pdf', '') == DocumentType.CERTIFICAT_GARANTIE; print('All classification tests passed')\"",
+            "expected": "All classification tests passed"
+          },
+          "status": "pending",
+          "notes": "Port the FILENAME_PATTERNS and TEXT_PATTERNS from the prototype. The prototype has 13 filename patterns and 13 text patterns. Key improvements: handle VALROM's descriptive filenames (e.g., 'Certificat ISO 14001 SRAC 2025_2026.pdf'), handle CC- prefix for conformity certificates. Note the prototype classifies 'Aviz-agrement-tehnic-4014-DC-...' as Declaratie but it should be Agrement based on the document content."
+        }
+      ]
+    },
+    {
+      "id": "phase-4-metadata",
+      "name": "Metadata Extraction",
+      "type": "implementation",
+      "description": "Build the metadata extractor that pulls material name, expiration date, producer, and distributor from PDF text and folder context.",
+      "depends_on": [
+        "phase-1-foundation"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Create src/metadata_extractor.py with metadata extraction functions. Implement: (1) extract_expiration_date(text: str) -> str: extract validity/expiration dates using DATE_PATTERNS, normalize to DD.MM.YYYY format, handle Romanian month names, return 'N/A' if not found. (2) extract_producer(text: str, folder_name: str) -> str: extract producer company from text using regex, fallback to KNOWN_PRODUCERS by folder name. (3) extract_distributor(text: str, folder_name: str) -> str: extract distributor from text, CRITICAL FIX - for Tehnoworld and Zakprest folders, set distributor from SUPPLIER_ROLES even if not found in text. (4) extract_material(text: str, folder_name: str, doc_type: DocumentType) -> str: extract material/product name from text, fallback to KNOWN_MATERIALS. (5) extract_all_metadata(text: str, folder_name: str, doc_type: DocumentType) -> dict: orchestrator that calls all extraction functions and returns a metadata dict. Port regex patterns from prototype but fix the distributor logic.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/metadata_extractor.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from src.metadata_extractor import extract_expiration_date, extract_producer, extract_distributor; print(extract_expiration_date('valabila pana la data de 04.11.2027')); print(extract_producer('', 'PEHD Apa - TERAPLAST')); print(extract_distributor('', 'Teava apa PEHD - Tehnoworld'))\"",
+            "expected": "04.11.2027, TERAPLAST SA (or similar), and Tehnoworld (non-empty distributor)"
+          },
+          "status": "pending",
+          "notes": "CRITICAL FIX from prototype: The prototype's extract_distributor_from_text returns empty string for ALL documents because it only checks text, not folder roles. For Tehnoworld and Zakprest folders, the folder name itself indicates the distributor. The prototype correctly identifies producers via folder fallback but fails on distributors. Port the prototype's MONTH_MAP_RO, normalize_date(), and all extraction regex patterns."
+        }
+      ]
+    },
+    {
+      "id": "phase-5-output",
+      "name": "Word Document Generation",
+      "type": "implementation",
+      "description": "Build the Word document generator that creates the formatted output with cover letter and summary table.",
+      "depends_on": [
+        "phase-1-foundation"
+      ],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Create src/word_generator.py that generates the output .docx file. Implement generate_word_output(documents: list[DocumentInfo], output_path: Path, project_info: dict | None = None) -> None. The output must contain: (1) Company header: MAKYOL INSAAT SANAYI TURIZM VE TICARET A.S. and YAPI MERKENZI INSAAT VE SANAYI A.S. (2) Reference number and date. (3) Addressee: TECNIC Consulting Engineering Romania SRL, attention Supervizor Tehnic. (4) Project reference: Proiectare si Executie Autostrada Sibiu-Fagaras, Tronsonul 4. (5) Subject line about transmitting material documents for water pipe relocation. (6) Body text introducing the document list. (7) Summary table with 6 columns: Nr., Nume document, Material, Data expirare (daca e cazul), Producator, Distribuitor. (8) Blue header row (#4472C4 with white text), zebra striping, Arial font, professional styling. (9) Closing with signature block. Port the complete Word generation logic from the prototype's generate_word function. Ensure Romanian diacritics display correctly in the output.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/word_generator.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from src.word_generator import generate_word_output; from src.models import DocumentInfo, DocumentType; from pathlib import Path; docs = [DocumentInfo(file_path=Path('test.pdf'), file_name='test.pdf', supplier_folder='TERAPLAST', document_type=DocumentType.ISO_9001, material='Tevi PEHD', expiration_date='01.01.2028', producer='TERAPLAST SA', distributor='-')]; generate_word_output(docs, Path('output/test_output.docx')); print('Word generated successfully')\"",
+            "expected": "Word generated successfully"
+          },
+          "status": "pending",
+          "notes": "Port the generate_word function nearly verbatim from the prototype - it already has excellent formatting with blue headers, zebra striping, proper column widths, and correct cover letter text. Key adjustments: (1) Accept DocumentInfo objects instead of plain dicts, (2) Use pathlib.Path, (3) Add logging, (4) Ensure output/ directory is created if missing. The prototype's Word output is already production-quality formatting."
+        }
+      ]
+    },
+    {
+      "id": "phase-6-orchestration",
+      "name": "CLI & Pipeline Orchestration",
+      "type": "implementation",
+      "description": "Build the main entry point that wires all modules together into the complete processing pipeline with CLI interface.",
+      "depends_on": [
+        "phase-2-extraction",
+        "phase-3-classification",
+        "phase-4-metadata",
+        "phase-5-output"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Create src/main.py as the CLI entry point and pipeline orchestrator. Implement: (1) scan_input_folders(input_dir: Path) -> list[SupplierFolder]: recursively scan Documente/ to find supplier subfolders and their PDF files, skip non-PDF files (Thumbs.db, .docx, etc.), skip hidden/dot folders. (2) process_documents(input_dir: Path, output_path: Path, verbose: bool) -> ProcessingResult: the main pipeline that scans folders -> extracts text from each PDF -> classifies document type -> extracts metadata -> builds DocumentInfo list -> generates Word output. (3) CLI with argparse: --input/-i (default: Documente/), --output/-o (default: output/rezultat.docx), --verbose/-v for detailed logging, --json/-j for optional JSON export of extracted data. (4) Proper logging setup: INFO level by default, DEBUG with --verbose. (5) Summary output: total processed, successful extractions, scanned PDFs (OCR used), failed PDFs, documents per supplier. (6) Error resilience: catch and log per-PDF errors, continue processing, report all failures at the end.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "src/main.py"
+          ],
+          "patterns_from": [
+            "makyol-automation/proceseaza_documente.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "python src/main.py --help",
+            "expected": "CLI help text showing --input, --output, --verbose, --json options"
+          },
+          "status": "pending",
+          "notes": "This is the integration point. It must import and wire: pdf_extractor.extract_pdf_text, document_classifier.classify_document, metadata_extractor.extract_all_metadata, word_generator.generate_word_output. The prototype's main() and process_folder() functions provide the orchestration pattern. Ensure the output directory is created if it doesn't exist. The tool should handle both absolute and relative paths (resolve relative to script location as fallback, matching the prototype's behavior)."
+        }
+      ]
+    },
+    {
+      "id": "phase-7-testing",
+      "name": "Testing & End-to-End Verification",
+      "type": "integration",
+      "description": "Create unit tests for all modules and verify the complete pipeline end-to-end against the actual document set.",
+      "depends_on": [
+        "phase-6-orchestration"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-7-1",
+          "description": "Create unit tests for all modules. (1) tests/test_document_classifier.py: test classification of all known filename patterns (FT, ISO 9001/14001/45001/50001, AVT, AGT, AVS, DC, CC, CG), test content-based fallback, test edge cases (CC-01740 prefix, DOC001, descriptive VALROM filenames). (2) tests/test_metadata_extractor.py: test date extraction with various formats (DD.MM.YYYY, YYYY-MM-DD, Romanian month names), test producer extraction from text and folder fallback, test distributor extraction (CRITICAL: verify Tehnoworld/Zakprest get distributor populated), test material extraction. (3) tests/test_pdf_extractor.py: test text extraction from a known text-based PDF, test fallback detection for scanned PDFs, test error handling for nonexistent files. (4) tests/test_word_generator.py: test Word file is created with correct table structure and column count.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [
+            "tests/test_document_classifier.py",
+            "tests/test_metadata_extractor.py",
+            "tests/test_pdf_extractor.py",
+            "tests/test_word_generator.py"
+          ],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "python -m pytest tests/ -v --tb=short",
+            "expected": "All tests pass"
+          },
+          "status": "pending",
+          "notes": "Unit tests should be independent and fast. For PDF extractor tests, use one real PDF from Documente/ (the text-based TERAPLAST FT). For Word generator tests, create a temp file and verify it exists with correct structure. Use pytest fixtures for common test data."
+        },
+        {
+          "id": "subtask-7-2",
+          "description": "End-to-end pipeline verification. Run the full pipeline against all 4 supplier folders and verify: (1) Output Word file is created at output/rezultat.docx. (2) JSON export shows all ~40 PDFs processed. (3) All known document types are correctly classified. (4) Distributor field is populated for Tehnoworld and Zakprest folders. (5) Expiration dates are found for TERAPLAST ISO certificates (which have extractable text with dates). (6) No crashes during processing. (7) Compare results against makyol-automation/rezultate_extrase.json to verify parity or improvement.",
+          "service": "pdf-processor",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [
+            "makyol-automation/rezultate_extrase.json"
+          ],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Run: python src/main.py --input Documente/ --output output/rezultat.docx --json output/results.json --verbose",
+              "Verify output/rezultat.docx exists and is > 10KB",
+              "Verify output/results.json has entries for all ~40 PDFs",
+              "Verify no PDFs caused a crash (pipeline completed)",
+              "Verify Tehnoworld documents have non-empty distributor field",
+              "Verify TERAPLAST ISO 9001 has expiration date 04.11.2027",
+              "Open rezultat.docx to verify table formatting and Romanian characters"
+            ]
+          },
+          "status": "pending",
+          "notes": "This is the final validation step. Compare against the prototype's output (rezultate_extrase.json) to ensure we match or exceed its extraction quality. The key improvements over the prototype should be: (1) non-empty distributor for Tehnoworld/Zakprest, (2) potentially better extraction for scanned PDFs via OCR, (3) proper logging output."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 7,
+    "total_subtasks": 9,
+    "services_involved": [
+      "pdf-processor"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 3,
+      "parallel_groups": [
+        {
+          "phases": [
+            "phase-3-classification",
+            "phase-4-metadata",
+            "phase-5-output"
+          ],
+          "reason": "All three depend only on phase-1-foundation and don't share any files. Classification, metadata extraction, and Word generation are independent modules."
+        }
+      ],
+      "recommended_workers": 2,
+      "speedup_estimate": "1.3x faster than sequential (phases 3/4/5 can run in parallel, but phase 6 blocks on all three)"
+    },
+    "startup_command": "source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 001 --parallel 2"
+  },
+  "verification_strategy": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "test_creation_phase": "phase-7-testing",
+    "test_types_required": [
+      "unit",
+      "integration"
+    ],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All unit tests pass (python -m pytest tests/ -v)",
+      "Full pipeline processes all ~40 PDFs without crashing",
+      "Output Word document contains summary table with all documents",
+      "Distributor field populated for Tehnoworld and Zakprest folders",
+      "Expiration dates extracted for text-based ISO certificates",
+      "Romanian diacritics preserved in output",
+      "CLI help text is accurate"
+    ],
+    "verification_steps": [
+      {
+        "name": "Unit Tests",
+        "command": "python -m pytest tests/ -v",
+        "expected_outcome": "All tests pass",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Full Pipeline Run",
+        "command": "python src/main.py --input Documente/ --output output/rezultat.docx --json output/results.json --verbose",
+        "expected_outcome": "Pipeline completes, output files created, no crashes",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Output Validation",
+        "command": "python -c \"import json; data = json.load(open('output/results.json', encoding='utf-8')); print(f'Total: {len(data)}'); tehno = [d for d in data if 'Tehnoworld' in d.get('folder','')]; print(f'Tehnoworld distributor filled: {all(d.get(\\\"distributor\\\",\\\"\\\") for d in tehno)}')\"",
+        "expected_outcome": "Total ~40, Tehnoworld distributor filled: True",
+        "type": "test",
+        "required": true,
+        "blocking": false
+      }
+    ],
+    "reasoning": "Medium risk: single-service CLI tool with well-understood requirements. Primary risks are PDF extraction quality (scanned PDFs) and regex correctness for Romanian text. Unit tests cover classification and extraction logic; integration test verifies end-to-end pipeline."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": [
+        "python -m pytest tests/ -v"
+      ],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "python src/main.py --input Documente/ --output output/rezultat.docx --json output/results.json --verbose"
+      ],
+      "services_to_test": [
+        "pdf-processor"
+      ]
+    },
+    "e2e_tests": {
+      "required": true,
+      "commands": [
+        "python src/main.py --input Documente/ --output output/rezultat.docx"
+      ],
+      "flows": [
+        "full-pipeline-all-suppliers"
+      ]
+    },
+    "browser_verification": {
+      "required": false,
+      "pages": []
+    },
+    "database_verification": {
+      "required": false,
+      "checks": []
+    },
+    "output_verification": {
+      "required": true,
+      "checks": [
+        "output/rezultat.docx exists and is > 10KB",
+        "Word file opens without errors",
+        "Table has 6 columns: Nr., Nume document, Material, Data expirare, Producator, Distribuitor",
+        "All ~40 PDFs represented in table rows",
+        "Romanian characters (ă, â, î, ș, ț) display correctly",
+        "Expiration dates in DD.MM.YYYY format where applicable",
+        "Distributor populated for Tehnoworld and Zakprest documents"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "xstateState": "planning",
+  "executionPhase": "coding",
+  "updated_at": "2026-04-10T16:49:34.599Z",
+  "lastEvent": {
+    "eventId": "b64f84a5-f4a5-449a-b061-1650a43a6cc1",
+    "sequence": 0,
+    "type": "PLANNING_COMPLETE",
+    "timestamp": "2026-04-10T16:32:56.064456+00:00"
+  },
+  "last_updated": "2026-04-10T16:46:42.860984+00:00"
+}
