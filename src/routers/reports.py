@@ -98,6 +98,7 @@ def get_missing_documents(db: Session, supplier_id: Optional[int] = None):
     return query.all()
 
 
+@router.post("/")
 @router.post("/generate")
 async def generate_report(
     request: ReportRequest,
