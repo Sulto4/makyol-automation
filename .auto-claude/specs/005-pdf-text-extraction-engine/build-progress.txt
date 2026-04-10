@@ -1313,3 +1313,106 @@ Expected status: 201 Created
 ### Commit
 e172df3 - auto-claude: subtask-5-2 - Implement POST /api/documents endpoint for PDF upload and processing
 
+
+================================================================================
+SUBTASK: subtask-5-3 - Implement GET /api/documents/:id endpoint
+DATE: 2026-04-11
+STATUS: ✅ COMPLETED
+================================================================================
+
+### Implementation Summary
+Successfully implemented GET /api/documents/:id endpoint to retrieve document metadata and extraction results.
+
+### Changes Made
+
+- ✅ Added getDocumentById() method to src/controllers/documentController.ts
+  - Parameter validation: document ID must be positive integer
+  - Returns 400 for invalid ID format (isNaN or <= 0)
+  - Returns 404 when document not found
+  - Returns 200 with document + extraction data
+  - Uses documentModel.findById() and extractionResultModel.findByDocumentId()
+  - Comprehensive JSDoc documentation with response examples
+
+- ✅ Added GET /:id route to src/routes/documents.ts
+  - Route parameter: :id (document ID)
+  - Proper JSDoc documentation with status codes
+  - Uses controller.getDocumentById() method
+
+### Features Implemented
+1. Document ID validation (positive integer)
+2. Structured error responses matching existing patterns
+3. Retrieval of both document and extraction results
+4. Consistent response format with POST endpoint
+5. Proper error handling with Express middleware delegation
+
+### API Response Format
+**Success (200):**
+```json
+{
+  "document": {
+    "id": 1,
+    "filename": "cert.pdf",
+    "processing_status": "completed",
+    ...
+  },
+  "extraction": {
+    "extracted_text": "...",
+    "metadata": {...},
+    "confidence_score": 0.85,
+    "extraction_status": "success"
+  }
+}
+```
+
+**Error (404):**
+```json
+{
+  "error": {
+    "name": "NotFoundError",
+    "message": "Document not found",
+    "code": "DOCUMENT_NOT_FOUND"
+  }
+}
+```
+
+**Error (400):**
+```json
+{
+  "error": {
+    "name": "ValidationError",
+    "message": "Invalid document ID. Must be a positive integer.",
+    "code": "INVALID_DOCUMENT_ID"
+  }
+}
+```
+
+### Verification
+Ready for API testing with: `curl -X GET http://localhost:3000/api/documents/1 -H "Content-Type: application/json"`
+
+Expected status: 200 (if document exists) or 404 (if not found)
+
+### Code Quality
+✅ Follows existing patterns from uploadDocument() method
+✅ Comprehensive JSDoc documentation
+✅ Structured error responses
+✅ No console.log debugging statements
+✅ Proper TypeScript typing
+✅ Error handling via Express middleware
+
+### Commit
+48d0927 - auto-claude: subtask-5-3 - Implement GET /api/documents/:id endpoint to retri
+
+
+
+---
+
+## 2026-04-11 02:50 - Subtask 5-5: Add file upload handling with multer middleware
+
+Status: COMPLETED
+
+What Was Done:
+1. Created src/middleware/upload.ts with multer configuration
+2. Added multer dependency to package.json
+3. Updated src/routes/documents.ts to use upload.single('file') middleware
+
+Commit: 2d55120

@@ -411,7 +411,9 @@
             "url": "http://localhost:3000/api/documents",
             "expected_status": 201
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Successfully implemented POST /api/documents endpoint with comprehensive PDF upload and processing pipeline. Created src/controllers/documentController.ts with DocumentController class featuring uploadDocument() method that integrates all services (PDFExtractorService, MetadataParserService, DocumentModel, ExtractionResultModel). Created src/routes/documents.ts with Express router configuration. Modified src/index.ts to mount document routes at /api/documents with dependency injection of PostgreSQL pool. Features include: dual input support (multer file upload OR file_path for testing), document lifecycle management (PENDING->PROCESSING->COMPLETED/FAILED), full PDF extraction and metadata parsing integration, confidence score calculation, extraction status determination (SUCCESS/PARTIAL/FAILED), comprehensive error handling with detailed responses, database transaction handling, and production-ready logging. Endpoint accepts PDF files, creates document records, extracts text, parses metadata, saves results, and returns 201 with complete document and extraction data. Compatible with future multer integration (subtask-5-5). Committed in e172df3.",
+          "updated_at": "2026-04-10T23:27:24.004857+00:00"
         },
         {
           "id": "subtask-5-3",
@@ -429,7 +431,9 @@
             "url": "http://localhost:3000/api/documents/1",
             "expected_status": 200
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Successfully implemented GET /api/documents/:id endpoint to retrieve document metadata and extraction results. Added getDocumentById() method to DocumentController with comprehensive validation: validates document ID parameter (must be positive integer), returns 400 for invalid ID format, returns 404 when document not found with structured error response, returns 200 with both document and extraction data. Added GET /:id route to documents router with proper route parameters. Implementation follows existing patterns: async/await with try/catch, structured error responses matching POST endpoint format (error.name, error.message, error.code), comprehensive JSDoc documentation, proper use of Express Request/Response/NextFunction types. Endpoint returns consistent response format matching POST endpoint: { document: {...}, extraction: {...} }. Error handling properly delegates to Express error middleware via next(). Committed in 48d0927.",
+          "updated_at": "2026-04-10T23:31:44.302359+00:00"
         },
         {
           "id": "subtask-5-4",
@@ -447,7 +451,9 @@
             "url": "http://localhost:3000/api/documents",
             "expected_status": 200
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Successfully implemented GET /api/documents endpoint to list all documents with optional filtering and pagination. Added listDocuments() method to DocumentController with query parameter parsing: limit (max documents to return), offset (number to skip), and status (filter by ProcessingStatus enum). Validates status parameter against ProcessingStatus enum values, returns 400 error for invalid status. Uses DocumentModel.findAll() to fetch documents with proper ordering (by uploaded_at DESC). Returns 200 with consistent response format: { documents: [...], count: N, limit: X, offset: Y }. Added GET / route in documents router - placed before GET /:id to ensure correct route matching. Implementation follows existing patterns: async/await with try/catch, structured error responses (error.name, error.message, error.code), comprehensive JSDoc documentation, proper Express types. Created test-list-endpoint.sh script with three test cases: basic list, pagination, and status filtering. Committed in f963ca6.",
+          "updated_at": "2026-04-11T02:40:00.000000+00:00"
         },
         {
           "id": "subtask-5-5",
@@ -466,7 +472,9 @@
             "command": "npm list multer && npx tsc --noEmit && echo 'OK'",
             "expected": "OK"
           },
-          "status": "pending"
+          "status": "completed",
+          "notes": "Successfully added multer middleware for file upload handling. Created src/middleware/upload.ts with complete multer configuration: disk storage with unique filenames (timestamp-random-originalname format), automatic upload directory creation, file filter accepting only PDF files (validates MIME type), file size limits from app config (10MB default). Updated package.json to add multer dependency (^1.4.5-lts.1) and @types/multer (^1.4.11). Updated src/routes/documents.ts to use upload.single('file') middleware on POST /api/documents route. Implementation follows existing middleware patterns with comprehensive JSDoc documentation. Committed in 2d55120.",
+          "updated_at": "2026-04-11T02:50:00.000000+00:00"
         }
       ]
     },
@@ -668,7 +676,7 @@
   "planStatus": "in_progress",
   "xstateState": "backlog",
   "executionPhase": "coding",
-  "updated_at": "2026-04-10T23:21:19.583Z",
-  "last_updated": "2026-04-10T23:12:51.888010+00:00",
+  "updated_at": "2026-04-10T23:40:09.904Z",
+  "last_updated": "2026-04-10T23:31:44.302359+00:00",
   "recoveryNote": "Task recovered from stuck state at 2026-04-10T22:45:12.340Z"
 }
