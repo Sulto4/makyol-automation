@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
 import { DocumentController } from '../controllers/documentController';
+import { upload } from '../middleware/upload';
 
 /**
  * Create and configure document routes
@@ -16,14 +17,14 @@ export function createDocumentRoutes(pool: Pool): Router {
    * POST /api/documents
    * Upload and process a PDF document
    *
-   * @body file - PDF file (when multer is configured)
+   * @body file - PDF file (multipart/form-data)
    * @body file_path - File path for testing (alternative to file upload)
    * @returns 201 - Document created and processed
    * @returns 400 - Invalid request (no file, invalid file type)
    * @returns 422 - PDF processing failed
    * @returns 500 - Server error
    */
-  router.post('/', (req, res, next) => controller.uploadDocument(req, res, next));
+  router.post('/', upload.single('file'), (req, res, next) => controller.uploadDocument(req, res, next));
 
   /**
    * GET /api/documents
