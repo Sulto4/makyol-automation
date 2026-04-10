@@ -381,3 +381,154 @@ class PDFGenerator:
         # Reset buffer position
         buffer.seek(0)
         return buffer
+
+    def generate_expiring_certificates_pdf(
+        self,
+        certificate_data: list[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Expiring Certificates PDF report.
+
+        Args:
+            certificate_data: List of certificate dictionaries with keys:
+                - supplier_name: Name of the supplier
+                - document_type: Type of document/certificate
+                - validity_date: Validity/expiry date (YYYY-MM-DD format or date string)
+                - days_until_expiry: Number of days until expiration
+                - certificate_number: Certificate/document number
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the PDF
+
+        Example:
+            certificate_data = [
+                {
+                    'supplier_name': 'ABC Construction Ltd.',
+                    'document_type': 'Tax Clearance',
+                    'validity_date': '2026-05-15',
+                    'days_until_expiry': 35,
+                    'certificate_number': 'TAX-2024-456'
+                }
+            ]
+        """
+        # Create report info
+        report_info = {
+            'Report Type': 'Expiring Certificates',
+            'Total Expiring': str(len(certificate_data)),
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        # Create document
+        buffer, doc, story = self.create_document(
+            report_title="Expiring Certificates Report",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+        # Prepare table data
+        # Header row
+        table_data = [
+            ['Supplier', 'Document Type', 'Validity Date', 'Days Until Expiry', 'Certificate #']
+        ]
+
+        # Data rows
+        for certificate in certificate_data:
+            table_data.append([
+                certificate.get('supplier_name', 'N/A'),
+                certificate.get('document_type', 'N/A'),
+                certificate.get('validity_date', 'N/A'),
+                str(certificate.get('days_until_expiry', 'N/A')),
+                certificate.get('certificate_number', 'N/A')
+            ])
+
+        # Add table to story
+        col_widths = [1.8 * inch, 2.0 * inch, 1.2 * inch, 1.3 * inch, 1.7 * inch]
+        self.add_table(
+            story,
+            data=table_data,
+            col_widths=col_widths,
+            title="Certificates Expiring Soon"
+        )
+
+        # Finalize document
+        self.finalize_document(doc, story, preparer)
+
+        # Reset buffer position
+        buffer.seek(0)
+        return buffer
+
+    def generate_missing_documents_pdf(
+        self,
+        missing_data: list[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Missing Documents PDF report.
+
+        Args:
+            missing_data: List of missing document dictionaries with keys:
+                - supplier_name: Name of the supplier
+                - document_type: Type of document that is missing
+                - required: When the document is required (e.g., 'Always Required', date)
+                - status: Status of the document (typically 'Missing')
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the PDF
+
+        Example:
+            missing_data = [
+                {
+                    'supplier_name': 'ABC Construction Ltd.',
+                    'document_type': 'Environmental Compliance Certificate',
+                    'required': 'Always Required',
+                    'status': 'Missing'
+                }
+            ]
+        """
+        # Create report info
+        report_info = {
+            'Report Type': 'Missing Documents',
+            'Total Missing': str(len(missing_data)),
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        # Create document
+        buffer, doc, story = self.create_document(
+            report_title="Missing Documents Report",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+        # Prepare table data
+        # Header row
+        table_data = [
+            ['Supplier', 'Document Type', 'Required', 'Status']
+        ]
+
+        # Data rows
+        for missing in missing_data:
+            table_data.append([
+                missing.get('supplier_name', 'N/A'),
+                missing.get('document_type', 'N/A'),
+                missing.get('required', 'N/A'),
+                missing.get('status', 'Missing')
+            ])
+
+        # Add table to story
+        col_widths = [2.5 * inch, 2.5 * inch, 1.5 * inch, 1.5 * inch]
+        self.add_table(
+            story,
+            data=table_data,
+            col_widths=col_widths,
+            title="Document Compliance Gaps"
+        )
+
+        # Finalize document
+        self.finalize_document(doc, story, preparer)
+
+        # Reset buffer position
+        buffer.seek(0)
+        return buffer
