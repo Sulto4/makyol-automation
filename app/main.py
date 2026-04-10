@@ -24,7 +24,7 @@ from app.middleware.error_handler import (
     validation_exception_handler,
     generic_exception_handler
 )
-from app.routers import test
+from app.routers import test, suppliers
 
 
 # Initialize FastAPI app
@@ -61,6 +61,7 @@ app.add_middleware(APIKeyAuthMiddleware)
 
 # Include routers
 app.include_router(test.router)
+app.include_router(suppliers.router)
 
 
 @app.get("/health", tags=["System"], summary="Health Check")
