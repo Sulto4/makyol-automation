@@ -26,6 +26,19 @@ export function createDocumentRoutes(pool: Pool): Router {
   router.post('/', (req, res, next) => controller.uploadDocument(req, res, next));
 
   /**
+   * GET /api/documents
+   * List all documents with optional filtering and pagination
+   *
+   * @query limit - Maximum number of documents to return (optional)
+   * @query offset - Number of documents to skip (optional)
+   * @query status - Filter by processing status (optional)
+   * @returns 200 - List of documents
+   * @returns 400 - Invalid query parameters
+   * @returns 500 - Server error
+   */
+  router.get('/', (req, res, next) => controller.listDocuments(req, res, next));
+
+  /**
    * GET /api/documents/:id
    * Retrieve a document and its extraction results by ID
    *

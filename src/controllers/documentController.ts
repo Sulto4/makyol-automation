@@ -196,6 +196,61 @@ export class DocumentController {
   }
 
   /**
+   * List all documents with optional filtering and pagination
+   *
+   * GET /api/documents
+   *
+   * @query limit - Maximum number of documents to return (optional)
+   * @query offset - Number of documents to skip (optional)
+   * @query status - Filter by processing status (optional)
+   *
+   * @example
+   * Response (200):
+   * {
+   *   "documents": [
+   *     { id, filename, processing_status, uploaded_at, ... }
+   *   ],
+   *   "count": 10,
+   *   "limit": 50,
+   *   "offset": 0
+   * }
+   */
+  async listDocuments(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Parse query parameters
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+      const status = req.query.status as ProcessingStatus | undefined;
+
+      // Validate status if provided
+      if (status && !Object.values(ProcessingStatus).includes(status)) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: `Invalid status. Must be one of: ${Object.values(ProcessingStatus).join(', ')}`,
+            code: 'INVALID_STATUS',
+          }
+        });
+        return;
+      }
+
+      // Fetch documents from database
+      const documents = await this.documentModel.findAll(limit, offset, status);
+
+      // Return list with pagination metadata
+      res.status(200).json({
+        documents,
+        count: documents.length,
+        limit: limit || null,
+        offset: offset || 0,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a document by ID with its extraction results
    *
    * GET /api/documents/:id
