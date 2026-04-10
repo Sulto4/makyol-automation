@@ -1247,3 +1247,69 @@ Next Steps:
 - Proceed to subtask-5-2: Implement POST /api/documents endpoint
 - Wire up document routes in src/index.ts
 - Add file upload handling with multer
+
+## 2026-04-11 - Subtask 5-2: POST /api/documents Endpoint Implementation
+
+### Completed
+- ✅ Created src/controllers/documentController.ts with DocumentController class
+  - uploadDocument() method handles file upload and processing
+  - Accepts both multer file uploads (req.file) and file_path for testing
+  - Full service integration: PDFExtractor, MetadataParser, Document, ExtractionResult
+  - Document lifecycle: PENDING → PROCESSING → COMPLETED/FAILED
+  - Confidence score calculation from metadata confidence values
+  - Extraction status determination (SUCCESS/PARTIAL/FAILED based on confidence)
+  - Comprehensive error handling with structured JSON responses
+  - Production-ready logging at all stages
+
+- ✅ Created src/routes/documents.ts with Express router
+  - POST /api/documents endpoint configuration
+  - Dependency injection pattern with PostgreSQL pool
+  - JSDoc documentation for API endpoints
+
+- ✅ Modified src/index.ts to integrate routes
+  - Added createDocumentRoutes import
+  - Updated createApp() to accept pool parameter for DI
+  - Mounted document routes at /api/documents with API prefix
+  - Reordered initialization for proper dependency flow
+
+### Features Implemented
+1. Dual input support: multer uploads OR file_path (testing)
+2. PDF validation (file extension check)
+3. Database transaction handling with proper status updates
+4. Text extraction with PDFExtractorService
+5. Metadata parsing with MetadataParserService
+6. Extraction result storage with confidence and status
+7. Error capture and storage in database
+8. 201 Created response with document + extraction data
+9. Compatible with future multer middleware (subtask-5-5)
+
+### API Response Format
+```json
+{
+  "document": {
+    "id": 1,
+    "filename": "cert.pdf",
+    "processing_status": "completed",
+    ...
+  },
+  "extraction": {
+    "extracted_text": "...",
+    "metadata": {
+      "certificate_number": "...",
+      "issuing_organization": "...",
+      ...
+    },
+    "confidence_score": 0.85,
+    "extraction_status": "success"
+  }
+}
+```
+
+### Verification
+Ready for API testing with: `curl -X POST http://localhost:3000/api/documents -H "Content-Type: application/json" -d '{"file_path": "./tests/fixtures/sample.pdf"}'`
+
+Expected status: 201 Created
+
+### Commit
+e172df3 - auto-claude: subtask-5-2 - Implement POST /api/documents endpoint for PDF upload and processing
+
