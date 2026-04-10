@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Makyol Compliance Report Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">Makyol</h1>
+                <h2 class="subtitle">Compliance Report Generator</h2>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="card">
+                <h3 class="card-title">Generate Compliance Report</h3>
+
+                <form id="reportForm" class="report-form">
+                    <!-- Report Type Selection -->
+                    <div class="form-group">
+                        <label for="reportType" class="form-label">
+                            Report Type <span class="required">*</span>
+                        </label>
+                        <select id="reportType" name="reportType" class="form-select" required>
+                            <option value="">-- Select Report Type --</option>
+                            <option value="supplier_summary">Supplier Compliance Summary</option>
+                            <option value="document_inventory">Detailed Document Inventory</option>
+                            <option value="expiring_certificates">Expiring Certificates Report</option>
+                            <option value="missing_documents">Missing Documents Report</option>
+                            <option value="full_audit">Full Audit Certification Report</option>
+                        </select>
+                        <small class="form-help">Choose the type of compliance report to generate</small>
+                    </div>
+
+                    <!-- Format Selection -->
+                    <div class="form-group">
+                        <label for="format" class="form-label">
+                            Format <span class="required">*</span>
+                        </label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="format" value="pdf" checked>
+                                <span class="radio-text">PDF</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="format" value="excel">
+                                <span class="radio-text">Excel</span>
+                            </label>
+                        </div>
+                        <small class="form-help">Select output format for the report</small>
+                    </div>
+
+                    <!-- Preparer Name -->
+                    <div class="form-group">
+                        <label for="preparer" class="form-label">
+                            Prepared By <span class="required">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="preparer"
+                            name="preparer"
+                            class="form-input"
+                            placeholder="Enter your name"
+                            required
+                        >
+                        <small class="form-help">Name of the person generating this report</small>
+                    </div>
+
+                    <!-- Optional Filters Section -->
+                    <div class="filters-section">
+                        <h4 class="filters-title">Optional Filters</h4>
+
+                        <!-- Supplier Filter -->
+                        <div class="form-group">
+                            <label for="supplierId" class="form-label">Supplier ID</label>
+                            <input
+                                type="number"
+                                id="supplierId"
+                                name="supplierId"
+                                class="form-input"
+                                placeholder="Enter supplier ID (optional)"
+                                min="1"
+                            >
+                            <small class="form-help">Filter by specific supplier (leave blank for all)</small>
+                        </div>
+
+                        <!-- Date Range Filters -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="dateFrom" class="form-label">Date From</label>
+                                <input
+                                    type="date"
+                                    id="dateFrom"
+                                    name="dateFrom"
+                                    class="form-input"
+                                >
+                                <small class="form-help">Start date for filtering</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="dateTo" class="form-label">Date To</label>
+                                <input
+                                    type="date"
+                                    id="dateTo"
+                                    name="dateTo"
+                                    class="form-input"
+                                >
+                                <small class="form-help">End date for filtering</small>
+                            </div>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="form-group">
+                            <label for="status" class="form-label">Document Status</label>
+                            <select id="status" name="status" class="form-select">
+                                <option value="">-- All Statuses --</option>
+                                <option value="valid">Valid</option>
+                                <option value="expired">Expired</option>
+                                <option value="missing">Missing</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                            <small class="form-help">Filter by document status (optional)</small>
+                        </div>
+
+                        <!-- Days Threshold (for Expiring Certificates) -->
+                        <div class="form-group" id="daysThresholdGroup" style="display: none;">
+                            <label for="daysThreshold" class="form-label">Days Threshold</label>
+                            <input
+                                type="number"
+                                id="daysThreshold"
+                                name="daysThreshold"
+                                class="form-input"
+                                value="30"
+                                min="1"
+                                max="365"
+                            >
+                            <small class="form-help">Show certificates expiring within this many days</small>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="generateBtn">
+                            <span class="btn-text">Generate Report</span>
+                        </button>
+                        <button type="reset" class="btn btn-secondary">
+                            Reset Form
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Status Messages -->
+                <div id="statusMessage" class="status-message" style="display: none;"></div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Makyol. All rights reserved. | Compliance Management System</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
