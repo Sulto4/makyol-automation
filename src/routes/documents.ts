@@ -25,6 +25,18 @@ export function createDocumentRoutes(pool: Pool): Router {
    */
   router.post('/', (req, res, next) => controller.uploadDocument(req, res, next));
 
+  /**
+   * GET /api/documents/:id
+   * Retrieve a document and its extraction results by ID
+   *
+   * @param id - Document ID
+   * @returns 200 - Document found with extraction results
+   * @returns 400 - Invalid document ID
+   * @returns 404 - Document not found
+   * @returns 500 - Server error
+   */
+  router.get('/:id', (req, res, next) => controller.getDocumentById(req, res, next));
+
   return router;
 }
 

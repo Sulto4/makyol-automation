@@ -196,6 +196,71 @@ export class DocumentController {
   }
 
   /**
+   * Get a document by ID with its extraction results
+   *
+   * GET /api/documents/:id
+   *
+   * @example
+   * Response (200):
+   * {
+   *   "document": { id, filename, processing_status, ... },
+   *   "extraction": { extracted_text, metadata, confidence_score, ... }
+   * }
+   *
+   * Response (404):
+   * {
+   *   "error": {
+   *     "name": "NotFoundError",
+   *     "message": "Document not found",
+   *     "code": "DOCUMENT_NOT_FOUND"
+   *   }
+   * }
+   */
+  async getDocumentById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const documentId = parseInt(req.params.id, 10);
+
+      // Validate ID parameter
+      if (isNaN(documentId) || documentId <= 0) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'Invalid document ID. Must be a positive integer.',
+            code: 'INVALID_DOCUMENT_ID',
+          }
+        });
+        return;
+      }
+
+      // Find document by ID
+      const document = await this.documentModel.findById(documentId);
+
+      if (!document) {
+        res.status(404).json({
+          error: {
+            name: 'NotFoundError',
+            message: 'Document not found',
+            code: 'DOCUMENT_NOT_FOUND',
+          }
+        });
+        return;
+      }
+
+      // Find extraction result for this document
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+
+      // Return 200 OK with document and extraction results
+      res.status(200).json({
+        document,
+        extraction,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Calculate overall confidence score from metadata
    */
   private calculateConfidence(metadata: any): number {
