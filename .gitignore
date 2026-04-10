@@ -8,3 +8,8 @@
 .worktrees/
 .security-key
 logs/security/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3

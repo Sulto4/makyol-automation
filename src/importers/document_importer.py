@@ -84,6 +84,68 @@ class DocumentImporter:
 
         return existing is not None
 
+    def get_or_create_supplier(
+        self,
+        name: str,
+        folder_path: str
+    ) -> Supplier:
+        """Get existing supplier or create new one if it doesn't exist.
+
+        Uses supplier name for lookup. If supplier exists, returns it.
+        If not, creates a new supplier with the given name and folder_path.
+
+        Args:
+            name: Supplier name (e.g., 'Zakprest')
+            folder_path: Relative folder path for supplier documents
+                        (e.g., 'Documente/Documente Zakprest')
+
+        Returns:
+            Supplier: Existing or newly created supplier object
+
+        Raises:
+            IntegrityError: If folder_path conflicts with existing supplier
+        """
+        session = self.db_session if self.db_session else SessionLocal()
+
+        try:
+            # Check if supplier already exists by name
+            existing = session.query(Supplier).filter(
+                Supplier.name == name
+            ).first()
+
+            if existing:
+                logger.debug(f"Supplier '{name}' already exists (id: {existing.id})")
+                return existing
+
+            # Create new supplier
+            supplier = Supplier(
+                name=name,
+                folder_path=folder_path
+            )
+
+            session.add(supplier)
+            session.commit()
+            session.refresh(supplier)
+
+            logger.info(f"Created new supplier: {name} (folder: {folder_path})")
+
+            return supplier
+
+        except IntegrityError as e:
+            session.rollback()
+            logger.error(f"Integrity error creating supplier '{name}': {e}")
+            raise
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error creating supplier '{name}': {e}")
+            raise
+
+        finally:
+            # Only close session if we created it
+            if self._owns_session and not self.db_session:
+                session.close()
+
     def import_document(
         self,
         file_path: Path,
