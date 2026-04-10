@@ -230,3 +230,77 @@ class PDFGenerator:
         # Reset buffer position
         buffer.seek(0)
         return buffer
+
+    def generate_supplier_summary_pdf(
+        self,
+        supplier_data: list[dict],
+        preparer: Optional[str] = None
+    ) -> BytesIO:
+        """
+        Generate Supplier Summary PDF report.
+
+        Args:
+            supplier_data: List of supplier dictionaries with keys:
+                - name: Supplier name
+                - status: Supplier status (active, inactive, pending)
+                - document_count: Total number of documents
+                - expiring_soon: Number of documents expiring soon
+            preparer: Name of the person generating the report
+
+        Returns:
+            BytesIO buffer containing the PDF
+
+        Example:
+            supplier_data = [
+                {
+                    'name': 'ABC Construction Ltd.',
+                    'status': 'active',
+                    'document_count': 12,
+                    'expiring_soon': 2
+                }
+            ]
+        """
+        # Create report info
+        report_info = {
+            'Report Type': 'Supplier Compliance Summary',
+            'Total Suppliers': str(len(supplier_data)),
+            'Generated On': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+        # Create document
+        buffer, doc, story = self.create_document(
+            report_title="Supplier Compliance Summary",
+            preparer=preparer,
+            report_info=report_info
+        )
+
+        # Prepare table data
+        # Header row
+        table_data = [
+            ['Supplier Name', 'Status', 'Document Count', 'Expiring Soon']
+        ]
+
+        # Data rows
+        for supplier in supplier_data:
+            table_data.append([
+                supplier.get('name', 'N/A'),
+                supplier.get('status', 'N/A').title(),
+                str(supplier.get('document_count', 0)),
+                str(supplier.get('expiring_soon', 0))
+            ])
+
+        # Add table to story
+        col_widths = [3.5 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch]
+        self.add_table(
+            story,
+            data=table_data,
+            col_widths=col_widths,
+            title="Supplier Overview"
+        )
+
+        # Finalize document
+        self.finalize_document(doc, story, preparer)
+
+        # Reset buffer position
+        buffer.seek(0)
+        return buffer
