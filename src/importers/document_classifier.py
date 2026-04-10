@@ -45,15 +45,22 @@ class DocumentClassifier:
         )
 
         # Medium-confidence patterns: keyword matching
+        # Order matters: most specific patterns first
         self.keyword_patterns = [
-            # ISO certificates
-            (re.compile(r'(?:certificat\s+)?ISO\s+9001', re.IGNORECASE), "ISO 9001"),
-            (re.compile(r'(?:certificat\s+)?ISO\s+14001', re.IGNORECASE), "ISO 14001"),
+            # ISO certificates with "Certificat" prefix (most specific)
+            (re.compile(r'certificat\s+ISO\s+9001', re.IGNORECASE), "Certificat ISO 9001"),
+            (re.compile(r'certificat\s+ISO\s+14001', re.IGNORECASE), "Certificat ISO 14001"),
+            (re.compile(r'certificat\s+ISO\s+45001', re.IGNORECASE), "Certificat ISO 45001"),
+
+            # ISO certificates without "Certificat" prefix (less specific)
+            (re.compile(r'\bISO\s+9001\b', re.IGNORECASE), "ISO 9001"),
+            (re.compile(r'\bISO\s+14001\b', re.IGNORECASE), "ISO 14001"),
+            (re.compile(r'\bISO\s+45001\b', re.IGNORECASE), "ISO 45001"),
 
             # Other document types
             (re.compile(r'\bAVS\b', re.IGNORECASE), "AVS"),
-            (re.compile(r'certificat', re.IGNORECASE), "Certificat"),
             (re.compile(r'fi[șs]a?\s+tehnic[aă]', re.IGNORECASE), "Fisa tehnica"),
+            (re.compile(r'certificat', re.IGNORECASE), "Certificat"),
         ]
 
     def classify(self, filename: str) -> ClassificationResult:
