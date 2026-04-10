@@ -12,6 +12,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import settings
+from app.middleware.auth import APIKeyAuthMiddleware
+from app.routers import test
 
 
 # Initialize FastAPI app
@@ -33,6 +35,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Configure API Key Authentication
+app.add_middleware(APIKeyAuthMiddleware)
+
+# Include routers
+app.include_router(test.router)
 
 
 @app.get("/health", tags=["System"], summary="Health Check")
