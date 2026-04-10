@@ -5,14 +5,18 @@ Initializes the FastAPI application with:
 - Basic configuration
 - Health check endpoint
 - CORS middleware
+- API key authentication
+- Rate limiting (100 requests/minute)
 - API metadata
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.auth import APIKeyAuthMiddleware
+from app.middleware.rate_limit import limiter, _rate_limit_exceeded_handler
 from app.routers import test
 
 
@@ -26,6 +30,10 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json"
 )
+
+# Configure Rate Limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS
 app.add_middleware(

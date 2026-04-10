@@ -5,7 +5,8 @@ Simple test endpoint for verifying API authentication and functionality.
 This router is for testing purposes only.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from app.middleware.rate_limit import limiter
 
 router = APIRouter(
     prefix="/api/v1",
@@ -14,7 +15,8 @@ router = APIRouter(
 
 
 @router.get("/test", summary="Test Endpoint")
-async def test_endpoint():
+@limiter.limit(f"100/minute")
+async def test_endpoint(request: Request):
     """
     Test endpoint to verify API is working and authentication is enabled.
 
