@@ -50,15 +50,18 @@ class FolderScanner:
             logger.warning(f"Path is not a directory: {folder_path}")
             return
 
-        # Use rglob for recursive scanning - case insensitive PDF matching
-        for pdf_file in folder_path.rglob("*.pdf"):
-            if pdf_file.is_file():
-                yield pdf_file
+        # Use rglob for recursive scanning
+        # Track seen files to avoid duplicates on case-insensitive filesystems
+        seen_files = set()
 
-        # Also match .PDF extension (uppercase)
-        for pdf_file in folder_path.rglob("*.PDF"):
-            if pdf_file.is_file():
-                yield pdf_file
+        for pattern in ["*.pdf", "*.PDF"]:
+            for pdf_file in folder_path.rglob(pattern):
+                if pdf_file.is_file():
+                    # Use resolved path to handle case-insensitive duplicates
+                    resolved_path = pdf_file.resolve()
+                    if resolved_path not in seen_files:
+                        seen_files.add(resolved_path)
+                        yield pdf_file
 
     def scan_all_suppliers(self) -> Iterator[Tuple[Path, Optional[str]]]:
         """Scan all known supplier folders for PDF files.
