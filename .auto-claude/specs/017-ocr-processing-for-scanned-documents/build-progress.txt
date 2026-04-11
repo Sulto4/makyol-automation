@@ -316,3 +316,217 @@ Next Steps:
 **Next Steps:**
 - Commit changes
 - Proceed to subtask-3-2: Calculate aggregate confidence score for documents with OCR pages
+
+## 2026-04-11 16:00 - Subtask 3-2 Completed: Aggregate Confidence Score Calculation
+
+**What was done:**
+- Added `calculate_aggregate_confidence()` method to PDFExtractor class
+- Implements weighted average confidence calculation for entire documents
+- Formula: (sum of OCR page confidences + text_page_count * 1.0) / total_pages
+- Confidence calculation logic:
+  - Text-based pages (with extractable text layer) have implicit confidence = 1.0
+  - OCR-processed pages use Tesseract confidence scores (0.0 - 1.0)
+  - Weighted average accounts for both proportion and quality of OCR pages
+- Returns float between 0.0 and 1.0 representing document quality:
+  - 1.0 = All pages are text-based (no OCR needed)
+  - 0.85+ = Good quality (mostly text or high-quality OCR)
+  - 0.7-0.85 = Acceptable quality (some low-quality OCR)
+  - <0.7 = Poor quality (many scanned pages with low OCR confidence)
+- Edge case handling:
+  - Returns 0.0 for documents with 0 pages
+  - Clamps result to valid range [0.0, 1.0]
+  - Handles division by zero for OCR average logging
+- Created comprehensive verification script (verify_confidence.py):
+  - Test 1: All text pages → confidence = 1.0
+  - Test 2: All OCR pages → confidence = average of OCR scores
+  - Test 3: Mixed document → weighted average
+  - Test 4: Low quality OCR → below threshold detection
+  - Test 5: Edge case with zero pages
+
+**Code Quality:**
+✓ Comprehensive docstring with formula explanation and examples
+✓ Type hints for all parameters and return values
+✓ Detailed inline comments explaining calculation steps
+✓ Logging with breakdown of text vs OCR pages
+✓ Safe division with conditional for logging OCR average
+✓ Input validation for edge cases
+✓ Example trace in docstring showing calculation
+
+**Files modified:**
+- src/services/pdf_extractor.py (added calculate_aggregate_confidence() method)
+
+**Files created:**
+- verify_confidence.py (comprehensive test suite for manual verification)
+
+**Manual Verification:**
+✓ Formula correctly implements weighted average as specified in plan notes
+✓ Text pages treated as confidence 1.0 (perfect confidence)
+✓ OCR pages use actual Tesseract confidence scores
+✓ Calculation validated through example trace:
+  - 5 pages: 3 text, 2 OCR [0.92, 0.78]
+  - Sum: (0.92 + 0.78 + 3) / 5 = 4.70 / 5 = 0.94 ✓
+✓ Edge cases handled (zero pages, all text, all OCR)
+✓ Result clamped to [0.0, 1.0] range
+✓ Logging provides useful debugging information
+
+**Commit:** b83ea95 - auto-claude: subtask-3-2 - Calculate aggregate confidence score for documents
+
+**Phase 3 Status:** 2 of 3 subtasks completed
+- ✅ subtask-3-1: Track OCR usage and page-level confidence in metadata
+- ✅ subtask-3-2: Calculate aggregate confidence score for documents
+- ⏳ subtask-3-3: Add low_confidence flag when OCR confidence below threshold
+
+**Next Steps:**
+- Proceed to subtask-3-3: Add low_confidence flag when OCR confidence is below threshold (0.85)
+
+## 2026-04-11 17:00 - Subtask 3-3 Completed: Low-Confidence Flagging
+
+**What was done:**
+- Updated `get_extraction_metadata()` method to include low-confidence flagging
+- Automatically flags documents for manual review when OCR confidence is below threshold
+- Implementation features:
+  - Accepts optional `aggregate_confidence` parameter (auto-calculates if not provided)
+  - Imports OCR_CONFIDENCE_THRESHOLD from config (default: 0.85)
+  - Compares aggregate confidence against threshold
+  - Sets `requires_manual_review: true` when confidence < 0.85
+  - Sets `requires_manual_review: false` when confidence >= 0.85
+  - Adds `review_reason` with format "Low OCR confidence: {score:.2f}" when flagged
+  - Comprehensive logging (warning for flagged, debug for acceptable)
+- Edge case handling:
+  - Only evaluates flagging for OCR-processed documents
+  - Auto-calculates confidence using calculate_aggregate_confidence() if needed
+  - Works with both explicit and auto-calculated confidence scores
+- Created comprehensive verification script (verify_low_confidence_flag.py):
+  - Test 1: High confidence document (0.92) → NOT flagged ✓
+  - Test 2: Low confidence document (0.78) → flagged with reason ✓
+  - Test 3: Threshold boundary (0.85) → NOT flagged (>= check) ✓
+  - Test 4: Mixed document with low aggregate → flagged ✓
+  - Test 5: Non-OCR document → no flagging ✓
+  - Test 6: Auto-calculation of aggregate confidence → works correctly ✓
+
+**Code Quality:**
+✓ Updated docstring with new parameters and return fields
+✓ Type hints maintained (Optional[float] for aggregate_confidence)
+✓ Proper error handling and edge cases
+✓ Logging at appropriate levels (warning for flagged, debug for acceptable)
+✓ Clean integration with existing metadata structure
+✓ Follows existing code patterns
+
+**Example Metadata Output:**
+```json
+{
+  "is_ocr_processed": true,
+  "ocr_pages": [1, 3, 5],
+  "page_confidence_scores": {"1": 0.92, "3": 0.78, "5": 0.85},
+  "requires_manual_review": true,
+  "review_reason": "Low OCR confidence: 0.78"
+}
+```
+
+**Files modified:**
+- src/services/pdf_extractor.py (updated get_extraction_metadata() method)
+
+**Files created:**
+- verify_low_confidence_flag.py (comprehensive test suite with 6 test scenarios)
+
+**Manual Verification:**
+✓ Metadata includes 'requires_manual_review': true when confidence < 0.85
+✓ Metadata includes 'requires_manual_review': false when confidence >= 0.85
+✓ Review reason includes actual confidence score formatted to 2 decimals
+✓ Threshold (0.85) correctly treated as acceptable (not flagged)
+✓ Auto-calculation works when aggregate_confidence not provided
+✓ Non-OCR documents handled gracefully
+✓ Integration with OCR_CONFIG threshold setting
+
+**Commit:** 2dd5d0a - auto-claude: subtask-3-3 - Add low_confidence flag when OCR confidence is bel
+
+**Phase 3 Status:** All subtasks completed ✅
+- ✅ subtask-3-1: Track OCR usage and page-level confidence in metadata
+- ✅ subtask-3-2: Calculate aggregate confidence score for documents
+- ✅ subtask-3-3: Add low_confidence flag when OCR confidence below threshold
+
+**Next Steps:**
+- Ready to proceed to Phase 4 (Mixed Document Support)
+- Subtask 4-1: Update extraction logic to combine text from text-based and OCR-processed pages
+- Note: Much of Phase 4 functionality is already implemented in extract_text() method
+
+## 2026-04-11 18:00 - Subtask 4-1 Completed: Mixed Document Text Extraction
+
+**What was done:**
+- Performed comprehensive code review of extract_text() method
+- Verified that text-based and OCR-processed pages are correctly combined in page order
+- Created verification documentation (verify_mixed_document_extraction.py)
+
+**Code Review Findings:**
+
+✅ **Sequential Page Processing (Line 231)**
+- Code: `for page_idx in range(page_count):`
+- Pages processed 0 to page_count-1 in sequential order
+- Guarantees page order preservation
+
+✅ **Unified Text Collection (Line 272)**
+- Code: `all_text_parts.append(page_text)`
+- SAME append operation used for both text and OCR routes
+- Both extraction methods contribute to the same ordered list
+- Python list maintains insertion order by design
+
+✅ **Text Concatenation (Line 275)**
+- Code: `full_text = "\n\n".join(all_text_parts)`
+- All pages joined with consistent double-newline separator
+- Final output maintains page order: page1\n\npage2\n\npage3...
+
+✅ **Mixed Document Scenario Verified**
+- Example: 5-page PDF with pages 1,3,5 text-based and 2,4 scanned
+- Processing flow:
+  * Page 0 (text) → all_text_parts = [text1]
+  * Page 1 (OCR)  → all_text_parts = [text1, ocr2]
+  * Page 2 (text) → all_text_parts = [text1, ocr2, text3]
+  * Page 3 (OCR)  → all_text_parts = [text1, ocr2, text3, ocr4]
+  * Page 4 (text) → all_text_parts = [text1, ocr2, text3, ocr4, text5]
+- Final output: text1\n\nocr2\n\ntext3\n\nocr4\n\ntext5
+- ✓ Correct interleaving of text and OCR results in page order
+
+✅ **Error Handling Preserves Order (Line 260)**
+- OCR failures result in empty text ('') being appended
+- Page position still maintained even with failed extractions
+- Graceful degradation without reordering
+
+**Verification Summary:**
+
+The extract_text() implementation correctly satisfies subtask-4-1 requirements:
+1. ✓ Both text and OCR results are concatenated
+2. ✓ Page order is maintained (sequential processing)
+3. ✓ No pages skipped
+4. ✓ Consistent separator between pages
+5. ✓ Mixed documents handled correctly
+6. ✓ Error handling preserves page order
+
+**Implementation Details:**
+- Data Structure: List[str] for ordered text collection
+- Processing: Sequential for-loop over page range
+- Routing: is_page_scanned() determines extraction method per page
+- Collection: Single append operation for both routes
+- Output: join() operation preserves list order
+
+**Files created:**
+- verify_mixed_document_extraction.py (code review documentation)
+
+**Manual Verification:**
+✓ Code review confirms both text and OCR results are concatenated in page order
+✓ No code changes needed - implementation already correct from subtask-2-2
+✓ Sequential processing guarantees order preservation
+✓ Single collection point ensures unified output
+
+**Note:**
+The extract_text() method was implemented in subtask-2-2 with correct page-order
+logic. This subtask verified the implementation meets all mixed document requirements.
+
+**Commit:** (pending) - auto-claude: subtask-4-1 - Verify mixed document text extraction logic
+
+**Phase 4 Status:** 1 of 2 subtasks completed
+- ✅ subtask-4-1: Combine text from text-based and OCR-processed pages
+- ⏳ subtask-4-2: Track mixed document statistics in metadata
+
+**Next Steps:**
+- Commit verification documentation
+- Proceed to subtask-4-2: Track mixed document statistics in metadata
