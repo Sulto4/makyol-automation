@@ -300,8 +300,8 @@ class PDFExtractor:
         Generate metadata dictionary for database storage from extraction results.
 
         Creates a metadata structure suitable for storing in the database's JSONB
-        metadata field, tracking OCR usage, page-level confidence scores, and flagging
-        low-confidence documents for manual review.
+        metadata field, tracking OCR usage, page-level confidence scores, mixed document
+        statistics, and flagging low-confidence documents for manual review.
 
         Args:
             extraction_result: Dictionary from extract_text() containing:
@@ -317,6 +317,10 @@ class PDFExtractor:
             - ocr_pages: List of page numbers (1-indexed) that were OCR processed
             - page_confidence_scores: Dict mapping page number strings to confidence scores
                                      (keys as strings for JSON compatibility)
+            - text_pages_count: Number of pages processed with text extraction (not OCR)
+            - ocr_pages_count: Number of pages processed with OCR
+            - total_pages: Total number of pages in the document
+            - document_type: Type of document ("text", "scanned", or "mixed")
             - requires_manual_review: Boolean flag for low-confidence documents (when confidence < threshold)
             - review_reason: String explaining why manual review is needed (only present when flagged)
 
@@ -327,6 +331,10 @@ class PDFExtractor:
             >>>     "is_ocr_processed": True,
             >>>     "ocr_pages": [1, 3, 5],
             >>>     "page_confidence_scores": {"1": 0.92, "3": 0.78, "5": 0.85},
+            >>>     "text_pages_count": 2,
+            >>>     "ocr_pages_count": 3,
+            >>>     "total_pages": 5,
+            >>>     "document_type": "mixed",
             >>>     "requires_manual_review": True,
             >>>     "review_reason": "Low OCR confidence: 0.78"
             >>> }
@@ -336,9 +344,22 @@ class PDFExtractor:
         # Extract data from extraction result
         ocr_pages = extraction_result.get('ocr_pages', [])
         page_confidence_scores = extraction_result.get('page_confidence_scores', {})
+        total_pages = extraction_result.get('total_pages', 0)
+
+        # Calculate page statistics for mixed documents
+        ocr_pages_count = len(ocr_pages)
+        text_pages_count = total_pages - ocr_pages_count
+
+        # Determine document type based on page composition
+        if ocr_pages_count == 0:
+            document_type = "text"  # All pages are text-based
+        elif text_pages_count == 0:
+            document_type = "scanned"  # All pages are scanned/OCR
+        else:
+            document_type = "mixed"  # Combination of text and scanned pages
 
         # Determine if OCR was used
-        is_ocr_processed = len(ocr_pages) > 0
+        is_ocr_processed = ocr_pages_count > 0
 
         # Convert page numbers in confidence scores to strings for JSON compatibility
         # JSONB in PostgreSQL requires string keys for nested objects
@@ -347,11 +368,15 @@ class PDFExtractor:
             for page_num, score in page_confidence_scores.items()
         }
 
-        # Build metadata structure
+        # Build metadata structure with mixed document statistics
         metadata = {
             'is_ocr_processed': is_ocr_processed,
             'ocr_pages': ocr_pages,
-            'page_confidence_scores': page_confidence_scores_str
+            'page_confidence_scores': page_confidence_scores_str,
+            'text_pages_count': text_pages_count,
+            'ocr_pages_count': ocr_pages_count,
+            'total_pages': total_pages,
+            'document_type': document_type
         }
 
         # Calculate aggregate confidence if not provided
@@ -378,8 +403,9 @@ class PDFExtractor:
                 )
 
         logger.info(
-            f"Metadata generated: is_ocr_processed={is_ocr_processed}, "
-            f"ocr_pages_count={len(ocr_pages)}, "
+            f"Metadata generated: document_type={document_type}, "
+            f"total_pages={total_pages}, text_pages={text_pages_count}, "
+            f"ocr_pages={ocr_pages_count}, "
             f"requires_manual_review={metadata.get('requires_manual_review', False)}"
         )
 
