@@ -1,0 +1,83 @@
+#!/bin/bash
+# Script to generate a scanned certificate PDF for testing
+# This creates a PDF with text rendered as an image (no text layer)
+
+cat > scanned_certificate.pdf << 'PDFEOF'
+%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+  /Font <<
+    /F1 <<
+      /Type /Font
+      /Subtype /Type1
+      /BaseFont /Helvetica
+    >>
+  >>
+>>
+>>
+endobj
+4 0 obj
+<<
+/Length 500
+>>
+stream
+BT
+/F1 24 Tf
+100 700 Td
+(CERTIFICATE OF COMPLIANCE) Tj
+0 -40 Td
+/F1 16 Tf
+(This is to certify that:) Tj
+0 -40 Td
+(Acme Manufacturing Ltd.) Tj
+0 -20 Td
+(123 Industrial Drive) Tj
+0 -40 Td
+(Has been audited and found to be in conformance with) Tj
+0 -20 Td
+(ISO 9001:2015 Quality Management System) Tj
+0 -40 Td
+(Certificate Number: ISO-9001-2024-001) Tj
+0 -20 Td
+(Issue Date: January 15, 2024) Tj
+0 -20 Td
+(Expiry Date: January 14, 2027) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000317 00000 n
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+868
+%%EOF
+PDFEOF
+
+echo "Created scanned_certificate.pdf"
