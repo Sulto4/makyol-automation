@@ -353,3 +353,74 @@ class PDFExtractor:
         )
 
         return metadata
+
+    def calculate_aggregate_confidence(self, extraction_result: Dict) -> float:
+        """
+        Calculate aggregate confidence score for the entire document.
+
+        Uses a weighted average approach where:
+        - Text-based pages (with extractable text layer) have confidence = 1.0
+        - OCR-processed pages have confidence from Tesseract (0.0 - 1.0)
+        - Aggregate = (sum of OCR page confidences + count of text pages) / total pages
+
+        This provides a holistic quality metric for the entire document that accounts
+        for both the proportion of pages requiring OCR and the quality of those OCR extractions.
+
+        Args:
+            extraction_result: Dictionary from extract_text() containing:
+                - total_pages: Total number of pages in the document
+                - ocr_pages: List of page numbers that used OCR
+                - page_confidence_scores: Dict mapping page number to OCR confidence score
+
+        Returns:
+            Float between 0.0 and 1.0 representing aggregate confidence:
+            - 1.0 = All pages are text-based (no OCR needed)
+            - 0.85+ = Good quality (mostly text or high-quality OCR)
+            - 0.7-0.85 = Acceptable quality (some low-quality OCR)
+            - <0.7 = Poor quality (many scanned pages with low OCR confidence)
+
+        Example:
+            >>> # Document with 5 pages: 3 text-based, 2 OCR with scores 0.92 and 0.78
+            >>> result = {
+            ...     'total_pages': 5,
+            ...     'ocr_pages': [2, 4],
+            ...     'page_confidence_scores': {2: 0.92, 4: 0.78}
+            ... }
+            >>> confidence = extractor.calculate_aggregate_confidence(result)
+            >>> # confidence = (0.92 + 0.78 + 3*1.0) / 5 = 4.70 / 5 = 0.94
+        """
+        logger.debug("Calculating aggregate confidence score")
+
+        # Extract data from extraction result
+        total_pages = extraction_result.get('total_pages', 0)
+        ocr_pages = extraction_result.get('ocr_pages', [])
+        page_confidence_scores = extraction_result.get('page_confidence_scores', {})
+
+        # Handle edge case: no pages
+        if total_pages == 0:
+            logger.warning("Cannot calculate confidence for document with 0 pages")
+            return 0.0
+
+        # Calculate number of text-based pages (pages not in OCR list)
+        ocr_page_count = len(ocr_pages)
+        text_page_count = total_pages - ocr_page_count
+
+        # Sum OCR page confidence scores
+        ocr_confidence_sum = 0.0
+        for page_num, confidence in page_confidence_scores.items():
+            ocr_confidence_sum += confidence
+
+        # Calculate weighted average:
+        # (sum of OCR confidences + text_page_count * 1.0) / total_pages
+        aggregate_confidence = (ocr_confidence_sum + text_page_count) / total_pages
+
+        # Clamp to valid range [0.0, 1.0] to handle any edge cases
+        aggregate_confidence = max(0.0, min(1.0, aggregate_confidence))
+
+        logger.info(
+            f"Aggregate confidence calculated: {aggregate_confidence:.4f} "
+            f"({text_page_count} text pages, {ocr_page_count} OCR pages, "
+            f"OCR avg={ocr_confidence_sum/ocr_page_count if ocr_page_count > 0 else 0:.4f})"
+        )
+
+        return aggregate_confidence
