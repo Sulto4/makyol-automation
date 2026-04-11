@@ -5,7 +5,7 @@ This service handles text extraction from PDFs using pdfplumber for text-based p
 and integrates with OCR service for scanned pages.
 """
 
-from typing import Optional
+from typing import Optional, Dict, List
 import pdfplumber
 import logging
 
@@ -25,15 +25,18 @@ class PDFExtractor:
     by detecting text-less pages and routing them to OCR processing.
     """
 
-    def __init__(self, min_text_threshold: int = 10):
+    def __init__(self, min_text_threshold: int = 10, ocr_service=None):
         """
         Initialize PDF extractor with configuration.
 
         Args:
             min_text_threshold: Minimum character count to consider a page as text-based
                               (default: 10). Pages with fewer characters are considered scanned.
+            ocr_service: Optional OCRService instance for processing scanned pages.
+                        If None, OCRService will be imported and instantiated when needed.
         """
         self.min_text_threshold = min_text_threshold
+        self._ocr_service = ocr_service
         logger.info(f"PDFExtractor initialized with min_text_threshold={min_text_threshold}")
 
     def is_page_scanned(self, pdf_path: str, page_number: int) -> bool:
@@ -167,3 +170,127 @@ class PDFExtractor:
         except Exception as e:
             logger.error(f"Failed to get page count: {str(e)}")
             raise PDFExtractionError(f"Error getting page count: {str(e)}")
+
+    @property
+    def ocr_service(self):
+        """
+        Lazy-load OCR service when needed.
+
+        Returns:
+            OCRService instance
+        """
+        if self._ocr_service is None:
+            from .ocr_service import OCRService
+            from ..config.settings import OCR_CONFIG
+
+            self._ocr_service = OCRService(
+                tesseract_lang=OCR_CONFIG.get('TESSERACT_LANG', 'eng'),
+                dpi=OCR_CONFIG.get('OCR_DPI', 300),
+                confidence_threshold=OCR_CONFIG.get('OCR_CONFIDENCE_THRESHOLD', 0.85)
+            )
+            logger.info("OCRService lazy-loaded")
+
+        return self._ocr_service
+
+    def extract_text(self, pdf_path: str) -> Dict:
+        """
+        Extract text from all pages of a PDF, routing scanned pages to OCR.
+
+        This method intelligently processes each page:
+        1. Attempts text extraction with pdfplumber first
+        2. If page is scanned (no text), routes to OCR service
+        3. Combines results in page order
+        4. Tracks OCR usage and confidence scores
+
+        Args:
+            pdf_path: Path to the PDF file
+
+        Returns:
+            Dictionary containing:
+            - full_text: Combined text from all pages
+            - ocr_pages: List of page numbers that used OCR (1-indexed)
+            - page_confidence_scores: Dict mapping page number to confidence score
+            - total_pages: Total number of pages processed
+
+        Raises:
+            PDFExtractionError: If extraction fails
+            FileNotFoundError: If the PDF file doesn't exist
+        """
+        try:
+            logger.info(f"Starting text extraction for {pdf_path}")
+
+            # Get total page count
+            page_count = self.get_page_count(pdf_path)
+
+            # Initialize result tracking
+            all_text_parts: List[str] = []
+            ocr_pages: List[int] = []
+            page_confidence_scores: Dict[int, float] = {}
+
+            # Process each page
+            for page_idx in range(page_count):
+                page_num_display = page_idx + 1  # 1-indexed for display
+
+                logger.debug(f"Processing page {page_num_display}/{page_count}")
+
+                # Check if page is scanned
+                is_scanned = self.is_page_scanned(pdf_path, page_idx)
+
+                if is_scanned:
+                    # Route to OCR service
+                    logger.info(f"Page {page_num_display} is scanned, routing to OCR")
+
+                    try:
+                        # OCRService expects 1-indexed page numbers
+                        ocr_result = self.ocr_service.process_pdf_page(pdf_path, page_num_display)
+
+                        # Extract OCR text
+                        page_text = ocr_result.get('text', '')
+                        confidence = ocr_result.get('confidence', 0.0)
+
+                        # Track OCR usage
+                        ocr_pages.append(page_num_display)
+                        page_confidence_scores[page_num_display] = confidence
+
+                        logger.info(
+                            f"Page {page_num_display} OCR complete: "
+                            f"{len(page_text)} chars, confidence={confidence:.2f}"
+                        )
+
+                    except Exception as e:
+                        logger.error(f"OCR failed for page {page_num_display}: {str(e)}")
+                        # Continue with empty text rather than failing entirely
+                        page_text = ""
+                        ocr_pages.append(page_num_display)
+                        page_confidence_scores[page_num_display] = 0.0
+                else:
+                    # Extract text normally with pdfplumber
+                    logger.debug(f"Page {page_num_display} has text layer, using pdfplumber")
+                    page_text = self.extract_text_from_page(pdf_path, page_idx)
+
+                # Add page text to results (maintain page order)
+                all_text_parts.append(page_text)
+
+            # Combine all text with page breaks
+            full_text = "\n\n".join(all_text_parts)
+
+            result = {
+                'full_text': full_text,
+                'ocr_pages': ocr_pages,
+                'page_confidence_scores': page_confidence_scores,
+                'total_pages': page_count
+            }
+
+            logger.info(
+                f"Extraction complete: {page_count} pages processed, "
+                f"{len(ocr_pages)} pages used OCR, {len(full_text)} total characters"
+            )
+
+            return result
+
+        except FileNotFoundError:
+            logger.error(f"PDF file not found: {pdf_path}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to extract text from PDF: {str(e)}")
+            raise PDFExtractionError(f"Error extracting text: {str(e)}")
