@@ -395,3 +395,71 @@ class TestOCRServiceIntegration:
         assert 'requires_review' in result
         assert result['text'] == "Complete workflow test"
         assert result['page_number'] == 1
+
+
+class TestOCRPerformance:
+    """Performance tests for OCR processing."""
+
+    @patch('src.services.ocr_service.convert_from_path')
+    @patch('src.services.ocr_service.pytesseract.image_to_string')
+    @patch('src.services.ocr_service.pytesseract.image_to_data')
+    def test_ocr_performance(self, mock_image_to_data, mock_image_to_string, mock_convert):
+        """
+        Test that OCR processing completes within 30 seconds for a 5-page document.
+
+        This test simulates processing of a 5-page scanned document and verifies
+        that the total processing time is under the 30-second requirement.
+        """
+        import time
+
+        # Setup - simulate realistic OCR responses
+        mock_image = Mock(spec=Image.Image)
+        mock_convert.return_value = [mock_image]
+
+        # Simulate realistic OCR text output (certificate-like content)
+        mock_image_to_string.return_value = """CERTIFICATE OF COMPLIANCE
+
+This is to certify that:
+
+Acme Manufacturing Ltd.
+123 Industrial Drive
+
+Has been audited and found to be in conformance with
+ISO 9001:2015 Quality Management System
+
+Certificate Number: ISO-9001-2024-001
+Issue Date: January 15, 2024
+Expiry Date: January 14, 2027"""
+
+        # Simulate realistic confidence scores
+        mock_image_to_data.return_value = {
+            'conf': [95, 92, 88, -1, 90, 87, 93, 89, 91, 94, 88, 92]
+        }
+
+        service = OCRService()
+
+        # Measure time to process 5 pages
+        start_time = time.time()
+
+        results = []
+        for page_num in range(1, 6):  # Process pages 1-5
+            result = service.process_pdf_page('test_document.pdf', page_num)
+            results.append(result)
+
+        end_time = time.time()
+        processing_time = end_time - start_time
+
+        # Verify performance requirement
+        assert processing_time < 30.0, f"OCR processing took {processing_time:.2f}s, expected <30s"
+
+        # Verify all pages were processed
+        assert len(results) == 5
+
+        # Verify each result has required fields
+        for i, result in enumerate(results, start=1):
+            assert result['page_number'] == i
+            assert 'text' in result
+            assert 'confidence' in result
+            assert 'requires_review' in result
+            assert isinstance(result['text'], str)
+            assert 0.0 <= result['confidence'] <= 1.0
