@@ -295,18 +295,21 @@ class PDFExtractor:
             logger.error(f"Failed to extract text from PDF: {str(e)}")
             raise PDFExtractionError(f"Error extracting text: {str(e)}")
 
-    def get_extraction_metadata(self, extraction_result: Dict) -> Dict:
+    def get_extraction_metadata(self, extraction_result: Dict, aggregate_confidence: Optional[float] = None) -> Dict:
         """
         Generate metadata dictionary for database storage from extraction results.
 
         Creates a metadata structure suitable for storing in the database's JSONB
-        metadata field, tracking OCR usage and page-level confidence scores.
+        metadata field, tracking OCR usage, page-level confidence scores, and flagging
+        low-confidence documents for manual review.
 
         Args:
             extraction_result: Dictionary from extract_text() containing:
                 - ocr_pages: List of page numbers that used OCR
                 - page_confidence_scores: Dict of page number to confidence score
                 - total_pages: Total number of pages
+            aggregate_confidence: Optional pre-calculated aggregate confidence score.
+                                 If None, will be calculated automatically.
 
         Returns:
             Dictionary containing:
@@ -314,6 +317,8 @@ class PDFExtractor:
             - ocr_pages: List of page numbers (1-indexed) that were OCR processed
             - page_confidence_scores: Dict mapping page number strings to confidence scores
                                      (keys as strings for JSON compatibility)
+            - requires_manual_review: Boolean flag for low-confidence documents (when confidence < threshold)
+            - review_reason: String explaining why manual review is needed (only present when flagged)
 
         Example:
             >>> result = extractor.extract_text('doc.pdf')
@@ -321,7 +326,9 @@ class PDFExtractor:
             >>> # metadata = {
             >>>     "is_ocr_processed": True,
             >>>     "ocr_pages": [1, 3, 5],
-            >>>     "page_confidence_scores": {"1": 0.92, "3": 0.78, "5": 0.85}
+            >>>     "page_confidence_scores": {"1": 0.92, "3": 0.78, "5": 0.85},
+            >>>     "requires_manual_review": True,
+            >>>     "review_reason": "Low OCR confidence: 0.78"
             >>> }
         """
         logger.debug("Generating extraction metadata")
@@ -347,9 +354,33 @@ class PDFExtractor:
             'page_confidence_scores': page_confidence_scores_str
         }
 
+        # Calculate aggregate confidence if not provided
+        if aggregate_confidence is None and is_ocr_processed:
+            aggregate_confidence = self.calculate_aggregate_confidence(extraction_result)
+
+        # Add low-confidence flagging for manual review
+        if aggregate_confidence is not None:
+            # Import threshold from config
+            from ..config.settings import OCR_CONFIG
+            threshold = OCR_CONFIG.get('OCR_CONFIDENCE_THRESHOLD', 0.85)
+
+            if aggregate_confidence < threshold:
+                metadata['requires_manual_review'] = True
+                metadata['review_reason'] = f"Low OCR confidence: {aggregate_confidence:.2f}"
+                logger.warning(
+                    f"Document flagged for manual review: confidence={aggregate_confidence:.2f} "
+                    f"< threshold={threshold}"
+                )
+            else:
+                metadata['requires_manual_review'] = False
+                logger.debug(
+                    f"Document confidence acceptable: {aggregate_confidence:.2f} >= {threshold}"
+                )
+
         logger.info(
             f"Metadata generated: is_ocr_processed={is_ocr_processed}, "
-            f"ocr_pages_count={len(ocr_pages)}"
+            f"ocr_pages_count={len(ocr_pages)}, "
+            f"requires_manual_review={metadata.get('requires_manual_review', False)}"
         )
 
         return metadata
