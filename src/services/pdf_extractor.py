@@ -294,3 +294,62 @@ class PDFExtractor:
         except Exception as e:
             logger.error(f"Failed to extract text from PDF: {str(e)}")
             raise PDFExtractionError(f"Error extracting text: {str(e)}")
+
+    def get_extraction_metadata(self, extraction_result: Dict) -> Dict:
+        """
+        Generate metadata dictionary for database storage from extraction results.
+
+        Creates a metadata structure suitable for storing in the database's JSONB
+        metadata field, tracking OCR usage and page-level confidence scores.
+
+        Args:
+            extraction_result: Dictionary from extract_text() containing:
+                - ocr_pages: List of page numbers that used OCR
+                - page_confidence_scores: Dict of page number to confidence score
+                - total_pages: Total number of pages
+
+        Returns:
+            Dictionary containing:
+            - is_ocr_processed: Boolean indicating if any page used OCR
+            - ocr_pages: List of page numbers (1-indexed) that were OCR processed
+            - page_confidence_scores: Dict mapping page number strings to confidence scores
+                                     (keys as strings for JSON compatibility)
+
+        Example:
+            >>> result = extractor.extract_text('doc.pdf')
+            >>> metadata = extractor.get_extraction_metadata(result)
+            >>> # metadata = {
+            >>>     "is_ocr_processed": True,
+            >>>     "ocr_pages": [1, 3, 5],
+            >>>     "page_confidence_scores": {"1": 0.92, "3": 0.78, "5": 0.85}
+            >>> }
+        """
+        logger.debug("Generating extraction metadata")
+
+        # Extract data from extraction result
+        ocr_pages = extraction_result.get('ocr_pages', [])
+        page_confidence_scores = extraction_result.get('page_confidence_scores', {})
+
+        # Determine if OCR was used
+        is_ocr_processed = len(ocr_pages) > 0
+
+        # Convert page numbers in confidence scores to strings for JSON compatibility
+        # JSONB in PostgreSQL requires string keys for nested objects
+        page_confidence_scores_str = {
+            str(page_num): score
+            for page_num, score in page_confidence_scores.items()
+        }
+
+        # Build metadata structure
+        metadata = {
+            'is_ocr_processed': is_ocr_processed,
+            'ocr_pages': ocr_pages,
+            'page_confidence_scores': page_confidence_scores_str
+        }
+
+        logger.info(
+            f"Metadata generated: is_ocr_processed={is_ocr_processed}, "
+            f"ocr_pages_count={len(ocr_pages)}"
+        )
+
+        return metadata
