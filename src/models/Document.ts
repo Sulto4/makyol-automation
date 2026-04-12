@@ -11,6 +11,16 @@ export enum ProcessingStatus {
 }
 
 /**
+ * Review status enum for document classification
+ */
+export enum ReviewStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  NEEDS_REVIEW = 'needs_review',
+}
+
+/**
  * Document interface matching the documents table schema
  */
 export interface Document {
@@ -25,6 +35,10 @@ export interface Document {
   uploaded_at: Date;
   processing_started_at: Date | null;
   processing_completed_at: Date | null;
+  categorie: string | null;
+  confidence: number | null;
+  metoda_clasificare: string | null;
+  review_status: ReviewStatus | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -38,6 +52,10 @@ export interface CreateDocumentInput {
   file_path: string;
   file_size: number;
   mime_type?: string;
+  categorie?: string;
+  confidence?: number;
+  metoda_clasificare?: string;
+  review_status?: ReviewStatus;
 }
 
 /**
@@ -48,6 +66,20 @@ export interface UpdateDocumentStatusInput {
   error_message?: string | null;
   processing_started_at?: Date;
   processing_completed_at?: Date;
+  categorie?: string;
+  confidence?: number;
+  metoda_clasificare?: string;
+  review_status?: ReviewStatus;
+}
+
+/**
+ * Input type for updating document classification
+ */
+export interface UpdateClassificationInput {
+  categorie: string;
+  confidence: number;
+  metoda_clasificare: string;
+  review_status?: ReviewStatus;
 }
 
 /**
@@ -171,6 +203,35 @@ export class DocumentModel {
       RETURNING *
     `;
     values.push(id);
+
+    const result: QueryResult<Document> = await this.pool.query(query, values);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Update document classification fields
+   */
+  async updateClassification(
+    id: number,
+    input: UpdateClassificationInput
+  ): Promise<Document | null> {
+    const query = `
+      UPDATE documents
+      SET categorie = $1,
+          confidence = $2,
+          metoda_clasificare = $3,
+          review_status = $4
+      WHERE id = $5
+      RETURNING *
+    `;
+
+    const values = [
+      input.categorie,
+      input.confidence,
+      input.metoda_clasificare,
+      input.review_status || ReviewStatus.PENDING,
+      id,
+    ];
 
     const result: QueryResult<Document> = await this.pool.query(query, values);
     return result.rows[0] || null;
