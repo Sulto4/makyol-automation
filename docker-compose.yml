@@ -43,6 +43,7 @@ services:
       UPLOAD_DIR: ./uploads
       API_PREFIX: /api
       CORS_ORIGIN: http://localhost:3000
+      PIPELINE_URL: http://pipeline:8001
     ports:
       - "3000:3000"
     volumes:
@@ -50,6 +51,33 @@ services:
       - ./uploads:/app/uploads
       - /app/node_modules
     command: npm run dev
+
+  pipeline:
+    build:
+      context: ./pipeline
+      dockerfile: Dockerfile
+    container_name: pdfextractor-pipeline
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 8001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: pdfextractor
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./uploads:/app/uploads
+      - "./makyol-automation/Pachete Makyol:/app/pachete"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/pipeline/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
