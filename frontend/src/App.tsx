@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
+import Layout from './components/layout/Layout';
 
 // Lazy-loaded pages would go here; for now use placeholder components
 function Dashboard() {
