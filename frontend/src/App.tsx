@@ -4,10 +4,7 @@ import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import DocumentDetailPage from './pages/DocumentDetailPage';
 import UploadPage from './pages/UploadPage';
-
-function Alerts() {
-  return <div className="p-6"><h1 className="text-2xl font-bold">Alerte</h1></div>;
-}
+import AlertsPage from './pages/AlertsPage';
 
 export default function App() {
   return (
@@ -17,7 +14,7 @@ export default function App() {
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/upload" element={<UploadPage />} />
-        <Route path="/alerts" element={<Alerts />} />
+        <Route path="/alerts" element={<AlertsPage />} />
       </Route>
     </Routes>
   );
