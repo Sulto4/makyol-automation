@@ -44,6 +44,13 @@ export interface ExtractionResult {
   confidence_score: number | null;
   extraction_status: ExtractionStatus;
   error_details: ErrorDetails | null;
+  material: string | null;
+  data_expirare: string | null;
+  companie: string | null;
+  producator: string | null;
+  distribuitor: string | null;
+  adresa_producator: string | null;
+  extraction_model: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -58,6 +65,13 @@ export interface CreateExtractionResultInput {
   confidence_score?: number | null;
   extraction_status?: ExtractionStatus;
   error_details?: ErrorDetails | null;
+  material?: string | null;
+  data_expirare?: string | null;
+  companie?: string | null;
+  producator?: string | null;
+  distribuitor?: string | null;
+  adresa_producator?: string | null;
+  extraction_model?: string | null;
 }
 
 /**
@@ -69,6 +83,13 @@ export interface UpdateExtractionResultInput {
   confidence_score?: number | null;
   extraction_status?: ExtractionStatus;
   error_details?: ErrorDetails | null;
+  material?: string | null;
+  data_expirare?: string | null;
+  companie?: string | null;
+  producator?: string | null;
+  distribuitor?: string | null;
+  adresa_producator?: string | null;
+  extraction_model?: string | null;
 }
 
 /**
@@ -92,8 +113,15 @@ export class ExtractionResultModel {
         metadata,
         confidence_score,
         extraction_status,
-        error_details
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        error_details,
+        material,
+        data_expirare,
+        companie,
+        producator,
+        distribuitor,
+        adresa_producator,
+        extraction_model
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *
     `;
 
@@ -104,6 +132,13 @@ export class ExtractionResultModel {
       input.confidence_score || null,
       input.extraction_status || ExtractionStatus.PENDING,
       input.error_details ? JSON.stringify(input.error_details) : null,
+      input.material || null,
+      input.data_expirare || null,
+      input.companie || null,
+      input.producator || null,
+      input.distribuitor || null,
+      input.adresa_producator || null,
+      input.extraction_model || null,
     ];
 
     const result: QueryResult<ExtractionResult> = await this.pool.query(query, values);
@@ -204,6 +239,48 @@ export class ExtractionResultModel {
       paramIndex++;
     }
 
+    if (updateData.material !== undefined) {
+      setClauses.push(`material = $${paramIndex}`);
+      values.push(updateData.material);
+      paramIndex++;
+    }
+
+    if (updateData.data_expirare !== undefined) {
+      setClauses.push(`data_expirare = $${paramIndex}`);
+      values.push(updateData.data_expirare);
+      paramIndex++;
+    }
+
+    if (updateData.companie !== undefined) {
+      setClauses.push(`companie = $${paramIndex}`);
+      values.push(updateData.companie);
+      paramIndex++;
+    }
+
+    if (updateData.producator !== undefined) {
+      setClauses.push(`producator = $${paramIndex}`);
+      values.push(updateData.producator);
+      paramIndex++;
+    }
+
+    if (updateData.distribuitor !== undefined) {
+      setClauses.push(`distribuitor = $${paramIndex}`);
+      values.push(updateData.distribuitor);
+      paramIndex++;
+    }
+
+    if (updateData.adresa_producator !== undefined) {
+      setClauses.push(`adresa_producator = $${paramIndex}`);
+      values.push(updateData.adresa_producator);
+      paramIndex++;
+    }
+
+    if (updateData.extraction_model !== undefined) {
+      setClauses.push(`extraction_model = $${paramIndex}`);
+      values.push(updateData.extraction_model);
+      paramIndex++;
+    }
+
     if (setClauses.length === 0) {
       // No fields to update
       return this.findById(id);
@@ -259,6 +336,48 @@ export class ExtractionResultModel {
     if (updateData.error_details !== undefined) {
       setClauses.push(`error_details = $${paramIndex}`);
       values.push(updateData.error_details ? JSON.stringify(updateData.error_details) : null);
+      paramIndex++;
+    }
+
+    if (updateData.material !== undefined) {
+      setClauses.push(`material = $${paramIndex}`);
+      values.push(updateData.material);
+      paramIndex++;
+    }
+
+    if (updateData.data_expirare !== undefined) {
+      setClauses.push(`data_expirare = $${paramIndex}`);
+      values.push(updateData.data_expirare);
+      paramIndex++;
+    }
+
+    if (updateData.companie !== undefined) {
+      setClauses.push(`companie = $${paramIndex}`);
+      values.push(updateData.companie);
+      paramIndex++;
+    }
+
+    if (updateData.producator !== undefined) {
+      setClauses.push(`producator = $${paramIndex}`);
+      values.push(updateData.producator);
+      paramIndex++;
+    }
+
+    if (updateData.distribuitor !== undefined) {
+      setClauses.push(`distribuitor = $${paramIndex}`);
+      values.push(updateData.distribuitor);
+      paramIndex++;
+    }
+
+    if (updateData.adresa_producator !== undefined) {
+      setClauses.push(`adresa_producator = $${paramIndex}`);
+      values.push(updateData.adresa_producator);
+      paramIndex++;
+    }
+
+    if (updateData.extraction_model !== undefined) {
+      setClauses.push(`extraction_model = $${paramIndex}`);
+      values.push(updateData.extraction_model);
       paramIndex++;
     }
 
