@@ -1,10 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
-
-// Lazy-loaded pages would go here; for now use placeholder components
-function Dashboard() {
-  return <div className="p-6"><h1 className="text-2xl font-bold">Panou de Control</h1></div>;
-}
+import DashboardPage from './pages/DashboardPage';
 
 function Documents() {
   return <div className="p-6"><h1 className="text-2xl font-bold">Documente</h1></div>;
@@ -26,7 +22,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<DashboardPage />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/upload" element={<Upload />} />
