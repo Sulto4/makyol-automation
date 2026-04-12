@@ -1,10 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import DashboardPage from './pages/DashboardPage';
-
-function Documents() {
-  return <div className="p-6"><h1 className="text-2xl font-bold">Documente</h1></div>;
-}
+import DocumentsPage from './pages/DocumentsPage';
 
 function DocumentDetail() {
   return <div className="p-6"><h1 className="text-2xl font-bold">Detalii Document</h1></div>;
@@ -23,7 +20,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/documents" element={<Documents />} />
+        <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/alerts" element={<Alerts />} />
