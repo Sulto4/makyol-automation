@@ -54,8 +54,8 @@ services:
 
   pipeline:
     build:
-      context: ./pipeline
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: pipeline/Dockerfile
     container_name: pdfextractor-pipeline
     restart: unless-stopped
     depends_on:
