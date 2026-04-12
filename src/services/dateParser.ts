@@ -1,4 +1,4 @@
-import { parse, isValid, format } from 'date-fns';
+import { isValid, format } from 'date-fns';
 import * as chrono from 'chrono-node';
 import {
   ROMANIAN_DATE_PATTERNS,
@@ -110,7 +110,7 @@ export class DateParserService {
    * @param options - Parsing options
    * @returns Array of parsed dates
    */
-  parseAll(text: string, options?: DateParserOptions): ParsedDate[] {
+  parseAll(text: string, _options?: DateParserOptions): ParsedDate[] {
     if (!text || typeof text !== 'string') {
       return [];
     }

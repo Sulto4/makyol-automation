@@ -295,8 +295,8 @@ describe('MetadataParserService', () => {
       expect(result1.certificate_number).toBeDefined();
 
       // With high threshold (strict mode)
-      const result2 = parser.parse(text, { minConfidence: 0.95 });
-      // May not extract due to low confidence
+      // With high threshold - may not extract due to low confidence
+      void parser.parse(text, { minConfidence: 0.95 });
     });
 
     it('should return empty object for invalid input', () => {

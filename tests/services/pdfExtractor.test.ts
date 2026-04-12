@@ -3,13 +3,10 @@ import * as path from 'path';
 import { PDFExtractorService } from '../../src/services/pdfExtractor';
 import {
   PDFNotFoundError,
-  PDFPermissionDeniedError,
   PDFCorruptedError,
-  PDFEncryptedError,
   PDFScannedError,
   PDFInvalidFormatError,
   PDFInvalidInputError,
-  PDFParsingError,
 } from '../../src/utils/errors';
 
 describe('PDFExtractorService', () => {

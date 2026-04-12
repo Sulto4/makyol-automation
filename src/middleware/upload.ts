@@ -9,7 +9,7 @@ import * as fs from 'fs';
  * Files are saved with unique names to prevent collisions
  */
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb) => {
+  destination: (_req: Request, _file: Express.Multer.File, cb) => {
     const uploadDir = appConfig.upload.uploadDir;
 
     // Ensure upload directory exists
@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 
     cb(null, uploadDir);
   },
-  filename: (req: Request, file: Express.Multer.File, cb) => {
+  filename: (_req: Request, file: Express.Multer.File, cb) => {
     // Generate unique filename: timestamp-randomstring-originalname
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = path.extname(file.originalname);
@@ -35,7 +35,7 @@ const storage = multer.diskStorage({
  * File filter to accept only PDF files
  */
 const fileFilter = (
-  req: Request,
+  _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ): void => {
