@@ -4,13 +4,26 @@ import * as path from 'path';
 /**
  * Pipeline processing response interface
  */
+export interface PipelineExtractionData {
+  material?: string | null;
+  data_expirare?: string | null;
+  companie?: string | null;
+  producator?: string | null;
+  distribuitor?: string | null;
+  adresa_producator?: string | null;
+  extraction_model?: string | null;
+  [key: string]: unknown;
+}
+
 export interface PipelineResponse {
-  success: boolean;
-  documentType?: string;
-  extractedData?: Record<string, unknown>;
-  confidence?: number;
-  errors?: string[];
-  processingTimeMs?: number;
+  filename: string;
+  classification: string | null;
+  confidence: number;
+  method: string | null;
+  extraction: PipelineExtractionData;
+  review_status: string;
+  used_vision: boolean;
+  error: string | null;
 }
 
 /**
@@ -192,7 +205,7 @@ export class PipelineClientService {
     const timeoutId = setTimeout(() => controller.abort(), this.defaultTimeoutMs);
 
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
+      const response = await fetch(`${this.baseUrl}/api/pipeline/health`, {
         method: 'GET',
         signal: controller.signal,
       });

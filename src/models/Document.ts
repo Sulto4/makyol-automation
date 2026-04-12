@@ -14,10 +14,9 @@ export enum ProcessingStatus {
  * Review status enum for document classification
  */
 export enum ReviewStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  NEEDS_REVIEW = 'needs_review',
+  OK = 'OK',
+  REVIEW = 'REVIEW',
+  NEEDS_CHECK = 'NEEDS_CHECK',
 }
 
 /**
@@ -229,7 +228,7 @@ export class DocumentModel {
       input.categorie,
       input.confidence,
       input.metoda_clasificare,
-      input.review_status || ReviewStatus.PENDING,
+      input.review_status || ReviewStatus.OK,
       id,
     ];
 
