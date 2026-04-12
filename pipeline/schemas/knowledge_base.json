@@ -1,0 +1,142 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Company knowledge base for fuzzy matching normalization",
+    "last_updated": "2026-04-12"
+  },
+  "companies": {
+    "TERAPLAST": {
+      "canonical": "TERAPLAST SA",
+      "aliases": [
+        "TERAPLAST S.A.",
+        "TERAPLAST SA",
+        "TeraPlast SA",
+        "TERAPLAST S.A",
+        "SC TERAPLAST SA"
+      ],
+      "cui": "RO3094980",
+      "canonical_address": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud",
+      "address_aliases": [
+        "Str. Industriei nr.3, Bistrita",
+        "Industriei 3, Bistrita, jud. Bistrita-Nasaud"
+      ]
+    },
+    "VALROM": {
+      "canonical": "VALROM INDUSTRIE SRL",
+      "aliases": [
+        "VALROM INDUSTRIE SRL",
+        "Valrom Industrie",
+        "VALROM INDUSTRIE S.R.L.",
+        "SC VALROM INDUSTRIE SRL",
+        "Valrom Industrie SRL"
+      ],
+      "cui": "RO6icing",
+      "canonical_address": "Str. Uzinei nr. 1, Valcea",
+      "address_aliases": [
+        "Str. Uzinei nr.1, Valcea",
+        "Uzinei 1, Valcea"
+      ]
+    },
+    "REHAU": {
+      "canonical": "REHAU POLYMER SRL",
+      "aliases": [
+        "REHAU",
+        "REHAU POLYMER SRL",
+        "Rehau Polymer",
+        "REHAU POLYMER S.R.L."
+      ],
+      "cui": "",
+      "canonical_address": "Str. Industriilor nr. 1, Maramures",
+      "address_aliases": []
+    },
+    "VALSIR": {
+      "canonical": "VALSIR SPA",
+      "aliases": [
+        "VALSIR SPA",
+        "Valsir S.p.A.",
+        "VALSIR S.P.A.",
+        "Valsir"
+      ],
+      "cui": "",
+      "canonical_address": "Via Valsir 2, Villanuova sul Clisi, Italy",
+      "address_aliases": [
+        "Via Valsir 2, Villanuova, Italy"
+      ]
+    },
+    "GEBERIT": {
+      "canonical": "GEBERIT INTERNATIONAL AG",
+      "aliases": [
+        "GEBERIT",
+        "Geberit International AG",
+        "GEBERIT INTERNATIONAL AG",
+        "Geberit AG"
+      ],
+      "cui": "",
+      "canonical_address": "Schachenstrasse 77, Jona, Switzerland",
+      "address_aliases": []
+    },
+    "WAVIN": {
+      "canonical": "WAVIN BV",
+      "aliases": [
+        "WAVIN",
+        "Wavin B.V.",
+        "WAVIN BV",
+        "Wavin"
+      ],
+      "cui": "",
+      "canonical_address": "Stationsplein 3, Zwolle, Netherlands",
+      "address_aliases": []
+    },
+    "PESTAN": {
+      "canonical": "PESTAN DOO",
+      "aliases": [
+        "PESTAN",
+        "Pestan d.o.o.",
+        "PESTAN DOO",
+        "Pestan"
+      ],
+      "cui": "",
+      "canonical_address": "Batajnicki drum 16, Beograd, Serbia",
+      "address_aliases": []
+    },
+    "ARMACELL": {
+      "canonical": "ARMACELL GMBH",
+      "aliases": [
+        "ARMACELL",
+        "Armacell GmbH",
+        "ARMACELL GMBH",
+        "Armacell"
+      ],
+      "cui": "",
+      "canonical_address": "Robert-Bosch-Strasse 10, Munster, Germany",
+      "address_aliases": []
+    },
+    "HENKEL": {
+      "canonical": "HENKEL AG",
+      "aliases": [
+        "HENKEL",
+        "Henkel AG & Co. KGaA",
+        "HENKEL AG",
+        "Henkel Romania SRL"
+      ],
+      "cui": "",
+      "canonical_address": "Henkelstrasse 67, Dusseldorf, Germany",
+      "address_aliases": []
+    },
+    "HUAYANG": {
+      "canonical": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD",
+      "aliases": [
+        "ZHEJIANG HUAYANG",
+        "Zhejiang Huayang Pipeline Industry Co., Ltd.",
+        "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD",
+        "Huayang Pipeline",
+        "HUAYANG"
+      ],
+      "cui": "",
+      "canonical_address": "Yongjia County, Wenzhou City, Zhejiang Province, China",
+      "address_aliases": [
+        "Yongjia, Wenzhou, Zhejiang, China"
+      ]
+    }
+  }
+}
