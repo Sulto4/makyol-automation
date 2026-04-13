@@ -32,59 +32,59 @@ logger = logging.getLogger(__name__)
 
 EXTRACTION_SCHEMA = {
     "ISO": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "CE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "FISA_TEHNICA": {
-        "fields": ["companie", "material", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "AGREMENT": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "AVIZ_TEHNIC": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "AVIZ_SANITAR": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "DECLARATIE_CONFORMITATE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "CERTIFICAT_CALITATE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "AUTORIZATIE_DISTRIBUTIE": {
-        "fields": ["companie", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie"],
     },
     "CUI": {
-        "fields": ["companie", "adresa_producator"],
+        "fields": ["companie", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie"],
     },
     "CERTIFICAT_GARANTIE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "DECLARATIE_PERFORMANTA": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "AVIZ_TEHNIC_SI_AGREMENT": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": ["companie", "material"],
     },
     "ALTELE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"],
         "required": [],
     },
 }
@@ -130,6 +130,12 @@ Analizeaza urmatorul text extras dintr-un document PDF clasificat ca "{category}
    - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
    - Maxim {max_address} caractere.
 
+7. **adresa_distribuitor** — Adresa distribuitorului (daca este mentionata).
+   - Extrage adresa completa a distribuitorului daca este disponibila.
+   - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
+   - Returneaza null daca nu este mentionata o adresa de distribuitor.
+   - Maxim {max_address} caractere.
+
 REGULI IMPORTANTE:
 - Raspunde DOAR cu un JSON valid, fara explicatii sau text suplimentar.
 - Foloseste null pentru campurile care nu pot fi determinate din text.
@@ -147,7 +153,8 @@ Format raspuns:
     "data_expirare": "DD.MM.YYYY" sau null,
     "producator": "Numele Producatorului" sau null,
     "distribuitor": "Numele Distribuitorului" sau null,
-    "adresa_producator": "Adresa completa" sau null
+    "adresa_producator": "Adresa completa" sau null,
+    "adresa_distribuitor": "Adresa distribuitorului" sau null
 }}
 
 Textul documentului ({category}):
@@ -311,13 +318,14 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
             "producator": None,
             "distribuitor": None,
             "adresa_producator": None,
+            "adresa_distribuitor": None,
         }
 
     normalized = {}
 
     # Process each expected field
     schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
-    all_fields = ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"]
+    all_fields = ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor"]
 
     for field in all_fields:
         value = result.get(field)
@@ -370,7 +378,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                     if len(value) > 50:
                         value = value[:50]
 
-        elif field == "adresa_producator":
+        elif field in ("adresa_producator", "adresa_distribuitor"):
             # Truncate address
             if len(value) > MAX_ADDRESS_LENGTH:
                 value = value[:MAX_ADDRESS_LENGTH].rsplit(" ", 1)[0]
