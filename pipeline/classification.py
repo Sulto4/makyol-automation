@@ -482,23 +482,65 @@ def classify_document(
     Returns:
         Tuple of (category, confidence, method).
     """
-    # Level 1: Filename regex
-    result = classify_by_filename(filename)
-    if result is not None:
-        logger.info("Classified '%s' by filename: %s (%.2f)", filename, result[0], result[1])
-        return result
+    # Always run both Level 1 and Level 2 upfront
+    fn_result = classify_by_filename(filename)
+    txt_result = classify_by_text(text)
 
-    # Level 2: Text content rules
-    result = classify_by_text(text)
-    if result is not None:
-        logger.info("Classified '%s' by text: %s (%.2f)", filename, result[0], result[1])
-        return result
+    both_match = fn_result is not None and txt_result is not None
+    fn_only = fn_result is not None and txt_result is None
+    txt_only = fn_result is None and txt_result is not None
+
+    if both_match:
+        fn_cat = fn_result[0]
+        txt_cat = txt_result[0]
+        if fn_cat == txt_cat:
+            # Both methods agree — high confidence
+            confidence = validate_classification(fn_cat, 0.98, text)
+            logger.info(
+                "Classified '%s' by filename+text_agree: %s (%.2f)",
+                filename, fn_cat, confidence,
+            )
+            return (fn_cat, confidence, "filename+text_agree")
+        else:
+            # Disagreement — text overrides if strong and non-ALTELE
+            text_score = _get_text_score(text, txt_cat)
+            if text_score >= 5 and txt_cat != "ALTELE":
+                confidence = validate_classification(txt_cat, 0.90, text)
+                logger.info(
+                    "Classified '%s' by text_override (score=%d, fn=%s, txt=%s): %s (%.2f)",
+                    filename, text_score, fn_cat, txt_cat, txt_cat, confidence,
+                )
+                return (txt_cat, confidence, "text_override")
+            else:
+                confidence = validate_classification(fn_cat, 0.85, text)
+                logger.info(
+                    "Classified '%s' by filename_wins (score=%d, fn=%s, txt=%s): %s (%.2f)",
+                    filename, text_score, fn_cat, txt_cat, fn_cat, confidence,
+                )
+                return (fn_cat, confidence, "filename_wins")
+
+    if fn_only:
+        confidence = validate_classification(fn_result[0], fn_result[1], text)
+        logger.info(
+            "Classified '%s' by filename_regex: %s (%.2f)",
+            filename, fn_result[0], confidence,
+        )
+        return (fn_result[0], confidence, "filename_regex")
+
+    if txt_only:
+        confidence = validate_classification(txt_result[0], txt_result[1], text)
+        logger.info(
+            "Classified '%s' by text_rules: %s (%.2f)",
+            filename, txt_result[0], confidence,
+        )
+        return (txt_result[0], confidence, "text_rules")
 
     # Level 3: AI classification
     result = classify_by_ai(text)
     if result is not None:
-        logger.info("Classified '%s' by AI: %s (%.2f)", filename, result[0], result[1])
-        return result
+        confidence = validate_classification(result[0], result[1], text)
+        logger.info("Classified '%s' by AI: %s (%.2f)", filename, result[0], confidence)
+        return (result[0], confidence, result[2])
 
     # Fallback
     logger.info("Classified '%s' as ALTELE (fallback)", filename)
