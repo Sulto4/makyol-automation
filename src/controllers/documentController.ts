@@ -513,7 +513,7 @@ export class DocumentController {
    *
    * GET /api/documents/stats
    */
-  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getStats(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       // Classification stats from documents table
       const classificationQuery = `
