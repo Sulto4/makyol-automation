@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { useDocuments, useDocumentDetails } from '../hooks/useDocuments';
 import { useFilterStore } from '../store/filterStore';
 import DocumentFilters from '../components/documents/DocumentFilters';
@@ -11,6 +11,7 @@ import Pagination from '../components/shared/Pagination';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import EmptyState from '../components/shared/EmptyState';
 import { exportToCSV } from '../utils/csv';
+import { exportToExcel } from '../utils/excel';
 import { getCategoryLabel } from '../utils/categories';
 import type { ExtractionResult } from '../types';
 
@@ -146,6 +147,14 @@ export default function DocumentsPage() {
     [sortField]
   );
 
+  function handleExportExcel() {
+    const items = sortedDocuments.map((doc) => ({
+      document: doc,
+      extraction: extractions.get(doc.id) ?? null,
+    }));
+    exportToExcel(items);
+  }
+
   function handleExportCSV() {
     const items = sortedDocuments.map((doc) => ({
       document: doc,
@@ -178,14 +187,24 @@ export default function DocumentsPage() {
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Documente</h1>
-        <button
-          onClick={handleExportCSV}
-          disabled={sortedDocuments.length === 0}
-          className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportExcel}
+            disabled={sortedDocuments.length === 0}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Export Excel
+          </button>
+          <button
+            onClick={handleExportCSV}
+            disabled={sortedDocuments.length === 0}
+            className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <DocumentFilters />
