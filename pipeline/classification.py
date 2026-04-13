@@ -447,7 +447,7 @@ def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | No
 
     try:
         response = requests.post(
-            OPENROUTER_URL, headers=headers, json=payload, timeout=60
+            OPENROUTER_URL, headers=headers, json=payload, timeout=120
         )
         response.raise_for_status()
 
@@ -498,7 +498,7 @@ def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | No
             extra={"extra_data": {
                 "filename": filename,
                 "text_length": text_length,
-                "timeout_seconds": 60,
+                "timeout_seconds": 120,
             }},
         )
         return None
