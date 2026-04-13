@@ -237,6 +237,15 @@ export class DocumentModel {
   }
 
   /**
+   * Delete all documents and return the count of deleted rows
+   */
+  async deleteAll(): Promise<number> {
+    const query = 'DELETE FROM documents RETURNING id';
+    const result: QueryResult = await this.pool.query(query);
+    return result.rowCount ?? 0;
+  }
+
+  /**
    * Delete a document by ID
    */
   async delete(id: number): Promise<boolean> {
