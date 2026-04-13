@@ -617,7 +617,7 @@ export class DocumentController {
   /**
    * Delete all documents and their associated data
    *
-   * DELETE /api/documents/all
+   * DELETE /api/documents
    */
   async clearAllDocuments(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -637,7 +637,7 @@ export class DocumentController {
       logger.info(`Bulk delete completed: ${deletedCount} document(s) removed`);
 
       res.status(200).json({
-        deleted_count: deletedCount,
+        deleted: deletedCount,
         message: `Successfully deleted ${deletedCount} document(s)`,
       });
 

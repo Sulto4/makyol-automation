@@ -263,8 +263,9 @@ export default function DocumentsPage() {
       <ConfirmDialog
         isOpen={showClearDialog}
         title="Șterge toate documentele"
-        message="Această acțiune va șterge toate documentele și datele asociate. Acțiunea este ireversibilă."
+        message={`Această acțiune va șterge ${allDocuments.length} document(e) și datele asociate. Acțiunea este ireversibilă.`}
         confirmLabel="Șterge tot"
+        cancelLabel="Anulează"
         onConfirm={handleClearDocuments}
         onCancel={() => setShowClearDialog(false)}
         variant="danger"
