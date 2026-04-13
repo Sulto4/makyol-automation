@@ -86,10 +86,19 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         if vision_extraction is not None:
             extraction = vision_extraction
         else:
-            extraction = extract_document_data(text, category)
+            extraction = extract_document_data(text, category, filename=filename)
     except Exception as e:
         logger.error("Extraction failed for %s: %s", filename, e)
         result["error"] = f"Extraction failed: {e}"
+        return result
+
+    # Step 4b: All-null detection — if AI returned nothing useful, flag for review
+    _check_fields = ("companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator")
+    if all(extraction.get(f) is None for f in _check_fields):
+        logger.warning("All extraction fields are null for %s", filename)
+        result["extraction"] = extraction
+        result["error"] = "AI extraction returned all null fields"
+        result["review_status"] = "NEEDS_CHECK"
         return result
 
     # Step 5: Normalize company names and addresses
