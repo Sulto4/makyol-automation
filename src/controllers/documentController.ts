@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { DocumentModel, ProcessingStatus, CreateDocumentInput } from '../models/Document';
+import { DocumentModel, Document, ProcessingStatus, CreateDocumentInput } from '../models/Document';
 import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } from '../models/ExtractionResult';
 // Legacy services kept for potential fallback - pipeline now handles extraction
 // import { PDFExtractorService } from '../services/pdfExtractor';
@@ -16,16 +16,80 @@ import { logger } from '../utils/logger';
  * Handles HTTP requests for document upload and processing
  */
 export class DocumentController {
+  protected pool: Pool;
   private documentModel: DocumentModel;
   private extractionResultModel: ExtractionResultModel;
   private pipelineClient: PipelineClientService;
   private auditService: AuditService;
 
   constructor(pool: Pool) {
+    this.pool = pool;
     this.documentModel = new DocumentModel(pool);
     this.extractionResultModel = new ExtractionResultModel(pool);
     this.pipelineClient = new PipelineClientService();
     this.auditService = new AuditService(pool);
+  }
+
+  /**
+   * Reprocess a single document through the pipeline
+   * Updates classification, upserts extraction result, and sets status to COMPLETED
+   */
+  protected async reprocessSingleDocument(document: Document): Promise<void> {
+    const pipelineResponse = await this.pipelineClient.processDocument(document.file_path);
+    logger.info(`Pipeline reprocessed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
+
+    if (pipelineResponse.error) {
+      throw new Error(pipelineResponse.error);
+    }
+
+    // Persist classification to documents table
+    if (pipelineResponse.classification) {
+      await this.documentModel.updateClassification(document.id, {
+        categorie: pipelineResponse.classification,
+        confidence: pipelineResponse.confidence ?? 0,
+        metoda_clasificare: pipelineResponse.method ?? 'ai',
+      });
+      logger.info(`Classification saved for document ${document.id}: ${pipelineResponse.classification}`);
+    }
+
+    // Map pipeline extracted data to extraction result fields
+    const extraction = pipelineResponse.extraction || {};
+    const extractionStatus = pipelineResponse.confidence >= 0.8
+      ? ExtractionStatus.SUCCESS
+      : pipelineResponse.confidence >= 0.5
+        ? ExtractionStatus.PARTIAL
+        : ExtractionStatus.FAILED;
+
+    const extractionInput: CreateExtractionResultInput = {
+      document_id: document.id,
+      extracted_text: null,
+      metadata: {},
+      confidence_score: pipelineResponse.confidence ?? null,
+      extraction_status: extractionStatus,
+      material: extraction.material ?? null,
+      data_expirare: extraction.data_expirare ?? null,
+      companie: extraction.companie ?? null,
+      producator: extraction.producator ?? null,
+      distribuitor: extraction.distribuitor ?? null,
+      adresa_producator: extraction.adresa_producator ?? null,
+      extraction_model: extraction.extraction_model ?? null,
+    };
+
+    // Upsert extraction result: update if exists, create if not
+    const existing = await this.extractionResultModel.findByDocumentId(document.id);
+    if (existing) {
+      await this.extractionResultModel.updateByDocumentId(document.id, extractionInput);
+    } else {
+      await this.extractionResultModel.create(extractionInput);
+    }
+    logger.info(`Extraction result upserted for document ${document.id} with status: ${extractionStatus}`);
+
+    // Update document status to COMPLETED and clear error
+    await this.documentModel.updateStatus(document.id, {
+      processing_status: ProcessingStatus.COMPLETED,
+      processing_completed_at: new Date(),
+      error_message: null,
+    });
   }
 
   /**
