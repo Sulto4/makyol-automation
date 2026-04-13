@@ -432,6 +432,83 @@ export class DocumentController {
   }
 
   /**
+   * Reprocess all documents matching optional filters
+   *
+   * POST /api/documents/reprocess-all
+   */
+  async reprocessAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { status, limit } = req.body || {};
+
+      // Validate status against ProcessingStatus enum if provided
+      if (status && !Object.values(ProcessingStatus).includes(status)) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: `Invalid status. Must be one of: ${Object.values(ProcessingStatus).join(', ')}`,
+            code: 'INVALID_STATUS',
+          }
+        });
+        return;
+      }
+
+      // Query matching documents
+      const documents = await this.documentModel.findAll(
+        limit ? parseInt(limit as string, 10) : undefined,
+        undefined,
+        status as ProcessingStatus | undefined
+      );
+
+      const jobId = `reprocess-${Date.now()}`;
+
+      // Respond immediately
+      res.status(202).json({
+        message: `Reprocessing ${documents.length} document(s) in the background`,
+        jobId,
+        total: documents.length,
+      });
+
+      // Start background processing loop with 1s delay between documents
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+      let processed = 0;
+      let failed = 0;
+
+      for (const document of documents) {
+        try {
+          await this.reprocessSingleDocument(document);
+          processed++;
+          logger.info(`[${jobId}] Reprocessed document ${document.id} (${processed}/${documents.length})`);
+        } catch (error: any) {
+          failed++;
+          logger.error(`[${jobId}] Failed to reprocess document ${document.id}: ${error.message}`);
+
+          // Update document status to FAILED
+          try {
+            await this.documentModel.updateStatus(document.id, {
+              processing_status: ProcessingStatus.FAILED,
+              error_message: error.message,
+              processing_completed_at: new Date(),
+            });
+          } catch (updateError: any) {
+            logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${updateError.message}`);
+          }
+        }
+
+        // 1s delay between documents
+        if (document !== documents[documents.length - 1]) {
+          await delay(1000);
+        }
+      }
+
+      logger.info(`[${jobId}] Batch reprocessing complete: ${processed} succeeded, ${failed} failed out of ${documents.length}`);
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a document by ID with its extraction results
    *
    * GET /api/documents/:id
