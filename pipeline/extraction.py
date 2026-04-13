@@ -190,6 +190,17 @@ _NULL_VALUES = {
 }
 
 
+def smart_truncate(text: str, max_chars: int = 6000) -> str:
+    """Truncate long text while preserving header, middle, and footer sections."""
+    if len(text) <= max_chars:
+        return text
+    header = text[:2500]
+    mid_start = len(text) // 2 - 1000
+    middle = text[mid_start:mid_start + 2000]
+    footer = text[-1500:]
+    return header + "\n\n[...]\n\n" + middle + "\n\n[...]\n\n" + footer
+
+
 def _fix_ocr_errors(text: str) -> str:
     """Fix common OCR errors in extracted text."""
     for wrong, correct in _OCR_FIXES:
@@ -399,7 +410,7 @@ def extract_data_with_ai(text: str, category: str) -> dict | None:
         return None
 
     # Truncate text to avoid token limits
-    truncated_text = text[:6000]
+    truncated_text = smart_truncate(text)
 
     prompt = _EXTRACTION_SYSTEM_PROMPT.format(
         category=category,
