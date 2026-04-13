@@ -76,7 +76,8 @@ async def get_stats():
     """Return current in-memory processing statistics."""
     result = dict(_stats)
     total = result["total_processed"]
-    result["avg_duration_ms"] = round(result.pop("total_duration_ms") / total, 1) if total > 0 else 0
+    total_dur = result.pop("total_duration_ms")
+    result["avg_duration_ms"] = round(total_dur / total, 1) if total > 0 else 0
     return result
 
 

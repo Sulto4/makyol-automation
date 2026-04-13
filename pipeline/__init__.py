@@ -173,12 +173,13 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
     result["error"] = None
 
     # Pipeline-complete summary
-    total_duration_ms = (time.time() - pipeline_start) * 1000
+    total_duration_ms = round((time.time() - pipeline_start) * 1000, 1)
+    result["total_duration_ms"] = total_duration_ms
     field_count = len(extraction) if isinstance(extraction, dict) else 0
     non_null_count = len([v for v in extraction.values() if v is not None]) if isinstance(extraction, dict) else 0
     logger.info("Pipeline complete", extra={"extra_data": {
         "step": "pipeline_complete", "filename": filename,
-        "total_duration_ms": round(total_duration_ms, 1),
+        "total_duration_ms": total_duration_ms,
         "review_status": result["review_status"],
         "used_vision": result["used_vision"],
         "has_error": result["error"] is not None,
