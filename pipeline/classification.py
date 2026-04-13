@@ -262,7 +262,9 @@ def classify_by_ai(text: str) -> tuple[str, float, str] | None:
         return None
 
     # Truncate text to avoid token limits
+    text_length = len(text)
     truncated_text = text[:4000]
+    was_truncated = text_length > 4000
     prompt = _AI_CLASSIFICATION_PROMPT.format(text=truncated_text)
 
     headers = {
@@ -276,11 +278,31 @@ def classify_by_ai(text: str) -> tuple[str, float, str] | None:
         "max_tokens": AI_MAX_TOKENS,
     }
 
+    logger.info(
+        "AI classification request starting",
+        extra={"extra_data": {
+            "text_length": text_length,
+            "truncated_to": len(truncated_text) if was_truncated else None,
+            "model": AI_MODEL,
+            "temperature": AI_TEMPERATURE,
+            "max_tokens": AI_MAX_TOKENS,
+        }},
+    )
+
     try:
         response = requests.post(
             OPENROUTER_URL, headers=headers, json=payload, timeout=60
         )
         response.raise_for_status()
+
+        response_body = response.text
+        logger.info(
+            "AI classification response received",
+            extra={"extra_data": {
+                "status_code": response.status_code,
+                "response_length": len(response_body),
+            }},
+        )
 
         result = response.json()
         content = result["choices"][0]["message"]["content"]
@@ -294,19 +316,56 @@ def classify_by_ai(text: str) -> tuple[str, float, str] | None:
         confidence = float(parsed.get("confidence", 0.5))
 
         if category not in VALID_CATEGORIES:
-            logger.warning("AI returned invalid category: %s", category)
+            logger.warning(
+                "AI returned invalid category: %s",
+                category,
+                extra={"extra_data": {
+                    "invalid_category": category,
+                    "raw_response": content[:500],
+                }},
+            )
             return None
+
+        logger.info(
+            "AI classification parsed successfully",
+            extra={"extra_data": {
+                "category": category,
+                "confidence": confidence,
+            }},
+        )
 
         return (category, confidence, "ai")
 
     except requests.exceptions.Timeout:
-        logger.error("AI classification timed out")
+        logger.error(
+            "AI classification timed out",
+            extra={"extra_data": {
+                "text_length": text_length,
+                "timeout_seconds": 60,
+            }},
+        )
         return None
     except requests.exceptions.RequestException as e:
-        logger.error("AI classification request failed: %s", e)
+        status_code = getattr(e.response, "status_code", None) if hasattr(e, "response") else None
+        response_body = getattr(e.response, "text", None) if hasattr(e, "response") else None
+        logger.error(
+            "AI classification request failed",
+            extra={"extra_data": {
+                "error": str(e),
+                "status_code": status_code,
+                "response_body": response_body[:500] if response_body else None,
+            }},
+        )
         return None
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.error("AI classification response parsing failed: %s", e)
+        logger.error(
+            "AI classification response parsing failed",
+            extra={"extra_data": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "raw_content": content[:500] if "content" in dir() else None,
+            }},
+        )
         return None
 
 
