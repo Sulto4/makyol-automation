@@ -92,14 +92,24 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         result["error"] = f"Extraction failed: {e}"
         return result
 
-    # Step 4b: All-null detection — if AI returned nothing useful, flag for review
+    # Step 4b: Retry extraction if all values are null
     _check_fields = ("companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator")
+    try:
+        all_null = all(extraction.get(f) is None for f in _check_fields)
+        if all_null and len(text.strip()) >= 50:
+            logger.warning(
+                "First extraction returned all null for %s, retrying...", filename
+            )
+            extraction = extract_document_data(text, category, filename=filename)
+            all_null = all(extraction.get(f) is None for f in _check_fields)
+    except Exception as e:
+        logger.error("Extraction retry failed for %s: %s", filename, e)
+
+    # If still all-null after retry, flag for review
     if all(extraction.get(f) is None for f in _check_fields):
         logger.warning("All extraction fields are null for %s", filename)
-        result["extraction"] = extraction
         result["error"] = "AI extraction returned all null fields"
         result["review_status"] = "NEEDS_CHECK"
-        return result
 
     # Step 5: Normalize company names and addresses
     try:

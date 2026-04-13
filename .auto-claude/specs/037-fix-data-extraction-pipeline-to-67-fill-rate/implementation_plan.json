@@ -1,0 +1,378 @@
+{
+  "feature": "Fix data extraction pipeline to 67% fill rate",
+  "workflow_type": "feature",
+  "workflow_rationale": "While this addresses broken behavior, the implementation involves creating a new module (regex_extraction.py), adding smart truncation logic, wiring retry mechanics, and propagating extraction_model tracking — all net-new functionality layered onto the existing pipeline. Changes span 2 services (Python pipeline + TypeScript backend).",
+  "phases": [
+    {
+      "id": "phase-1-regex-module",
+      "name": "Create Regex Extraction Module",
+      "type": "implementation",
+      "description": "Create pipeline/regex_extraction.py with Romanian-pattern regex fallbacks for company, date, and address extraction. This is a standalone module with no dependencies on other changes.",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Create pipeline/regex_extraction.py with extract_company_regex(), extract_date_regex(), extract_address_regex(), and regex_extract() orchestrator function. Must follow codebase patterns: module docstring, logging.getLogger(__name__), %s log formatting. Company patterns: S.C. ... S.R.L./S.A., societatea ... S.R.L. Date patterns: valabil/expira/valabilitate keywords with DD.MM.YYYY or DD/MM/YYYY dates. Address patterns: Str/B-dul/Calea/Sos/Piata prefixes with sediul/adresa keywords. regex_extract() returns dict with all 6 standard fields; material and producator always None.",
+          "service": "pipeline",
+          "files_to_modify": [],
+          "files_to_create": [
+            "pipeline/regex_extraction.py"
+          ],
+          "patterns_from": [
+            "pipeline/validation.py",
+            "pipeline/extraction.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"from regex_extraction import regex_extract, extract_company_regex, extract_date_regex, extract_address_regex; r = regex_extract('S.C. EXAMPLE S.R.L. valabilitate: 15.03.2026 sediul: Str. Test nr. 5', 'ISO'); print('company:', r['companie']); print('date:', r['data_expirare']); print('address:', r['adresa_producator']); print('material:', r['material']); assert r['companie'] is not None, 'company should not be None'; assert r['data_expirare'] is not None, 'date should not be None'; assert r['adresa_producator'] is not None, 'address should not be None'; assert r['material'] is None, 'material should be None'; print('ALL OK')\"",
+            "expected": "ALL OK"
+          },
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-2-smart-truncation",
+      "name": "Smart Text Truncation",
+      "type": "implementation",
+      "description": "Replace aggressive text[:6000] truncation with smart_truncate() that preserves header (2500 chars) + middle (2000 chars) + footer (1500 chars). This change is in extraction.py and is independent of the regex module.",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Add smart_truncate(text, max_chars=6000) function to pipeline/extraction.py. Logic: if len(text) <= max_chars, return unchanged. Otherwise keep first 2500 chars (header), 2000 chars centered at midpoint (middle), and last 1500 chars (footer), joined by '\\n\\n[...]\\n\\n'. Replace the 'text[:6000]' on line 402 of extract_data_with_ai() with smart_truncate(text). Do NOT modify the _EXTRACTION_SYSTEM_PROMPT.",
+          "service": "pipeline",
+          "files_to_modify": [
+            "pipeline/extraction.py"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "pipeline/extraction.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"from extraction import smart_truncate; short = 'abc' * 100; assert smart_truncate(short) == short, 'short text unchanged'; long = 'H' * 3000 + 'M' * 3000 + 'F' * 3000; result = smart_truncate(long); assert '[...]' in result, 'separator present'; assert len(result) < len(long), 'truncated'; assert result[:10] == 'H' * 10, 'header preserved'; assert result[-10:] == 'F' * 10, 'footer preserved'; print('ALL OK')\"",
+            "expected": "ALL OK"
+          },
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-extraction-enhancement",
+      "name": "Extraction Enhancement with Regex Merge and Model Tracking",
+      "type": "implementation",
+      "description": "Enhance extract_document_data() in extraction.py to: (1) use regex as primary fallback when AI returns None, (2) always merge regex results into null AI fields, (3) set extraction_model field. Depends on the regex module being created first.",
+      "depends_on": [
+        "phase-1-regex-module",
+        "phase-2-smart-truncation"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Modify extract_document_data() in pipeline/extraction.py to: (a) Import regex_extract from pipeline.regex_extraction and AI_MODEL from pipeline.config. (b) If extract_data_with_ai() returns None, log warning and use regex_extract() as primary result, set extraction_model='regex_fallback'. (c) After normalize_extraction_result(), always run regex_extract() and merge: for each field where normalized value is None and regex value is not None, fill with regex value and log with logger.info. (d) Set normalized['extraction_model'] = AI_MODEL when AI succeeded, or 'regex_fallback' when regex-only. Set extraction_model AFTER normalization so it doesn't get wiped. (e) Use %s log formatting, not f-strings.",
+          "service": "pipeline",
+          "files_to_modify": [
+            "pipeline/extraction.py"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "pipeline/extraction.py",
+            "pipeline/__init__.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"from extraction import extract_document_data; print('import OK')\"",
+            "expected": "import OK"
+          },
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-4-retry-logic",
+      "name": "Wire Extraction Retry in Pipeline Orchestrator",
+      "type": "implementation",
+      "description": "Add single-retry logic to process_document() in pipeline/__init__.py: if all extraction fields are None and text >= 50 chars, retry extract_document_data() once.",
+      "depends_on": [
+        "phase-3-extraction-enhancement"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "In pipeline/__init__.py process_document(), after extraction = extract_document_data(text, category), add retry logic: (1) Check if all values in extraction dict are None (skip 'extraction_model' key during check). (2) If all null AND len(text.strip()) >= 50, log with logger.warning('First extraction returned all null for %s, retrying...', filename) and retry: extraction = extract_document_data(text, category). (3) Single retry only — no loop. (4) Wrap retry in try/except like the existing extraction step. (5) Follow existing error handling pattern: if retry also fails, continue with null result (don't abort).",
+          "service": "pipeline",
+          "files_to_modify": [
+            "pipeline/__init__.py"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "pipeline/__init__.py"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"from pipeline import process_document; print('import OK')\"",
+            "expected": "import OK"
+          },
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-5-backend-timeouts",
+      "name": "Increase Backend Pipeline Client Timeouts",
+      "type": "implementation",
+      "description": "Increase default and large file timeouts in the TypeScript PipelineClientService to prevent premature timeouts during longer AI extraction calls.",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "In src/services/pipelineClient.ts, in the PipelineClientService constructor (line 126-128), change defaultTimeoutMs default from 30_000 to 60_000 and largeFileTimeoutMs default from 120_000 to 180_000. Only these two numeric values change — no other modifications to the file.",
+          "service": "backend",
+          "files_to_modify": [
+            "src/services/pipelineClient.ts"
+          ],
+          "files_to_create": [],
+          "patterns_from": [
+            "src/services/pipelineClient.ts"
+          ],
+          "verification": {
+            "type": "command",
+            "command": "grep -n '60_000\\|180_000' src/services/pipelineClient.ts",
+            "expected": "Lines containing 60_000 and 180_000"
+          },
+          "status": "completed",
+          "notes": "Changed defaultTimeoutMs from 30_000 to 60_000 and largeFileTimeoutMs from 120_000 to 180_000 in PipelineClientService constructor.",
+          "updated_at": "2026-04-13T15:16:23.862445+00:00"
+        }
+      ]
+    },
+    {
+      "id": "phase-6-integration",
+      "name": "Integration Verification",
+      "type": "integration",
+      "description": "Verify the complete extraction pipeline works end-to-end: smart truncation → AI extraction → regex merge → retry on all-null → extraction_model tracking → backend timeout handling.",
+      "depends_on": [
+        "phase-4-retry-logic",
+        "phase-5-backend-timeouts"
+      ],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Verify all pipeline imports work correctly. Run the pipeline module imports to confirm no circular imports or missing dependencies. Check that regex_extraction.py integrates with extraction.py and __init__.py without errors.",
+          "all_services": false,
+          "service": "pipeline",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"from pipeline import process_document; from pipeline.extraction import extract_document_data, smart_truncate; from pipeline.regex_extraction import regex_extract; print('All imports OK')\"",
+            "expected": "All imports OK"
+          },
+          "status": "completed"
+        },
+        {
+          "id": "subtask-6-2",
+          "description": "Verify regex fallback works in isolation by testing regex_extract with representative Romanian construction document text samples. Confirm company (S.R.L./S.A.), date (valabilitate), and address (Str.) patterns all match.",
+          "all_services": false,
+          "service": "pipeline",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"\nfrom regex_extraction import regex_extract\ntest_text = '''CERTIFICAT DE CONFORMITATE\\nS.C. TERAPLAST S.A.\\nMaterial: Tevi PVC\\nValabilitate: 15/03/2026\\nSediul social: Str. Industriilor nr. 3, Bistrita, jud. Bistrita-Nasaud'''\nr = regex_extract(test_text, 'CERTIFICAT_CALITATE')\nprint('companie:', r['companie'])\nprint('data_expirare:', r['data_expirare'])\nprint('adresa:', r['adresa_producator'])\nassert r['companie'] is not None\nassert r['data_expirare'] is not None\nassert r['adresa_producator'] is not None\nprint('ALL OK')\n\"",
+            "expected": "ALL OK"
+          },
+          "status": "completed"
+        },
+        {
+          "id": "subtask-6-3",
+          "description": "Verify smart_truncate preserves header+middle+footer content from a realistic long document. Test that documents under 6000 chars pass through unchanged and documents over 6000 chars include content from all three sections with [...] separators.",
+          "all_services": false,
+          "service": "pipeline",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cd pipeline && python -c \"\nfrom extraction import smart_truncate\n# Test 1: Short text unchanged\nshort = 'x' * 5000\nassert smart_truncate(short) == short, 'short text should be unchanged'\n# Test 2: Long text truncated correctly\nlong = 'HEADER_' * 500 + 'MIDDLE_' * 500 + 'FOOTER_' * 500\nresult = smart_truncate(long)\nassert len(result) < len(long), 'should be shorter'\nassert result.startswith('HEADER_'), 'header preserved'\nassert result.endswith('FOOTER_'), 'footer preserved'\nassert '[...]' in result, 'separator present'\nprint('ALL OK')\n\"",
+            "expected": "ALL OK"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-6-4",
+          "description": "End-to-end verification with Docker services. Start pipeline service and verify health endpoint responds. Then process a test PDF and verify extraction fields are populated and extraction_model is set.",
+          "all_services": true,
+          "service": "pipeline",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "docker compose up -d pipeline",
+              "curl http://localhost:8001/api/pipeline/health — verify status OK",
+              "Upload a test PDF via POST /api/pipeline/process",
+              "Verify response has non-null companie or material",
+              "Verify response has extraction_model field set (not null)",
+              "Check pipeline logs for regex merge or retry messages"
+            ]
+          },
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_phases": 6,
+    "total_subtasks": 8,
+    "services_involved": [
+      "pipeline",
+      "backend"
+    ],
+    "parallelism": {
+      "max_parallel_phases": 3,
+      "parallel_groups": [
+        {
+          "phases": [
+            "phase-1-regex-module",
+            "phase-2-smart-truncation",
+            "phase-5-backend-timeouts"
+          ],
+          "reason": "All three have no dependencies and modify different files: regex_extraction.py (new), extraction.py (truncation only), pipelineClient.ts respectively"
+        }
+      ],
+      "recommended_workers": 2,
+      "speedup_estimate": "1.3x faster than sequential — phases 1, 2, and 5 can run in parallel, but phases 3 and 4 are sequential and depend on previous phases"
+    },
+    "startup_command": "source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 037 --parallel 2"
+  },
+  "verification_strategy": {
+    "risk_level": "medium",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": [
+      "unit",
+      "integration"
+    ],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All pipeline imports succeed without errors",
+      "regex_extract() returns non-null companie for 'S.C. EXAMPLE S.R.L.' text",
+      "regex_extract() returns non-null data_expirare for 'valabilitate: 15.03.2026' text",
+      "regex_extract() returns non-null adresa_producator for 'Str. Test nr. 5' text",
+      "smart_truncate() returns text unchanged when <= 6000 chars",
+      "smart_truncate() preserves header/middle/footer with [...] separators for long text",
+      "extract_document_data() sets extraction_model field in result",
+      "extract_document_data() falls back to regex when AI returns None",
+      "process_document() retries extraction when all fields are null",
+      "PipelineClientService uses 60_000ms default timeout and 180_000ms large file timeout",
+      "Pipeline health check still passes after changes"
+    ],
+    "verification_steps": [
+      {
+        "name": "Pipeline Import Check",
+        "command": "cd pipeline && python -c \"from pipeline import process_document; from pipeline.extraction import extract_document_data, smart_truncate; from pipeline.regex_extraction import regex_extract; print('OK')\"",
+        "expected_outcome": "OK — all imports succeed",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Regex Extraction Unit Test",
+        "command": "cd pipeline && python -c \"from regex_extraction import regex_extract; r = regex_extract('S.C. TEST S.R.L. valabilitate: 01.01.2026 Str. Test nr. 1', 'ISO'); assert r['companie']; assert r['data_expirare']; assert r['adresa_producator']; assert r['material'] is None; print('OK')\"",
+        "expected_outcome": "OK — regex extracts company, date, address; material stays None",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Smart Truncation Unit Test",
+        "command": "cd pipeline && python -c \"from extraction import smart_truncate; assert smart_truncate('short') == 'short'; long = 'x' * 10000; r = smart_truncate(long); assert len(r) < 10000 and '[...]' in r; print('OK')\"",
+        "expected_outcome": "OK — short text unchanged, long text truncated with separators",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Backend Timeout Verification",
+        "command": "grep -c '60_000\\|180_000' src/services/pipelineClient.ts",
+        "expected_outcome": "2 — both timeout values updated",
+        "type": "test",
+        "required": true,
+        "blocking": false
+      },
+      {
+        "name": "Docker Pipeline Health Check",
+        "command": "docker compose up -d pipeline && sleep 5 && curl -s http://localhost:8001/api/pipeline/health",
+        "expected_outcome": "JSON with status: ok",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "Medium risk pipeline enhancement. Core extraction logic is being modified but current fill rate is near-zero so regression risk is minimal. Unit tests for regex patterns and smart truncation are critical. Integration test via Docker health check confirms no import/startup errors."
+  },
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": [
+        "pytest tests/"
+      ],
+      "minimum_coverage": null
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": [
+        "docker compose up -d pipeline && curl -s http://localhost:8001/api/pipeline/health"
+      ],
+      "services_to_test": [
+        "pipeline"
+      ]
+    },
+    "e2e_tests": {
+      "required": true,
+      "commands": [
+        "Upload test PDF via POST /api/pipeline/process and verify extraction fields"
+      ],
+      "flows": [
+        "document-upload-extraction",
+        "regex-fallback-on-ai-failure"
+      ]
+    },
+    "browser_verification": {
+      "required": false,
+      "pages": []
+    },
+    "database_verification": {
+      "required": true,
+      "checks": [
+        "SELECT extraction_model, COUNT(*) FROM extraction_results GROUP BY extraction_model — should show non-null values",
+        "SELECT COUNT(*) FILTER (WHERE companie IS NOT NULL) * 100.0 / COUNT(*) FROM extraction_results — should be >= 60%"
+      ]
+    }
+  },
+  "qa_signoff": null,
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "xstateState": "coding",
+  "executionPhase": "coding",
+  "updated_at": "2026-04-13T15:17:57.450Z",
+  "lastEvent": {
+    "eventId": "8eb5bc5d-b572-45d4-b8ab-44a3d2c948dc",
+    "sequence": 0,
+    "type": "PLANNING_COMPLETE",
+    "timestamp": "2026-04-13T14:39:07.934942+00:00"
+  },
+  "last_updated": "2026-04-13T15:16:23.862445+00:00"
+}
