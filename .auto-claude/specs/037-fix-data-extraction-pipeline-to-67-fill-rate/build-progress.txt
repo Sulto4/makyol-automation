@@ -1,0 +1,77 @@
+=== AUTO-BUILD PROGRESS ===
+
+Project: Fix Data Extraction Pipeline to 67%+ Fill Rate
+Workspace: managed by orchestrator
+Started: 2026-04-13
+
+Workflow Type: feature
+Rationale: Creating new regex_extraction module, adding smart truncation, wiring retry mechanics, and propagating extraction_model tracking — all net-new functionality layered onto the existing pipeline across 2 services (Python pipeline + TypeScript backend).
+
+Session 1 (Planner):
+- Created implementation_plan.json
+- Phases: 6
+- Total subtasks: 8
+- Created init.sh
+- Created context.json with codebase investigation findings
+- Updated project_index.json with full service definitions
+
+Phase Summary:
+- Phase 1 (Regex Module): 1 subtask, no dependencies — CREATE pipeline/regex_extraction.py
+- Phase 2 (Smart Truncation): 1 subtask, no dependencies — Add smart_truncate() to extraction.py
+- Phase 3 (Extraction Enhancement): 1 subtask, depends on [phase-1, phase-2] — Wire regex merge + extraction_model in extraction.py
+- Phase 4 (Retry Logic): 1 subtask, depends on [phase-3] — Wire retry in __init__.py
+- Phase 5 (Backend Timeouts): 1 subtask, no dependencies — Update pipelineClient.ts timeouts
+- Phase 6 (Integration): 4 subtasks, depends on [phase-4, phase-5] — E2E verification
+
+Services Involved:
+- pipeline (Python/Flask): Primary target. Create regex_extraction.py, modify extraction.py and __init__.py
+- backend (TypeScript/Express): Secondary. Increase timeout defaults in pipelineClient.ts
+
+Files to Create:
+- pipeline/regex_extraction.py — Regex fallback extraction functions
+
+Files to Modify:
+- pipeline/extraction.py — smart_truncate(), regex merge, extraction_model tracking
+- pipeline/__init__.py — Retry logic on all-null extraction
+- src/services/pipelineClient.ts — Timeout increase (30s→60s, 120s→180s)
+
+Files Confirmed No Changes Needed:
+- src/controllers/documentController.ts — Already passes extraction.extraction_model ?? null (line 178)
+- src/models/ExtractionResult.ts — extraction_model field already defined in interface (line 53)
+
+Parallelism Analysis:
+- Max parallel phases: 3 (phases 1, 2, and 5 can run simultaneously)
+- Recommended workers: 2
+- Parallel groups: [phase-1-regex-module, phase-2-smart-truncation, phase-5-backend-timeouts] — all independent, different files
+- Sequential chain: phase-3 depends on 1+2, phase-4 depends on 3, phase-6 depends on 4+5
+
+Key Investigation Findings:
+- pipeline/extraction.py line 402: text[:6000] — the aggressive truncation
+- pipeline/config.py line 35: MAX_RETRIES = 1 exists but unused for extraction retry
+- pipeline/validation.py: validate_extraction() has retry_func param but never receives one
+- documentController.ts line 178: extraction_model already wired to DB
+- ExtractionResult.ts line 53: extraction_model column exists in schema
+
+=== STARTUP COMMAND ===
+
+To continue building this spec, run:
+
+  source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 037 --parallel 2
+
+Example:
+  source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 037 --parallel 2
+
+=== END SESSION 1 ===
+
+=== SUBTASK 6-4: E2E Docker Verification ===
+
+Verification Results:
+1. ✅ Health endpoint: {"status":"ok","service":"python-pipeline"}
+2. ✅ Process PDF (ISO 9001): extraction_model="regex_fallback", adresa_producator populated
+3. ✅ Retry logic: Logs confirm "First extraction returned all null ... retrying..."
+4. ✅ Regex fallback: Logs confirm "AI extraction returned None ... using regex fallback"
+5. ✅ extraction_model field present in all responses (not null)
+6. ✅ AI 401 (no API key in test) gracefully handled → regex fallback works
+
+Note: AI extraction returns 401 in test env (no OpenRouter API key configured).
+Regex fallback correctly activates and populates fields where patterns match.

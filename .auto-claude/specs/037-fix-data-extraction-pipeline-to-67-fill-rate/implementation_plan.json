@@ -206,7 +206,7 @@
             "command": "cd pipeline && python -c \"\nfrom extraction import smart_truncate\n# Test 1: Short text unchanged\nshort = 'x' * 5000\nassert smart_truncate(short) == short, 'short text should be unchanged'\n# Test 2: Long text truncated correctly\nlong = 'HEADER_' * 500 + 'MIDDLE_' * 500 + 'FOOTER_' * 500\nresult = smart_truncate(long)\nassert len(result) < len(long), 'should be shorter'\nassert result.startswith('HEADER_'), 'header preserved'\nassert result.endswith('FOOTER_'), 'footer preserved'\nassert '[...]' in result, 'separator present'\nprint('ALL OK')\n\"",
             "expected": "ALL OK"
           },
-          "status": "pending"
+          "status": "completed"
         },
         {
           "id": "subtask-6-4",
@@ -227,7 +227,7 @@
               "Check pipeline logs for regex merge or retry messages"
             ]
           },
-          "status": "pending"
+          "status": "completed"
         }
       ]
     }
@@ -367,12 +367,13 @@
   "planStatus": "in_progress",
   "xstateState": "coding",
   "executionPhase": "coding",
-  "updated_at": "2026-04-13T15:17:57.450Z",
+  "updated_at": "2026-04-13T20:11:26.598Z",
   "lastEvent": {
     "eventId": "8eb5bc5d-b572-45d4-b8ab-44a3d2c948dc",
     "sequence": 0,
     "type": "PLANNING_COMPLETE",
     "timestamp": "2026-04-13T14:39:07.934942+00:00"
   },
-  "last_updated": "2026-04-13T15:16:23.862445+00:00"
+  "last_updated": "2026-04-13T15:16:23.862445+00:00",
+  "recoveryNote": "Task recovered from stuck state at 2026-04-13T20:10:30.860Z"
 }

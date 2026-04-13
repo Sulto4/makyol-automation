@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import path from 'path';
 import { Pool } from 'pg';
 import { appConfig } from './config/app';
 import { databaseConfig } from './config/database';
@@ -34,6 +35,9 @@ function createApp(pool: Pool): Express {
 
     next();
   });
+
+  // Static file serving for uploaded documents
+  app.use('/uploads', express.static(appConfig.upload.uploadDir));
 
   // Health check endpoint
   app.get('/health', (_req, res) => {

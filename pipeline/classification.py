@@ -99,6 +99,14 @@ FILENAME_RULES = [
     (r"(?i)\bDP\b.*performan", "DECLARATIE_PERFORMANTA"),
     # Combined aviz + agrement
     (r"(?i)aviz.*agrement", "AVIZ_TEHNIC_SI_AGREMENT"),
+    # CUI - ONRC / registrul comertului
+    (r"(?i)\bONRC\b", "CUI"),
+    (r"(?i)registrul\s*comer[tț]ului", "CUI"),
+    (r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare\s*fiscal[aă]", "CUI"),
+    # Certificat calitate - lab reports
+    (r"(?i)buletin\s*(?:de\s*)?analiz[aă]", "CERTIFICAT_CALITATE"),
+    (r"(?i)raport\s*(?:de\s*)?[iî]ncerc(?:are|[aă]ri)", "CERTIFICAT_CALITATE"),
+    (r"(?i)test\s*report", "CERTIFICAT_CALITATE"),
     # Generic approval patterns (fallback to ALTELE)
     (r"(?i)(?:aprobare.*teav|aprobare.*PEID|aprobare.*produc)", "ALTELE"),
     (r"(?i)aprobare\s*de\s*tip", "ALTELE"),
@@ -164,6 +172,23 @@ TEXT_MARKERS = [
     # Combined aviz + agrement
     (r"(?i)aviz\s*tehnic.*agrement", "AVIZ_TEHNIC_SI_AGREMENT", 3),
     (r"(?i)agrement.*aviz\s*tehnic", "AVIZ_TEHNIC_SI_AGREMENT", 3),
+    # ISO - additional markers
+    (r"(?i)\bASRO\b", "ISO", 2),
+    (r"(?i)SR\s*EN\s*\d+", "ISO", 2),
+    (r"(?i)\bIQNet\b", "ISO", 2),
+    (r"(?i)\bCERTIND\b", "ISO", 2),
+    # CE - additional markers
+    (r"(?i)organism\s*notificat", "CE", 2),
+    (r"(?i)regulament\s*UE", "CE", 2),
+    # Agrement - additional markers
+    (r"(?i)ETA-\d+", "AGREMENT", 2),
+    (r"(?i)\bEOTA\b", "AGREMENT", 2),
+    (r"(?i)\bINCERC\b", "AGREMENT", 2),
+    (r"(?i)ministerul\s*dezvolt[aă]rii", "AGREMENT", 2),
+    # CUI - additional markers
+    (r"(?i)punct\s*de\s*lucru", "CUI", 1),
+    (r"(?i)capital\s*social", "CUI", 1),
+    (r"(?i)\badministrator\b", "CUI", 1),
 ]
 
 # AI classification system prompt
@@ -245,6 +270,136 @@ def classify_by_text(text: str) -> tuple[str, float, str] | None:
     # Normalize confidence: score of 3 = 0.85, higher scores cap at 0.95
     confidence = min(0.85 + (best_score - 3) * 0.02, 0.95)
     return (best_category, confidence, "text_rules")
+
+
+def _get_text_score(text: str, category: str) -> int:
+    """Sum TEXT_MARKERS weights for a specific category against given text.
+
+    Args:
+        text: Extracted text from the PDF.
+        category: Category to score (must be in VALID_CATEGORIES).
+
+    Returns:
+        Total score (sum of matching marker weights), or 0 if text is empty
+        or category is unknown.
+    """
+    if not text or not text.strip():
+        return 0
+    if category not in VALID_CATEGORIES:
+        return 0
+
+    score = 0
+    for pattern, cat, weight in TEXT_MARKERS:
+        if cat == category and re.search(pattern, text):
+            score += weight
+    return score
+
+
+# ---------------------------------------------------------------------------
+# Post-classification validation patterns
+# Each category maps to a list of regex patterns for confidence boosting.
+# If >=2 patterns match, confidence is boosted by +0.05 (capped at 0.99).
+# ---------------------------------------------------------------------------
+
+_VALIDATION_PATTERNS: dict[str, list[str]] = {
+    "ISO": [
+        r"(?i)ISO\s*\d{4,5}",
+        r"(?i)management\s*system",
+        r"(?i)certificat(?:e|ul)?",
+        r"(?i)\bASRO\b",
+        r"(?i)\bIQNet\b",
+        r"(?i)\bCERTIND\b",
+        r"(?i)SR\s*EN\s*\d+",
+    ],
+    "CE": [
+        r"(?i)\bCE\b",
+        r"(?i)marcaj\s*CE",
+        r"(?i)\bPED\b",
+        r"(?i)organism\s*notificat",
+        r"(?i)directiva",
+    ],
+    "FISA_TEHNICA": [
+        r"(?i)fi[sș][aă]\s*tehnic[aă]",
+        r"(?i)technical\s*data\s*sheet",
+        r"(?i)caracteristici\s*tehnice",
+        r"(?i)propriet[aă][tț]i",
+    ],
+    "AGREMENT": [
+        r"(?i)agrement\s*tehnic",
+        r"(?i)ETA-\d+",
+        r"(?i)\bEOTA\b",
+        r"(?i)\bINCERC\b",
+    ],
+    "AVIZ_TEHNIC": [
+        r"(?i)aviz\s*tehnic",
+        r"(?i)avizul\s*tehnic",
+    ],
+    "AVIZ_SANITAR": [
+        r"(?i)aviz\s*sanitar",
+        r"(?i)ministerul\s*s[aă]n[aă]t[aă][tț]ii",
+        r"(?i)ap[aă]\s*potabil[aă]",
+    ],
+    "DECLARATIE_CONFORMITATE": [
+        r"(?i)declara[tț]i[ea]\s*de\s*conformitate",
+        r"(?i)declaration\s*of\s*conformity",
+        r"(?i)conform\s*cu\s*cerin[tț]ele",
+    ],
+    "CERTIFICAT_CALITATE": [
+        r"(?i)certificat\s*de\s*calitate",
+        r"(?i)quality\s*certificate",
+        r"(?i)certificat\s*de\s*conformitate",
+    ],
+    "AUTORIZATIE_DISTRIBUTIE": [
+        r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]",
+        r"(?i)distribu[tț]ie\s*autorizat[aă]",
+    ],
+    "CUI": [
+        r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare",
+        r"(?i)certificat\s*constatator",
+        r"(?i)registrul\s*comer[tț]ului",
+        r"(?i)capital\s*social",
+    ],
+    "CERTIFICAT_GARANTIE": [
+        r"(?i)certificat\s*de\s*garan[tț]ie",
+        r"(?i)warranty\s*certificate",
+        r"(?i)garan[tț]ie.*ani",
+    ],
+    "DECLARATIE_PERFORMANTA": [
+        r"(?i)declara[tț]i[ea]\s*(?:de\s*)?performan[tț][aă]",
+        r"(?i)declaration\s*of\s*performance",
+        r"(?i)\bDoP\b",
+    ],
+    "AVIZ_TEHNIC_SI_AGREMENT": [
+        r"(?i)aviz\s*tehnic.*agrement",
+        r"(?i)agrement.*aviz\s*tehnic",
+    ],
+}
+
+
+def validate_classification(category: str, confidence: float, text: str) -> float:
+    """Validate classification by checking text against validation patterns.
+
+    If >=2 patterns match for the given category, boost confidence by +0.05
+    (capped at 0.99).
+
+    Args:
+        category: The classified category.
+        confidence: The current confidence score.
+        text: Extracted text from the PDF.
+
+    Returns:
+        The (possibly boosted) confidence score.
+    """
+    patterns = _VALIDATION_PATTERNS.get(category)
+    if not patterns or not text:
+        return confidence
+
+    match_count = sum(1 for p in patterns if re.search(p, text))
+
+    if match_count >= 2:
+        return round(min(confidence + 0.05, 0.99), 2)
+
+    return confidence
 
 
 def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | None:
@@ -390,23 +545,65 @@ def classify_document(
     Returns:
         Tuple of (category, confidence, method).
     """
-    # Level 1: Filename regex
-    result = classify_by_filename(filename)
-    if result is not None:
-        logger.info("Classified '%s' by filename: %s (%.2f)", filename, result[0], result[1])
-        return result
+    # Always run both Level 1 and Level 2 upfront
+    fn_result = classify_by_filename(filename)
+    txt_result = classify_by_text(text)
 
-    # Level 2: Text content rules
-    result = classify_by_text(text)
-    if result is not None:
-        logger.info("Classified '%s' by text: %s (%.2f)", filename, result[0], result[1])
-        return result
+    both_match = fn_result is not None and txt_result is not None
+    fn_only = fn_result is not None and txt_result is None
+    txt_only = fn_result is None and txt_result is not None
+
+    if both_match:
+        fn_cat = fn_result[0]
+        txt_cat = txt_result[0]
+        if fn_cat == txt_cat:
+            # Both methods agree — high confidence
+            confidence = validate_classification(fn_cat, 0.98, text)
+            logger.info(
+                "Classified '%s' by filename+text_agree: %s (%.2f)",
+                filename, fn_cat, confidence,
+            )
+            return (fn_cat, confidence, "filename+text_agree")
+        else:
+            # Disagreement — text overrides if strong and non-ALTELE
+            text_score = _get_text_score(text, txt_cat)
+            if text_score >= 5 and txt_cat != "ALTELE":
+                confidence = validate_classification(txt_cat, 0.90, text)
+                logger.info(
+                    "Classified '%s' by text_override (score=%d, fn=%s, txt=%s): %s (%.2f)",
+                    filename, text_score, fn_cat, txt_cat, txt_cat, confidence,
+                )
+                return (txt_cat, confidence, "text_override")
+            else:
+                confidence = validate_classification(fn_cat, 0.85, text)
+                logger.info(
+                    "Classified '%s' by filename_wins (score=%d, fn=%s, txt=%s): %s (%.2f)",
+                    filename, text_score, fn_cat, txt_cat, fn_cat, confidence,
+                )
+                return (fn_cat, confidence, "filename_wins")
+
+    if fn_only:
+        confidence = validate_classification(fn_result[0], fn_result[1], text)
+        logger.info(
+            "Classified '%s' by filename_regex: %s (%.2f)",
+            filename, fn_result[0], confidence,
+        )
+        return (fn_result[0], confidence, "filename_regex")
+
+    if txt_only:
+        confidence = validate_classification(txt_result[0], txt_result[1], text)
+        logger.info(
+            "Classified '%s' by text_rules: %s (%.2f)",
+            filename, txt_result[0], confidence,
+        )
+        return (txt_result[0], confidence, "text_rules")
 
     # Level 3: AI classification
     result = classify_by_ai(text, filename=filename)
     if result is not None:
-        logger.info("Classified '%s' by AI: %s (%.2f)", filename, result[0], result[1])
-        return result
+        confidence = validate_classification(result[0], result[1], text)
+        logger.info("Classified '%s' by AI: %s (%.2f)", filename, result[0], confidence)
+        return (result[0], confidence, result[2])
 
     # Fallback — AI returned None
     logger.warning("AI classification returned None for '%s', falling back to ALTELE", filename)
