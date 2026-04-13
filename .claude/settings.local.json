@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"$PATH:/c/Program Files/Docker/Docker/resources/bin:/c/ProgramData/DockerDesktop/version-bin\")",
+      "Bash(docker compose:*)",
+      "Bash(docker rm:*)",
+      "Bash(export PATH=\"/d/nvm/v22.16.0:$PATH\")",
+      "Bash(npm run:*)",
+      "Bash(where node:*)",
+      "Read(//d//**)",
+      "Read(//c/Program Files/nodejs/**)",
+      "Read(//d/nodejs/**)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Read(//c//**)",
+      "Read(//c/Users/meler/AppData/Roaming/**)",
+      "Read(//c/Users/meler/AppData/Local/Programs//**)",
+      "Read(//c/Users/meler/**)",
+      "Bash(export PATH=\"/d:$PATH\")",
+      "Bash(npx vite:*)"
+    ]
+  }
+}

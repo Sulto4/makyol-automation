@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Upload, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, FileText, Upload, AlertTriangle, Settings } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Panou de Control', icon: LayoutDashboard },
   { to: '/documents', label: 'Documente', icon: FileText },
   { to: '/upload', label: 'Încărcare', icon: Upload },
   { to: '/alerts', label: 'Alerte', icon: AlertTriangle },
+  { to: '/settings', label: 'Setări', icon: Settings },
 ];
 
 export default function Sidebar() {
