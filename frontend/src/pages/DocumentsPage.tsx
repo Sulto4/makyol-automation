@@ -1,7 +1,9 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Download, FileSpreadsheet } from 'lucide-react';
-import { useDocuments, useDocumentDetails } from '../hooks/useDocuments';
+import { Download, FileSpreadsheet, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useDocuments, useDocumentDetails, useClearDocuments } from '../hooks/useDocuments';
 import { useFilterStore } from '../store/filterStore';
+import ConfirmDialog from '../components/shared/ConfirmDialog';
 import DocumentFilters from '../components/documents/DocumentFilters';
 import DocumentsTable, {
   type SortField,
@@ -23,6 +25,9 @@ export default function DocumentsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+
+  const clearMutation = useClearDocuments();
 
   const allDocuments = useMemo(() => data?.documents ?? [], [data]);
 
@@ -155,6 +160,19 @@ export default function DocumentsPage() {
     exportToExcel(items);
   }
 
+  function handleClearDocuments() {
+    clearMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success('Toate documentele au fost șterse cu succes');
+        setShowClearDialog(false);
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Eroare la ștergerea documentelor');
+        setShowClearDialog(false);
+      },
+    });
+  }
+
   function handleExportCSV() {
     const items = sortedDocuments.map((doc) => ({
       document: doc,
@@ -204,6 +222,14 @@ export default function DocumentsPage() {
             <Download className="h-4 w-4" />
             Export CSV
           </button>
+          <button
+            onClick={() => setShowClearDialog(true)}
+            disabled={allDocuments.length === 0 || clearMutation.isPending}
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Curăță Documente
+          </button>
         </div>
       </div>
 
@@ -233,6 +259,17 @@ export default function DocumentsPage() {
           />
         </>
       )}
+
+      <ConfirmDialog
+        isOpen={showClearDialog}
+        title="Șterge toate documentele"
+        message={`Această acțiune va șterge ${allDocuments.length} document(e) și datele asociate. Acțiunea este ireversibilă.`}
+        confirmLabel="Șterge tot"
+        cancelLabel="Anulează"
+        onConfirm={handleClearDocuments}
+        onCancel={() => setShowClearDialog(false)}
+        variant="danger"
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import type {
   UploadResponse,
   ReprocessResponse,
   ReprocessAllResponse,
+  ClearAllResponse,
   StatsResponse,
 } from '../types';
 
@@ -75,5 +76,13 @@ export async function reprocessAll(
  */
 export async function getDocumentStats(): Promise<StatsResponse> {
   const { data } = await apiClient.get<StatsResponse>('/documents/stats');
+  return data;
+}
+
+/**
+ * Delete all documents and their associated data
+ */
+export async function clearAllDocuments(): Promise<ClearAllResponse> {
+  const { data } = await apiClient.delete<ClearAllResponse>('/documents');
   return data;
 }

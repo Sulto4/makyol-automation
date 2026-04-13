@@ -58,6 +58,15 @@ export function createDocumentRoutes(pool: Pool): Router {
   router.post('/reprocess-all', (req, res, next) => controller.reprocessAll(req, res, next));
 
   /**
+   * DELETE /api/documents
+   * Delete all documents and their associated data
+   *
+   * @returns 200 - All documents deleted successfully
+   * @returns 500 - Server error
+   */
+  router.delete('/', (req, res, next) => controller.clearAllDocuments(req, res, next));
+
+  /**
    * GET /api/documents/:id
    * Retrieve a document and its extraction results by ID
    *

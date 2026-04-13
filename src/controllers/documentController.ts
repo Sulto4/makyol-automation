@@ -619,6 +619,38 @@ export class DocumentController {
   }
 
   /**
+   * Delete all documents and their associated data
+   *
+   * DELETE /api/documents
+   */
+  async clearAllDocuments(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deletedCount = await this.documentModel.deleteAll();
+
+      // Audit log: Bulk document delete
+      try {
+        await this.auditService.logDocumentDelete({
+          document_id: 0,
+          filename: '*',
+          file_path: '*',
+        }, null);
+      } catch (auditError: any) {
+        logger.error('Failed to create audit log for bulk document delete:', auditError);
+      }
+
+      logger.info(`Bulk delete completed: ${deletedCount} document(s) removed`);
+
+      res.status(200).json({
+        deleted: deletedCount,
+        message: `Successfully deleted ${deletedCount} document(s)`,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a document by ID with its extraction results
    *
    * GET /api/documents/:id
