@@ -447,7 +447,7 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
     response_body = None
     try:
         response = requests.post(
-            OPENROUTER_URL, headers=headers, json=payload, timeout=60
+            OPENROUTER_URL, headers=headers, json=payload, timeout=120
         )
         response.raise_for_status()
 
@@ -491,7 +491,7 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
                 "category": category,
                 "filename": filename,
                 "text_length": text_length,
-                "timeout_seconds": 60,
+                "timeout_seconds": 120,
             }},
         )
         return None
