@@ -251,3 +251,39 @@ export interface ClearAllResponse {
   message: string;
   deleted: number;
 }
+
+/**
+ * File with its relative folder path for folder upload
+ */
+export interface FolderUploadFile {
+  file: File;
+  relativePath: string;
+}
+
+/**
+ * Per-file result from folder upload processing
+ */
+export interface FolderUploadResult {
+  document: Document;
+  extraction: ExtractionResult | null;
+  relativePath: string;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Batch response from folder upload (from POST /api/documents/folder-upload)
+ */
+export interface FolderUploadResponse {
+  results: FolderUploadResult[];
+  totalProcessed: number;
+  totalFailed: number;
+}
+
+/**
+ * Request payload for downloading an archive with folder structure
+ */
+export interface ExportArchiveRequest {
+  documents: { id: number; relativePath: string }[];
+  folderName: string;
+}

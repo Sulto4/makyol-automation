@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
 import { DocumentController } from '../controllers/documentController';
-import { upload } from '../middleware/upload';
+import { upload, folderUpload } from '../middleware/upload';
 
 /**
  * Create and configure document routes
@@ -65,6 +65,28 @@ export function createDocumentRoutes(pool: Pool): Router {
    * @returns 500 - Server error
    */
   router.delete('/', (req, res, next) => controller.clearAllDocuments(req, res, next));
+
+  /**
+   * POST /api/documents/upload-folder
+   * Upload and process multiple PDF documents from a folder structure
+   *
+   * @body files - PDF files (multipart/form-data)
+   * @returns 201 - Documents created and processed
+   * @returns 400 - Invalid request (no files, invalid file types)
+   * @returns 500 - Server error
+   */
+  router.post('/upload-folder', folderUpload, (req, res, next) => controller.uploadFolder(req, res, next));
+
+  /**
+   * POST /api/documents/export-archive
+   * Export documents as an Excel archive
+   *
+   * @body JSON body with export parameters
+   * @returns 200 - Archive exported successfully
+   * @returns 400 - Invalid request
+   * @returns 500 - Server error
+   */
+  router.post('/export-archive', (req, res, next) => controller.exportArchive(req, res, next));
 
   /**
    * GET /api/documents/:id
