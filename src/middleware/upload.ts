@@ -63,3 +63,13 @@ export const upload = multer({
     fileSize: appConfig.upload.maxFileSize,
   },
 });
+
+/**
+ * Multer upload middleware for folder/batch uploads (up to 100 PDFs)
+ *
+ * @example
+ * ```typescript
+ * router.post('/upload-folder', folderUpload, controller.handleFolderUpload);
+ * ```
+ */
+export const folderUpload = upload.array('files', 100);
