@@ -247,13 +247,14 @@ def classify_by_text(text: str) -> tuple[str, float, str] | None:
     return (best_category, confidence, "text_rules")
 
 
-def classify_by_ai(text: str) -> tuple[str, float, str] | None:
+def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | None:
     """Classify document using AI via OpenRouter API.
 
     FIX: temperature changed from 0.1 (monolith bug) to 0.0.
 
     Args:
         text: Extracted text from the PDF.
+        filename: Optional filename for logging context.
 
     Returns:
         Tuple of (category, confidence, method) or None on failure.
@@ -300,13 +301,18 @@ def classify_by_ai(text: str) -> tuple[str, float, str] | None:
         return (category, confidence, "ai")
 
     except requests.exceptions.Timeout:
-        logger.error("AI classification timed out")
+        logger.error("AI classification timed out for '%s'", filename)
         return None
     except requests.exceptions.RequestException as e:
-        logger.error("AI classification request failed: %s", e)
+        status_code = getattr(e.response, "status_code", "N/A") if hasattr(e, "response") else "N/A"
+        body = getattr(e.response, "text", "")[:500] if hasattr(e, "response") and e.response is not None else ""
+        logger.error(
+            "AI classification request failed for '%s': %s (HTTP %s) body=%s",
+            filename, e, status_code, body,
+        )
         return None
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.error("AI classification response parsing failed: %s", e)
+        logger.error("AI classification response parsing failed for '%s': %s", filename, e)
         return None
 
 
@@ -340,11 +346,11 @@ def classify_document(
         return result
 
     # Level 3: AI classification
-    result = classify_by_ai(text)
+    result = classify_by_ai(text, filename=filename)
     if result is not None:
         logger.info("Classified '%s' by AI: %s (%.2f)", filename, result[0], result[1])
         return result
 
-    # Fallback
-    logger.info("Classified '%s' as ALTELE (fallback)", filename)
+    # Fallback — AI returned None
+    logger.warning("AI classification returned None for '%s', falling back to ALTELE", filename)
     return ("ALTELE", 0.3, "fallback")
