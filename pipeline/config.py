@@ -27,7 +27,14 @@ def fetch_settings_from_api(timeout: int = 5) -> Optional[Dict[str, Any]]:
         response = requests.get(SETTINGS_API_ENDPOINT, timeout=timeout)
         response.raise_for_status()
 
-        settings_list = response.json()
+        response_data = response.json()
+
+        # Handle backend API response format: {"success": true, "data": [...], "count": N}
+        if isinstance(response_data, dict) and "data" in response_data:
+            settings_list = response_data["data"]
+        else:
+            settings_list = response_data
+
         if not isinstance(settings_list, list):
             return None
 
