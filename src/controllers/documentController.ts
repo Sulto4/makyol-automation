@@ -137,8 +137,26 @@ export class DocumentController {
       // Step 3: Process document through Python pipeline
       let extractionResult;
       try {
+        const pipelineStartTime = Date.now();
         const pipelineResponse = await this.pipelineClient.processDocument(filePath);
+        const pipelineResponseTimeMs = Date.now() - pipelineStartTime;
         logger.info(`Pipeline processed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
+
+        // Per-document processing summary
+        const extraction = pipelineResponse.extraction || {};
+        const extractionFields = ['material', 'data_expirare', 'companie', 'producator', 'distribuitor', 'adresa_producator', 'extraction_model'];
+        const extractedFields = extractionFields.filter(f => extraction[f] != null && extraction[f] !== '');
+        const nullFields = extractionFields.filter(f => extraction[f] == null || extraction[f] === '');
+        logger.info(`Document processing summary for ${document.id}`, {
+          documentId: document.id,
+          extractedFields,
+          nullFields,
+          usedVision: pipelineResponse.used_vision,
+          reviewStatus: pipelineResponse.review_status,
+          method: pipelineResponse.method,
+          confidence: pipelineResponse.confidence,
+          pipelineResponseTimeMs,
+        });
 
         if (pipelineResponse.error) {
           throw new Error(pipelineResponse.error);
@@ -155,7 +173,6 @@ export class DocumentController {
         }
 
         // Map pipeline extracted data to extraction result fields
-        const extraction = pipelineResponse.extraction || {};
         const extractionStatus = pipelineResponse.confidence >= 0.8
           ? ExtractionStatus.SUCCESS
           : pipelineResponse.confidence >= 0.5
