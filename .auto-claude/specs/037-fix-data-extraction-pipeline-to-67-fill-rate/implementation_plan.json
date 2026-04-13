@@ -363,17 +363,18 @@
     }
   },
   "qa_signoff": null,
-  "status": "in_progress",
-  "planStatus": "in_progress",
-  "xstateState": "coding",
-  "executionPhase": "coding",
-  "updated_at": "2026-04-13T20:11:26.598Z",
+  "status": "done",
+  "planStatus": "completed",
+  "xstateState": "human_review",
+  "executionPhase": "complete",
+  "updated_at": "2026-04-13T20:38:02.392Z",
   "lastEvent": {
-    "eventId": "8eb5bc5d-b572-45d4-b8ab-44a3d2c948dc",
-    "sequence": 0,
-    "type": "PLANNING_COMPLETE",
-    "timestamp": "2026-04-13T14:39:07.934942+00:00"
+    "eventId": "1009b847-4841-4d8b-914f-a9bde588a755",
+    "sequence": 2,
+    "type": "QA_PASSED",
+    "timestamp": "2026-04-13T20:15:22.724391+00:00"
   },
   "last_updated": "2026-04-13T15:16:23.862445+00:00",
-  "recoveryNote": "Task recovered from stuck state at 2026-04-13T20:10:30.860Z"
+  "recoveryNote": "Task recovered from stuck state at 2026-04-13T20:10:30.860Z",
+  "reviewReason": "completed"
 }

@@ -17,7 +17,8 @@
       "Read(//c/Users/meler/AppData/Local/Programs//**)",
       "Read(//c/Users/meler/**)",
       "Bash(export PATH=\"/d:$PATH\")",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(taskkill //F //IM node.exe)"
     ]
   }
 }
