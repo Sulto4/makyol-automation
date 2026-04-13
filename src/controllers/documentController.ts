@@ -509,6 +509,87 @@ export class DocumentController {
   }
 
   /**
+   * Get processing statistics for documents and extractions
+   *
+   * GET /api/documents/stats
+   */
+  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Classification stats from documents table
+      const classificationQuery = `
+        SELECT
+          COUNT(*)::int AS total_documents,
+          COUNT(*) FILTER (WHERE processing_status = 'COMPLETED')::int AS completed,
+          COUNT(*) FILTER (WHERE processing_status = 'FAILED')::int AS failed,
+          COUNT(*) FILTER (WHERE processing_status = 'PENDING')::int AS pending,
+          COUNT(*) FILTER (WHERE processing_status = 'PROCESSING')::int AS processing,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'filename_regex')::int AS method_filename_regex,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'text_rules')::int AS method_text_rules,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'ai')::int AS method_ai,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'filename+text_agree')::int AS method_filename_text_agree,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'text_override')::int AS method_text_override,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'vision')::int AS method_vision,
+          ROUND(AVG(confidence)::numeric, 4) AS average_confidence,
+          COUNT(*) FILTER (WHERE categorie = 'ALTELE')::int AS categorie_altele
+        FROM documents
+      `;
+
+      // Extraction stats from extraction_results table
+      const extractionQuery = `
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(companie)::int AS has_companie,
+          COUNT(material)::int AS has_material,
+          COUNT(data_expirare)::int AS has_data_expirare,
+          COUNT(producator)::int AS has_producator,
+          COUNT(distribuitor)::int AS has_distribuitor,
+          COUNT(adresa_producator)::int AS has_adresa_producator
+        FROM extraction_results
+      `;
+
+      const [classificationResult, extractionResult] = await Promise.all([
+        this.pool.query(classificationQuery),
+        this.pool.query(extractionQuery),
+      ]);
+
+      const classRow = classificationResult.rows[0];
+      const extrRow = extractionResult.rows[0];
+
+      res.status(200).json({
+        classification: {
+          total_documents: classRow.total_documents,
+          completed: classRow.completed,
+          failed: classRow.failed,
+          pending: classRow.pending,
+          processing: classRow.processing,
+          by_method: {
+            filename_regex: classRow.method_filename_regex,
+            text_rules: classRow.method_text_rules,
+            ai: classRow.method_ai,
+            'filename+text_agree': classRow.method_filename_text_agree,
+            text_override: classRow.method_text_override,
+            vision: classRow.method_vision,
+          },
+          average_confidence: classRow.average_confidence ? parseFloat(classRow.average_confidence) : null,
+          categorie_altele: classRow.categorie_altele,
+        },
+        extraction: {
+          total: extrRow.total,
+          has_companie: extrRow.has_companie,
+          has_material: extrRow.has_material,
+          has_data_expirare: extrRow.has_data_expirare,
+          has_producator: extrRow.has_producator,
+          has_distribuitor: extrRow.has_distribuitor,
+          has_adresa_producator: extrRow.has_adresa_producator,
+        },
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a document by ID with its extraction results
    *
    * GET /api/documents/:id
