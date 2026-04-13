@@ -241,3 +241,11 @@ export interface ReprocessAllResponse {
   jobId: string;
   total: number;
 }
+
+/**
+ * Clear all documents response (from DELETE /api/documents)
+ */
+export interface ClearAllResponse {
+  message: string;
+  deleted: number;
+}
