@@ -1,0 +1,51 @@
+From 44ae50c46473c3a0a656d052ec8b5c61917390b9 Mon Sep 17 00:00:00 2001
+From: Sulto4 <meleru.radu4@yahoo.com>
+Date: Mon, 13 Apr 2026 18:26:05 +0300
+Subject: [PATCH] fix: env_file optional, OPENROUTER_API_KEY default, add httpx
+ dep (qa-requested)
+
+- Make env_file .env optional (required: false) so docker compose works without .env
+- Add full OPENROUTER_API_KEY default fallback in docker-compose.yml per spec
+- Add httpx to requirements.txt (used by startup health check in api.py)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+---
+ docker-compose.yml | 5 +++--
+ requirements.txt   | 1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 2ec2fad..b664a80 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -60,7 +60,8 @@ services:
+       postgres:
+         condition: service_healthy
+     env_file:
+-      - .env
++      - path: .env
++        required: false
+     environment:
+       PORT: 8001
+       DB_HOST: postgres
+@@ -68,7 +69,7 @@ services:
+       DB_USER: postgres
+       DB_PASSWORD: postgres
+       DB_NAME: pdfextractor
+-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
++      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-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}
+       AI_MODEL: ${AI_MODEL:-google/gemini-2.0-flash-001}
+     ports:
+       - "8001:8001"
+diff --git a/requirements.txt b/requirements.txt
+index 0d6ba80..5f68e46 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -9,3 +9,4 @@ fastapi>=0.115.0
+ uvicorn[standard]>=0.27.0
+ python-multipart>=0.0.9
+ requests>=2.31.0
++httpx>=0.27.0
+-- 
+2.34.1
+

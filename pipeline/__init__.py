@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 from pathlib import Path
 
 from pipeline.text_extraction import extract_text_from_pdf
@@ -38,6 +39,8 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         Dict with keys: classification, confidence, method, extraction,
         review_status, used_vision, error (if any).
     """
+    pipeline_start = time.time()
+
     if not filename:
         filename = os.path.basename(pdf_path)
 
@@ -53,32 +56,55 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
     }
 
     # Step 1: Text extraction
+    t0 = time.time()
     try:
         text = extract_text_from_pdf(pdf_path)
     except Exception as e:
-        logger.error("Text extraction failed for %s: %s", filename, e)
+        logger.error("Text extraction failed for %s: %s", filename, e,
+                     extra={"extra_data": {"filename": filename, "error": str(e)}})
         result["error"] = f"Text extraction failed: {e}"
         return result
+    finally:
+        duration_ms = (time.time() - t0) * 1000
+        logger.info("Text extraction complete", extra={"extra_data": {
+            "step": "text_extraction", "filename": filename,
+            "duration_ms": round(duration_ms, 1),
+            "text_length": len(text) if "text" in dir() else 0,
+            "engine_used": "multi-engine",
+        }})
 
     # Step 2: Vision fallback if text is too short
     vision_extraction = None
     if len(text.strip()) < _MIN_TEXT_LENGTH:
-        logger.info("Text too short (%d chars) for %s, trying vision fallback",
-                     len(text.strip()), filename)
+        logger.info("Text too short, trying vision fallback", extra={"extra_data": {
+            "filename": filename, "text_length": len(text.strip()),
+        }})
         result["used_vision"] = True
 
     # Step 3: Classification
+    t0 = time.time()
     try:
         category, confidence, method = classify_document(filename, text)
         result["classification"] = category
         result["confidence"] = confidence
         result["method"] = method
     except Exception as e:
-        logger.error("Classification failed for %s: %s", filename, e)
+        logger.error("Classification failed for %s: %s", filename, e,
+                     extra={"extra_data": {"filename": filename, "error": str(e)}})
         result["error"] = f"Classification failed: {e}"
         return result
+    finally:
+        duration_ms = (time.time() - t0) * 1000
+        logger.info("Classification complete", extra={"extra_data": {
+            "step": "classification", "filename": filename,
+            "duration_ms": round(duration_ms, 1),
+            "category": result.get("classification"),
+            "confidence": result.get("confidence"),
+            "method": result.get("method"),
+        }})
 
     # Step 4: Extraction (vision fallback or text-based)
+    t0 = time.time()
     try:
         if result["used_vision"]:
             vision_extraction = extract_with_vision(pdf_path, category)
@@ -88,9 +114,20 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         else:
             extraction = extract_document_data(text, category, filename=filename)
     except Exception as e:
-        logger.error("Extraction failed for %s: %s", filename, e)
+        logger.error("Extraction failed for %s: %s", filename, e,
+                     extra={"extra_data": {"filename": filename, "error": str(e)}})
         result["error"] = f"Extraction failed: {e}"
         return result
+    finally:
+        duration_ms = (time.time() - t0) * 1000
+        ext = extraction if "extraction" in dir() else {}
+        non_null = len([v for v in ext.values() if v is not None]) if isinstance(ext, dict) else 0
+        logger.info("Extraction complete", extra={"extra_data": {
+            "step": "extraction", "filename": filename,
+            "duration_ms": round(duration_ms, 1),
+            "non_null_fields": non_null,
+            "total_fields": len(ext) if isinstance(ext, dict) else 0,
+        }})
 
     # Step 4b: Retry extraction if all values are null
     _check_fields = ("companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator")
@@ -112,6 +149,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         result["review_status"] = "NEEDS_CHECK"
 
     # Step 5: Normalize company names and addresses
+    t0 = time.time()
     try:
         for field in ("companie", "producator", "distribuitor"):
             raw = extraction.get(field)
@@ -125,17 +163,49 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                 normalized, _ = normalize_address(raw)
                 extraction[field] = normalized
     except Exception as e:
-        logger.warning("Normalization error for %s: %s", filename, e)
+        logger.warning("Normalization error for %s: %s", filename, e,
+                       extra={"extra_data": {"filename": filename, "error": str(e)}})
+    finally:
+        duration_ms = (time.time() - t0) * 1000
+        logger.info("Normalization complete", extra={"extra_data": {
+            "step": "normalization", "filename": filename,
+            "duration_ms": round(duration_ms, 1),
+        }})
 
     # Step 6: Validation
+    t0 = time.time()
     try:
         extraction, review_status = validate_extraction(extraction, category)
     except Exception as e:
-        logger.warning("Validation error for %s: %s", filename, e)
+        logger.warning("Validation error for %s: %s", filename, e,
+                       extra={"extra_data": {"filename": filename, "error": str(e)}})
         review_status = "REVIEW"
+    finally:
+        duration_ms = (time.time() - t0) * 1000
+        logger.info("Validation complete", extra={"extra_data": {
+            "step": "validation", "filename": filename,
+            "duration_ms": round(duration_ms, 1),
+        }})
 
     result["extraction"] = extraction
     result["review_status"] = review_status
     result["error"] = None
+
+    # Pipeline-complete summary
+    total_duration_ms = round((time.time() - pipeline_start) * 1000, 1)
+    result["total_duration_ms"] = total_duration_ms
+    field_count = len(extraction) if isinstance(extraction, dict) else 0
+    non_null_count = len([v for v in extraction.values() if v is not None]) if isinstance(extraction, dict) else 0
+    logger.info("Pipeline complete", extra={"extra_data": {
+        "step": "pipeline_complete", "filename": filename,
+        "total_duration_ms": total_duration_ms,
+        "review_status": result["review_status"],
+        "used_vision": result["used_vision"],
+        "has_error": result["error"] is not None,
+        "field_count": field_count,
+        "non_null_fields": non_null_count,
+        "category": result["classification"],
+        "method": result["method"],
+    }})
 
     return result

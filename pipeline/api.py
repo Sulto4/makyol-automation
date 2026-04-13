@@ -9,10 +9,49 @@ import httpx
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 
+from pipeline.logging_config import setup_logging
+
+setup_logging()
+
 from pipeline import process_document
 from pipeline.config import OPENROUTER_API_KEY, OPENROUTER_URL, AI_MODEL
 
 logger = logging.getLogger(__name__)
+
+# In-memory stats accumulator (resets on service restart)
+_stats: dict = {
+    "total_processed": 0,
+    "successful": 0,
+    "failed": 0,
+    "total_duration_ms": 0,
+    "classification_methods": {},
+    "categories": {},
+    "ai_calls": 0,
+    "ai_failures": 0,
+}
+
+
+def _track_result(result: dict) -> None:
+    """Update stats accumulator after processing a document."""
+    _stats["total_processed"] += 1
+    if result.get("error") or result.get("review_status") == "FAILED":
+        _stats["failed"] += 1
+    else:
+        _stats["successful"] += 1
+    # Track duration
+    _stats["total_duration_ms"] += result.get("total_duration_ms", 0)
+    # Track classification method
+    method = result.get("method", "unknown")
+    _stats["classification_methods"][method] = _stats["classification_methods"].get(method, 0) + 1
+    # Track category
+    category = result.get("classification") or result.get("category") or "unknown"
+    _stats["categories"][category] = _stats["categories"].get(category, 0) + 1
+    # Track AI calls — if method is "ai", that counts as an AI call
+    if method == "ai":
+        _stats["ai_calls"] += 1
+        if result.get("error") or result.get("review_status") == "FAILED":
+            _stats["ai_failures"] += 1
+
 
 app = FastAPI(title="Makyol Pipeline API", version="1.0.0")
 
@@ -77,6 +116,16 @@ async def health_check():
     return HealthResponse(status="ok", service="python-pipeline")
 
 
+@app.get("/api/pipeline/stats")
+async def get_stats():
+    """Return current in-memory processing statistics."""
+    result = dict(_stats)
+    total = result["total_processed"]
+    total_dur = result.pop("total_duration_ms")
+    result["avg_duration_ms"] = round(total_dur / total, 1) if total > 0 else 0
+    return result
+
+
 @app.post("/api/pipeline/process")
 async def process_single(file: UploadFile = File(...)):
     """Upload and process a single PDF document.
@@ -97,10 +146,12 @@ async def process_single(file: UploadFile = File(...)):
             tmp_path = tmp.name
 
         result = process_document(tmp_path, filename=file.filename)
+        _track_result(result)
         return result
 
     except Exception as e:
         logger.error("Processing failed for %s: %s", file.filename, e)
+        _track_result({"error": str(e), "review_status": "FAILED"})
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
@@ -127,14 +178,17 @@ async def process_batch(request: BatchRequest):
     for pdf_path in pdf_files:
         try:
             result = process_document(str(pdf_path), filename=pdf_path.name)
+            _track_result(result)
             results.append(result)
         except Exception as e:
             logger.error("Batch processing failed for %s: %s", pdf_path.name, e)
-            results.append({
+            error_result = {
                 "filename": pdf_path.name,
                 "error": str(e),
                 "review_status": "FAILED",
-            })
+            }
+            _track_result(error_result)
+            results.append(error_result)
 
     return {"total": len(pdf_files), "results": results}
 

@@ -410,20 +410,8 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
     if not text or not text.strip():
         return None
 
-    # Truncate text to avoid token limits (smart_truncate preserves header+middle+footer)
-    text_length = len(text)
+    # Smart truncate to preserve header/middle/footer
     truncated_text = smart_truncate(text)
-    was_truncated = text_length > 6000
-
-    logger.info(
-        "AI extraction request starting",
-        extra={"extra_data": {
-            "category": category,
-            "filename": filename,
-            "text_length": text_length,
-            "truncated_to": len(truncated_text) if was_truncated else None,
-        }},
-    )
 
     prompt = _EXTRACTION_SYSTEM_PROMPT.format(
         category=category,
@@ -444,23 +432,11 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
         "max_tokens": AI_MAX_TOKENS,
     }
 
-    response_body = None
     try:
         response = requests.post(
             OPENROUTER_URL, headers=headers, json=payload, timeout=60
         )
         response.raise_for_status()
-
-        response_body = response.text
-        logger.info(
-            "AI extraction response received",
-            extra={"extra_data": {
-                "category": category,
-                "status_code": response.status_code,
-                "response_length": len(response_body),
-                "model": AI_MODEL,
-            }},
-        )
 
         result = response.json()
         content = result["choices"][0]["message"]["content"]
@@ -470,56 +446,21 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
         content = re.sub(r"\s*```$", "", content.strip())
 
         parsed = json.loads(content)
-
-        non_null_fields = [k for k, v in parsed.items() if v is not None]
-        logger.info(
-            "AI extraction parsed successfully",
-            extra={"extra_data": {
-                "category": category,
-                "field_names": list(parsed.keys()),
-                "non_null_count": len(non_null_fields),
-                "non_null_fields": non_null_fields,
-            }},
-        )
-
         return parsed
 
     except requests.exceptions.Timeout:
-        logger.error(
-            "AI extraction timed out",
-            extra={"extra_data": {
-                "category": category,
-                "filename": filename,
-                "text_length": text_length,
-                "timeout_seconds": 60,
-            }},
-        )
+        logger.error("AI extraction timed out for category %s [file=%s]", category, filename)
         return None
     except requests.exceptions.RequestException as e:
-        status_code = getattr(e.response, "status_code", None) if hasattr(e, "response") else None
-        response_body = getattr(e.response, "text", None) if hasattr(e, "response") else None
+        status_code = getattr(e.response, "status_code", "N/A")
+        response_body = getattr(e.response, "text", "")[:500]
         logger.error(
-            "AI extraction request failed",
-            extra={"extra_data": {
-                "category": category,
-                "filename": filename,
-                "error": str(e),
-                "status_code": status_code,
-                "response_body": response_body[:500] if response_body else None,
-            }},
+            "AI extraction request failed: %s | status=%s | file=%s | response=%s",
+            e, status_code, filename, response_body,
         )
         return None
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.error(
-            "AI extraction response parsing failed",
-            extra={"extra_data": {
-                "category": category,
-                "filename": filename,
-                "error": str(e),
-                "error_type": type(e).__name__,
-                "response_body": response_body[:500] if response_body else None,
-            }},
-        )
+        logger.error("AI extraction response parsing failed: %s [file=%s]", e, filename)
         return None
 
 
@@ -540,7 +481,7 @@ def extract_document_data(text: str, category: str, filename: str = "") -> dict:
     raw_result = extract_data_with_ai(text, category, filename=filename)
 
     if raw_result is None:
-        logger.warning("AI extraction returned None for category %s, using regex fallback", category)
+        logger.warning("AI extraction returned None for category %s [file=%s], using regex fallback", category, filename)
         raw_result = regex_extract(text, category)
         extraction_model = "regex_fallback"
     else:
@@ -552,7 +493,7 @@ def extract_document_data(text: str, category: str, filename: str = "") -> dict:
     regex_result = regex_extract(text, category)
     for field, regex_value in regex_result.items():
         if normalized.get(field) is None and regex_value is not None:
-            logger.info("Filling field %s from regex for category %s", field, category)
+            logger.info("Filling field %s from regex for category %s [file=%s]", field, category, filename)
             normalized[field] = regex_value
 
     # Set extraction_model AFTER normalization so it doesn't get wiped
