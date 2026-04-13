@@ -99,6 +99,14 @@ FILENAME_RULES = [
     (r"(?i)\bDP\b.*performan", "DECLARATIE_PERFORMANTA"),
     # Combined aviz + agrement
     (r"(?i)aviz.*agrement", "AVIZ_TEHNIC_SI_AGREMENT"),
+    # CUI - ONRC / registrul comertului
+    (r"(?i)\bONRC\b", "CUI"),
+    (r"(?i)registrul\s*comer[tț]ului", "CUI"),
+    (r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare\s*fiscal[aă]", "CUI"),
+    # Certificat calitate - lab reports
+    (r"(?i)buletin\s*(?:de\s*)?analiz[aă]", "CERTIFICAT_CALITATE"),
+    (r"(?i)raport\s*(?:de\s*)?[iî]ncerc(?:are|[aă]ri)", "CERTIFICAT_CALITATE"),
+    (r"(?i)test\s*report", "CERTIFICAT_CALITATE"),
     # Generic approval patterns (fallback to ALTELE)
     (r"(?i)(?:aprobare.*teav|aprobare.*PEID|aprobare.*produc)", "ALTELE"),
     (r"(?i)aprobare\s*de\s*tip", "ALTELE"),
