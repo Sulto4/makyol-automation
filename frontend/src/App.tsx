@@ -5,6 +5,7 @@ import DocumentsPage from './pages/DocumentsPage';
 import DocumentDetailPage from './pages/DocumentDetailPage';
 import UploadPage from './pages/UploadPage';
 import AlertsPage from './pages/AlertsPage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/documents/:id" element={<DocumentDetailPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
