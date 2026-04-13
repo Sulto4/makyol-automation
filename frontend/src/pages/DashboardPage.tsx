@@ -1,15 +1,17 @@
 import { useMemo } from 'react';
-import { useDocuments } from '../hooks/useDocuments';
+import { useDocuments, useDocumentStats } from '../hooks/useDocuments';
 import SummaryCards from '../components/dashboard/SummaryCards';
 import CategoryChart from '../components/dashboard/CategoryChart';
 import StatusChart from '../components/dashboard/StatusChart';
 import ClassificationChart from '../components/dashboard/ClassificationChart';
+import ExtractionFillChart from '../components/dashboard/ExtractionFillChart';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import EmptyState from '../components/shared/EmptyState';
 
 export default function DashboardPage() {
   const { data, isLoading, isError, error } = useDocuments();
+  const { data: statsData } = useDocumentStats();
 
   const documents = useMemo(() => data?.documents ?? [], [data]);
 
@@ -74,6 +76,15 @@ export default function DashboardPage() {
         </h3>
         <ClassificationChart documents={documents} />
       </div>
+
+      {statsData?.extraction && statsData.extraction.total > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+            Rata de Completare Extracție
+          </h3>
+          <ExtractionFillChart stats={statsData.extraction} />
+        </div>
+      )}
 
       <RecentActivity documents={documents} />
     </div>
