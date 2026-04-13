@@ -1,12 +1,15 @@
 """Fuzzy company name matching and normalization against knowledge_base.json."""
 
 import json
+import logging
 import re
 from typing import Dict, Optional, Tuple
 
 from rapidfuzz import fuzz
 
 from pipeline.config import KNOWLEDGE_BASE_PATH
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Load knowledge base at import time
@@ -99,6 +102,12 @@ def normalize_company_name(raw_name: str) -> Tuple[str, bool]:
             best_canonical = canonical
 
     if best_score >= MATCH_THRESHOLD and best_canonical is not None:
+        logger.debug(
+            "Fuzzy company match: raw='%s' → canonical='%s'",
+            raw_name[:60],
+            best_canonical,
+            extra={"extra_data": {"raw": raw_name[:60], "canonical": best_canonical, "match_score": best_score}},
+        )
         return (best_canonical, True)
 
     # No match — return cleaned version
@@ -132,6 +141,12 @@ def normalize_address(raw_address: str) -> Tuple[str, bool]:
             best_addr = canonical_addr
 
     if best_score >= MATCH_THRESHOLD and best_addr is not None:
+        logger.debug(
+            "Fuzzy address match: raw='%s' → canonical='%s'",
+            raw_address[:60],
+            best_addr,
+            extra={"extra_data": {"raw": raw_address[:60], "canonical": best_addr, "match_score": best_score}},
+        )
         return (best_addr, True)
 
     return (cleaned, False)
