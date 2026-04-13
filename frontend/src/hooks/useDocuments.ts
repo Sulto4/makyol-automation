@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { listDocuments, getDocument } from '../api/documents';
+import { listDocuments, getDocument, getDocumentStats } from '../api/documents';
 
 /**
  * Fetch all documents for client-side pagination / filtering
@@ -34,5 +34,15 @@ export function useDocumentDetails(ids: number[]) {
       enabled: id > 0,
       staleTime: 5 * 60 * 1000,
     })),
+  });
+}
+
+/**
+ * Fetch aggregated document and extraction statistics
+ */
+export function useDocumentStats() {
+  return useQuery({
+    queryKey: ['document-stats'],
+    queryFn: getDocumentStats,
   });
 }

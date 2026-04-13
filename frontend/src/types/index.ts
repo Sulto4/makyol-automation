@@ -141,3 +141,54 @@ export interface ApiErrorResponse {
   code?: string;
   details?: string;
 }
+
+/**
+ * Classification statistics from GET /api/documents/stats
+ */
+export interface DocumentStats {
+  total: number;
+  byStatus: Record<string, number>;
+  byMethod: Record<string, number>;
+  averageConfidence: number;
+  unknownCategory: number;
+}
+
+/**
+ * Extraction field fill-rate statistics from GET /api/documents/stats
+ */
+export interface ExtractionStats {
+  total: number;
+  fieldCounts: {
+    companie: number;
+    material: number;
+    data_expirare: number;
+    producator: number;
+    distribuitor: number;
+    adresa_producator: number;
+  };
+}
+
+/**
+ * Combined stats response (from GET /api/documents/stats)
+ */
+export interface StatsResponse {
+  classification: DocumentStats;
+  extraction: ExtractionStats;
+}
+
+/**
+ * Reprocess single document response (from POST /api/documents/:id/reprocess)
+ */
+export interface ReprocessResponse {
+  document: Document;
+  extraction: ExtractionResult;
+}
+
+/**
+ * Batch reprocess response (from POST /api/documents/reprocess-all)
+ */
+export interface ReprocessAllResponse {
+  message: string;
+  jobId: string;
+  total: number;
+}
