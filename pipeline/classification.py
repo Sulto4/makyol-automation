@@ -172,6 +172,23 @@ TEXT_MARKERS = [
     # Combined aviz + agrement
     (r"(?i)aviz\s*tehnic.*agrement", "AVIZ_TEHNIC_SI_AGREMENT", 3),
     (r"(?i)agrement.*aviz\s*tehnic", "AVIZ_TEHNIC_SI_AGREMENT", 3),
+    # ISO - additional markers
+    (r"(?i)\bASRO\b", "ISO", 2),
+    (r"(?i)SR\s*EN\s*\d+", "ISO", 2),
+    (r"(?i)\bIQNet\b", "ISO", 2),
+    (r"(?i)\bCERTIND\b", "ISO", 2),
+    # CE - additional markers
+    (r"(?i)organism\s*notificat", "CE", 2),
+    (r"(?i)regulament\s*UE", "CE", 2),
+    # Agrement - additional markers
+    (r"(?i)ETA-\d+", "AGREMENT", 2),
+    (r"(?i)\bEOTA\b", "AGREMENT", 2),
+    (r"(?i)\bINCERC\b", "AGREMENT", 2),
+    (r"(?i)ministerul\s*dezvolt[aă]rii", "AGREMENT", 2),
+    # CUI - additional markers
+    (r"(?i)punct\s*de\s*lucru", "CUI", 1),
+    (r"(?i)capital\s*social", "CUI", 1),
+    (r"(?i)\badministrator\b", "CUI", 1),
 ]
 
 # AI classification system prompt
