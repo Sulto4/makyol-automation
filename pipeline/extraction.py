@@ -190,6 +190,17 @@ _NULL_VALUES = {
 }
 
 
+def smart_truncate(text: str, max_chars: int = 6000) -> str:
+    """Truncate long text while preserving header, middle, and footer sections."""
+    if len(text) <= max_chars:
+        return text
+    header = text[:2500]
+    mid_start = len(text) // 2 - 1000
+    middle = text[mid_start:mid_start + 2000]
+    footer = text[-1500:]
+    return header + "\n\n[...]\n\n" + middle + "\n\n[...]\n\n" + footer
+
+
 def _fix_ocr_errors(text: str) -> str:
     """Fix common OCR errors in extracted text."""
     for wrong, correct in _OCR_FIXES:
@@ -399,7 +410,7 @@ def extract_data_with_ai(text: str, category: str) -> dict | None:
         return None
 
     # Truncate text to avoid token limits
-    truncated_text = text[:6000]
+    truncated_text = smart_truncate(text)
 
     prompt = _EXTRACTION_SYSTEM_PROMPT.format(
         category=category,
@@ -448,15 +459,37 @@ def extract_data_with_ai(text: str, category: str) -> dict | None:
 
 
 def extract_document_data(text: str, category: str) -> dict:
-    """Full extraction pipeline: AI extraction + normalization.
+    """Full extraction pipeline: AI extraction + regex merge + normalization.
 
     Args:
         text: Extracted text from the PDF.
         category: Document category from classification.
 
     Returns:
-        Normalized extraction result dict with all expected fields.
+        Normalized extraction result dict with all expected fields,
+        including extraction_model tracking.
     """
+    from pipeline.regex_extraction import regex_extract
+
     raw_result = extract_data_with_ai(text, category)
+
+    if raw_result is None:
+        logger.warning("AI extraction returned None for category %s, using regex fallback", category)
+        raw_result = regex_extract(text, category)
+        extraction_model = "regex_fallback"
+    else:
+        extraction_model = AI_MODEL
+
     normalized = normalize_extraction_result(raw_result, category, text)
+
+    # Merge regex results into normalized: fill None fields with regex values
+    regex_result = regex_extract(text, category)
+    for field, regex_value in regex_result.items():
+        if normalized.get(field) is None and regex_value is not None:
+            logger.info("Filling field %s from regex for category %s", field, category)
+            normalized[field] = regex_value
+
+    # Set extraction_model AFTER normalization so it doesn't get wiped
+    normalized["extraction_model"] = extraction_model
+
     return normalized
