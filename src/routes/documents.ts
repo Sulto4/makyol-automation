@@ -40,6 +40,24 @@ export function createDocumentRoutes(pool: Pool): Router {
   router.get('/', (req, res, next) => controller.listDocuments(req, res, next));
 
   /**
+   * GET /api/documents/stats
+   * Get document processing statistics
+   *
+   * @returns 200 - Processing statistics (counts by status, success rate, etc.)
+   * @returns 500 - Server error
+   */
+  router.get('/stats', (req, res, next) => controller.getStats(req, res, next));
+
+  /**
+   * POST /api/documents/reprocess-all
+   * Reprocess all failed documents in batch
+   *
+   * @returns 200 - Batch reprocessing results
+   * @returns 500 - Server error
+   */
+  router.post('/reprocess-all', (req, res, next) => controller.reprocessAll(req, res, next));
+
+  /**
    * GET /api/documents/:id
    * Retrieve a document and its extraction results by ID
    *
@@ -50,6 +68,19 @@ export function createDocumentRoutes(pool: Pool): Router {
    * @returns 500 - Server error
    */
   router.get('/:id', (req, res, next) => controller.getDocumentById(req, res, next));
+
+  /**
+   * POST /api/documents/:id/reprocess
+   * Reprocess a single document by ID
+   *
+   * @param id - Document ID
+   * @returns 200 - Document reprocessed successfully
+   * @returns 400 - Invalid document ID
+   * @returns 404 - Document not found
+   * @returns 422 - Reprocessing failed
+   * @returns 500 - Server error
+   */
+  router.post('/:id/reprocess', (req, res, next) => controller.reprocessDocument(req, res, next));
 
   return router;
 }

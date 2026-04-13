@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { DocumentModel, ProcessingStatus, CreateDocumentInput } from '../models/Document';
+import { DocumentModel, Document, ProcessingStatus, CreateDocumentInput } from '../models/Document';
 import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } from '../models/ExtractionResult';
 // Legacy services kept for potential fallback - pipeline now handles extraction
 // import { PDFExtractorService } from '../services/pdfExtractor';
@@ -16,16 +16,80 @@ import { logger } from '../utils/logger';
  * Handles HTTP requests for document upload and processing
  */
 export class DocumentController {
+  protected pool: Pool;
   private documentModel: DocumentModel;
   private extractionResultModel: ExtractionResultModel;
   private pipelineClient: PipelineClientService;
   private auditService: AuditService;
 
   constructor(pool: Pool) {
+    this.pool = pool;
     this.documentModel = new DocumentModel(pool);
     this.extractionResultModel = new ExtractionResultModel(pool);
     this.pipelineClient = new PipelineClientService();
     this.auditService = new AuditService(pool);
+  }
+
+  /**
+   * Reprocess a single document through the pipeline
+   * Updates classification, upserts extraction result, and sets status to COMPLETED
+   */
+  protected async reprocessSingleDocument(document: Document): Promise<void> {
+    const pipelineResponse = await this.pipelineClient.processDocument(document.file_path);
+    logger.info(`Pipeline reprocessed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
+
+    if (pipelineResponse.error) {
+      throw new Error(pipelineResponse.error);
+    }
+
+    // Persist classification to documents table
+    if (pipelineResponse.classification) {
+      await this.documentModel.updateClassification(document.id, {
+        categorie: pipelineResponse.classification,
+        confidence: pipelineResponse.confidence ?? 0,
+        metoda_clasificare: pipelineResponse.method ?? 'ai',
+      });
+      logger.info(`Classification saved for document ${document.id}: ${pipelineResponse.classification}`);
+    }
+
+    // Map pipeline extracted data to extraction result fields
+    const extraction = pipelineResponse.extraction || {};
+    const extractionStatus = pipelineResponse.confidence >= 0.8
+      ? ExtractionStatus.SUCCESS
+      : pipelineResponse.confidence >= 0.5
+        ? ExtractionStatus.PARTIAL
+        : ExtractionStatus.FAILED;
+
+    const extractionInput: CreateExtractionResultInput = {
+      document_id: document.id,
+      extracted_text: null,
+      metadata: {},
+      confidence_score: pipelineResponse.confidence ?? null,
+      extraction_status: extractionStatus,
+      material: extraction.material ?? null,
+      data_expirare: extraction.data_expirare ?? null,
+      companie: extraction.companie ?? null,
+      producator: extraction.producator ?? null,
+      distribuitor: extraction.distribuitor ?? null,
+      adresa_producator: extraction.adresa_producator ?? null,
+      extraction_model: extraction.extraction_model ?? null,
+    };
+
+    // Upsert extraction result: update if exists, create if not
+    const existing = await this.extractionResultModel.findByDocumentId(document.id);
+    if (existing) {
+      await this.extractionResultModel.updateByDocumentId(document.id, extractionInput);
+    } else {
+      await this.extractionResultModel.create(extractionInput);
+    }
+    logger.info(`Extraction result upserted for document ${document.id} with status: ${extractionStatus}`);
+
+    // Update document status to COMPLETED and clear error
+    await this.documentModel.updateStatus(document.id, {
+      processing_status: ProcessingStatus.COMPLETED,
+      processing_completed_at: new Date(),
+      error_message: null,
+    });
   }
 
   /**
@@ -299,6 +363,250 @@ export class DocumentController {
         count: documents.length,
         limit: limit || null,
         offset: offset || 0,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Reprocess a document through the pipeline
+   *
+   * POST /api/documents/:id/reprocess
+   */
+  async reprocessDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const documentId = parseInt(req.params.id, 10);
+
+      if (isNaN(documentId) || documentId <= 0) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'Invalid document ID. Must be a positive integer.',
+            code: 'INVALID_DOCUMENT_ID',
+          }
+        });
+        return;
+      }
+
+      const document = await this.documentModel.findById(documentId);
+
+      if (!document) {
+        res.status(404).json({
+          error: {
+            name: 'NotFoundError',
+            message: 'Document not found',
+            code: 'DOCUMENT_NOT_FOUND',
+          }
+        });
+        return;
+      }
+
+      try {
+        await this.reprocessSingleDocument(document);
+      } catch (error: any) {
+        if (error instanceof PipelineError && error.code === 'ECONNREFUSED') {
+          res.status(503).json({
+            error: {
+              name: 'ServiceUnavailableError',
+              message: 'Pipeline service is not available',
+              code: 'PIPELINE_UNAVAILABLE',
+            }
+          });
+          return;
+        }
+
+        // File-level errors (e.g., file not found, unreadable)
+        if (error instanceof PipelineError || error.code === 'ENOENT') {
+          res.status(422).json({
+            error: {
+              name: 'UnprocessableEntityError',
+              message: `Failed to reprocess document: ${error.message}`,
+              code: 'REPROCESS_FAILED',
+            }
+          });
+          return;
+        }
+
+        throw error;
+      }
+
+      // Get updated document and extraction
+      const updatedDocument = await this.documentModel.findById(documentId);
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+
+      logger.info(`Document ${documentId} reprocessed successfully`);
+
+      res.status(200).json({
+        document: updatedDocument,
+        extraction,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Reprocess all documents matching optional filters
+   *
+   * POST /api/documents/reprocess-all
+   */
+  async reprocessAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { status, limit } = req.body || {};
+
+      // Validate status against ProcessingStatus enum if provided
+      if (status && !Object.values(ProcessingStatus).includes(status)) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: `Invalid status. Must be one of: ${Object.values(ProcessingStatus).join(', ')}`,
+            code: 'INVALID_STATUS',
+          }
+        });
+        return;
+      }
+
+      // Query matching documents
+      const documents = await this.documentModel.findAll(
+        limit ? parseInt(limit as string, 10) : undefined,
+        undefined,
+        status as ProcessingStatus | undefined
+      );
+
+      const jobId = `reprocess-${Date.now()}`;
+
+      // Respond immediately
+      res.status(202).json({
+        message: `Reprocessing ${documents.length} document(s) in the background`,
+        jobId,
+        total: documents.length,
+      });
+
+      // Fire-and-forget: background processing in its own try-catch
+      void (async () => {
+        try {
+          const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+          let processed = 0;
+          let failed = 0;
+
+          for (const document of documents) {
+            try {
+              await this.reprocessSingleDocument(document);
+              processed++;
+              logger.info(`[${jobId}] Reprocessed document ${document.id} (${processed}/${documents.length})`);
+            } catch (error: any) {
+              failed++;
+              logger.error(`[${jobId}] Failed to reprocess document ${document.id}: ${error.message}`);
+
+              // Update document status to FAILED
+              try {
+                await this.documentModel.updateStatus(document.id, {
+                  processing_status: ProcessingStatus.FAILED,
+                  error_message: error.message,
+                  processing_completed_at: new Date(),
+                });
+              } catch (updateError: any) {
+                logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${updateError.message}`);
+              }
+            }
+
+            // 1s delay between documents
+            if (document !== documents[documents.length - 1]) {
+              await delay(1000);
+            }
+          }
+
+          logger.info(`[${jobId}] Batch reprocessing complete: ${processed} succeeded, ${failed} failed out of ${documents.length}`);
+        } catch (bgError: any) {
+          logger.error(`[${jobId}] Background reprocessing crashed: ${bgError.message}`);
+        }
+      })();
+
+      return;
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get processing statistics for documents and extractions
+   *
+   * GET /api/documents/stats
+   */
+  async getStats(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Classification stats from documents table
+      const classificationQuery = `
+        SELECT
+          COUNT(*)::int AS total_documents,
+          COUNT(*) FILTER (WHERE processing_status = 'COMPLETED')::int AS completed,
+          COUNT(*) FILTER (WHERE processing_status = 'FAILED')::int AS failed,
+          COUNT(*) FILTER (WHERE processing_status = 'PENDING')::int AS pending,
+          COUNT(*) FILTER (WHERE processing_status = 'PROCESSING')::int AS processing,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'filename_regex')::int AS method_filename_regex,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'text_rules')::int AS method_text_rules,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'ai')::int AS method_ai,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'filename+text_agree')::int AS method_filename_text_agree,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'text_override')::int AS method_text_override,
+          COUNT(*) FILTER (WHERE metoda_clasificare = 'vision')::int AS method_vision,
+          ROUND(AVG(confidence)::numeric, 4) AS average_confidence,
+          COUNT(*) FILTER (WHERE categorie = 'ALTELE')::int AS categorie_altele
+        FROM documents
+      `;
+
+      // Extraction stats from extraction_results table
+      const extractionQuery = `
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(companie)::int AS has_companie,
+          COUNT(material)::int AS has_material,
+          COUNT(data_expirare)::int AS has_data_expirare,
+          COUNT(producator)::int AS has_producator,
+          COUNT(distribuitor)::int AS has_distribuitor,
+          COUNT(adresa_producator)::int AS has_adresa_producator
+        FROM extraction_results
+      `;
+
+      const [classificationResult, extractionResult] = await Promise.all([
+        this.pool.query(classificationQuery),
+        this.pool.query(extractionQuery),
+      ]);
+
+      const classRow = classificationResult.rows[0];
+      const extrRow = extractionResult.rows[0];
+
+      res.status(200).json({
+        classification: {
+          total_documents: classRow.total_documents,
+          completed: classRow.completed,
+          failed: classRow.failed,
+          pending: classRow.pending,
+          processing: classRow.processing,
+          by_method: {
+            filename_regex: classRow.method_filename_regex,
+            text_rules: classRow.method_text_rules,
+            ai: classRow.method_ai,
+            'filename+text_agree': classRow.method_filename_text_agree,
+            text_override: classRow.method_text_override,
+            vision: classRow.method_vision,
+          },
+          average_confidence: classRow.average_confidence ? parseFloat(classRow.average_confidence) : null,
+          categorie_altele: classRow.categorie_altele,
+        },
+        extraction: {
+          total: extrRow.total,
+          has_companie: extrRow.has_companie,
+          has_material: extrRow.has_material,
+          has_data_expirare: extrRow.has_data_expirare,
+          has_producator: extrRow.has_producator,
+          has_distribuitor: extrRow.has_distribuitor,
+          has_adresa_producator: extrRow.has_adresa_producator,
+        },
       });
 
     } catch (error) {

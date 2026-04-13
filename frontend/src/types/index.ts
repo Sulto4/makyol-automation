@@ -189,3 +189,55 @@ export interface UpdateSettingResponse {
 export interface UpdateSettingInput {
   value: SettingValue;
 }
+
+/**
+ * Classification statistics from GET /api/documents/stats
+ */
+export interface DocumentStats {
+  total_documents: number;
+  completed: number;
+  failed: number;
+  pending: number;
+  processing: number;
+  by_method: Record<string, number>;
+  average_confidence: number | null;
+  categorie_altele: number;
+}
+
+/**
+ * Extraction field fill-rate statistics from GET /api/documents/stats
+ */
+export interface ExtractionStats {
+  total: number;
+  has_companie: number;
+  has_material: number;
+  has_data_expirare: number;
+  has_producator: number;
+  has_distribuitor: number;
+  has_adresa_producator: number;
+}
+
+/**
+ * Combined stats response (from GET /api/documents/stats)
+ */
+export interface StatsResponse {
+  classification: DocumentStats;
+  extraction: ExtractionStats;
+}
+
+/**
+ * Reprocess single document response (from POST /api/documents/:id/reprocess)
+ */
+export interface ReprocessResponse {
+  document: Document;
+  extraction: ExtractionResult;
+}
+
+/**
+ * Batch reprocess response (from POST /api/documents/reprocess-all)
+ */
+export interface ReprocessAllResponse {
+  message: string;
+  jobId: string;
+  total: number;
+}

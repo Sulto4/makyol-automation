@@ -3,6 +3,9 @@ import type {
   DocumentsListResponse,
   DocumentWithExtraction,
   UploadResponse,
+  ReprocessResponse,
+  ReprocessAllResponse,
+  StatsResponse,
 } from '../types';
 
 /**
@@ -43,5 +46,34 @@ export async function uploadDocument(
     },
   });
 
+  return data;
+}
+
+/**
+ * Reprocess a single document through the pipeline
+ */
+export async function reprocessDocument(id: number): Promise<ReprocessResponse> {
+  const { data } = await apiClient.post<ReprocessResponse>(`/documents/${id}/reprocess`);
+  return data;
+}
+
+/**
+ * Batch reprocess documents with optional filters
+ */
+export async function reprocessAll(
+  options?: { status?: string; limit?: number },
+): Promise<ReprocessAllResponse> {
+  const { data } = await apiClient.post<ReprocessAllResponse>(
+    '/documents/reprocess-all',
+    options,
+  );
+  return data;
+}
+
+/**
+ * Fetch aggregated document and extraction statistics
+ */
+export async function getDocumentStats(): Promise<StatsResponse> {
+  const { data } = await apiClient.get<StatsResponse>('/documents/stats');
   return data;
 }
