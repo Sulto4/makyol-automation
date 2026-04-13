@@ -50,6 +50,7 @@ export interface ExtractionResult {
   producator: string | null;
   distribuitor: string | null;
   adresa_producator: string | null;
+  adresa_distribuitor: string | null;
   extraction_model: string | null;
   created_at: Date;
   updated_at: Date;
@@ -71,6 +72,7 @@ export interface CreateExtractionResultInput {
   producator?: string | null;
   distribuitor?: string | null;
   adresa_producator?: string | null;
+  adresa_distribuitor?: string | null;
   extraction_model?: string | null;
 }
 
@@ -89,6 +91,7 @@ export interface UpdateExtractionResultInput {
   producator?: string | null;
   distribuitor?: string | null;
   adresa_producator?: string | null;
+  adresa_distribuitor?: string | null;
   extraction_model?: string | null;
 }
 
@@ -120,8 +123,9 @@ export class ExtractionResultModel {
         producator,
         distribuitor,
         adresa_producator,
+        adresa_distribuitor,
         extraction_model
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
 
@@ -138,6 +142,7 @@ export class ExtractionResultModel {
       input.producator || null,
       input.distribuitor || null,
       input.adresa_producator || null,
+      input.adresa_distribuitor || null,
       input.extraction_model || null,
     ];
 
@@ -275,6 +280,12 @@ export class ExtractionResultModel {
       paramIndex++;
     }
 
+    if (updateData.adresa_distribuitor !== undefined) {
+      setClauses.push(`adresa_distribuitor = $${paramIndex}`);
+      values.push(updateData.adresa_distribuitor);
+      paramIndex++;
+    }
+
     if (updateData.extraction_model !== undefined) {
       setClauses.push(`extraction_model = $${paramIndex}`);
       values.push(updateData.extraction_model);
@@ -372,6 +383,12 @@ export class ExtractionResultModel {
     if (updateData.adresa_producator !== undefined) {
       setClauses.push(`adresa_producator = $${paramIndex}`);
       values.push(updateData.adresa_producator);
+      paramIndex++;
+    }
+
+    if (updateData.adresa_distribuitor !== undefined) {
+      setClauses.push(`adresa_distribuitor = $${paramIndex}`);
+      values.push(updateData.adresa_distribuitor);
       paramIndex++;
     }
 
