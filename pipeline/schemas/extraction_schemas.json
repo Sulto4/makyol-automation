@@ -6,138 +6,426 @@
   },
   "schemas": {
     "ISO": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "CE": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "FISA_TEHNICA": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "AGREMENT": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "AVIZ_TEHNIC": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "AVIZ_SANITAR": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "DECLARATIE_CONFORMITATE": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "CERTIFICAT_CALITATE": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "AUTORIZATIE_DISTRIBUTIE": {
-      "required_fields": ["companie"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "CUI": {
-      "required_fields": ["companie"],
-      "optional_fields": ["adresa_producator"],
+      "required_fields": [
+        "companie"
+      ],
+      "optional_fields": [
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "CERTIFICAT_GARANTIE": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "DECLARATIE_PERFORMANTA": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "AVIZ_TEHNIC_SI_AGREMENT": {
-      "required_fields": ["companie", "material"],
-      "optional_fields": ["data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "required_fields": [
+        "companie",
+        "material"
+      ],
+      "optional_fields": [
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300, "not_generic": true},
-        "data_expirare": {"format": "DD.MM.YYYY"},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300,
+          "not_generic": true
+        },
+        "data_expirare": {
+          "format": "DD.MM.YYYY"
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     },
     "ALTELE": {
       "required_fields": [],
-      "optional_fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
+      "optional_fields": [
+        "companie",
+        "material",
+        "data_expirare",
+        "producator",
+        "distribuitor",
+        "adresa_producator",
+        "adresa_distribuitor"
+      ],
       "validation_rules": {
-        "companie": {"max_length": 80, "no_comma_lists": true},
-        "material": {"max_length": 300},
-        "adresa_producator": {"max_length": 250}
+        "companie": {
+          "max_length": 80,
+          "no_comma_lists": true
+        },
+        "material": {
+          "max_length": 300
+        },
+        "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
+        }
       }
     }
   }

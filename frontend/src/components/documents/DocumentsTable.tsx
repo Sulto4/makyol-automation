@@ -9,6 +9,7 @@ export type SortField =
   | 'producator'
   | 'companie'
   | 'distribuitor'
+  | 'adresa_distribuitor'
   | 'data_expirare'
   | 'confidence'
   | 'processing_status'
@@ -29,6 +30,7 @@ const COLUMNS: Column[] = [
   { key: 'producator', label: 'Producător' },
   { key: 'companie', label: 'Companie' },
   { key: 'distribuitor', label: 'Distribuitor' },
+  { key: 'adresa_distribuitor', label: 'Adresă distribuitor' },
   { key: 'data_expirare', label: 'Data expirare' },
   { key: 'confidence', label: 'Încredere' },
   { key: 'processing_status', label: 'Status procesare' },

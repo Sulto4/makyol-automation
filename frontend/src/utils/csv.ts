@@ -26,6 +26,7 @@ export function exportToCSV(
     'Producător',
     'Companie',
     'Distribuitor',
+    'Adresa Distribuitor',
     'Data Expirare',
     'Încărcat La',
   ];
@@ -42,6 +43,7 @@ export function exportToCSV(
     extraction?.producator ?? '',
     extraction?.companie ?? '',
     extraction?.distribuitor ?? '',
+    extraction?.adresa_distribuitor ?? '',
     formatDate(extraction?.data_expirare ?? null),
     formatDate(doc.uploaded_at),
   ]);
