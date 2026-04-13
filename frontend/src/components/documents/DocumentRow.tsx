@@ -42,6 +42,9 @@ export default function DocumentRow({ document, extraction }: DocumentRowProps) 
       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
         {extraction?.distribuitor || '—'}
       </td>
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+        {extraction?.adresa_distribuitor || '—'}
+      </td>
       <td className="whitespace-nowrap px-4 py-3 text-sm">
         <ExpirationWarning dataExpirare={extraction?.data_expirare ?? null} />
       </td>
