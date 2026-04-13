@@ -20,7 +20,8 @@ class StructuredFormatter(logging.Formatter):
                 record.created, tz=timezone.utc
             ).isoformat(),
             "level": record.levelname,
-            "logger": record.name,
+            "module": record.name,
+            "function": record.funcName,
             "message": record.getMessage(),
         }
 
