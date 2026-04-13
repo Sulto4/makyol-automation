@@ -1,6 +1,7 @@
 """Fuzzy company name matching and normalization against knowledge_base.json."""
 
 import json
+import logging
 import re
 from typing import Dict, Optional, Tuple
 
@@ -18,7 +19,13 @@ def _load_knowledge_base() -> dict:
         return json.load(f)
 
 
-_KB = _load_knowledge_base()
+logger = logging.getLogger(__name__)
+
+try:
+    _KB = _load_knowledge_base()
+except (FileNotFoundError, json.JSONDecodeError) as exc:
+    logger.critical("Failed to load knowledge base from %s: %s", KNOWLEDGE_BASE_PATH, exc)
+    _KB = {"companies": {}}
 
 # Pre-build alias → canonical lookup
 ALIAS_TO_CANONICAL: Dict[str, str] = {}
