@@ -125,9 +125,6 @@ export function createAuditMiddleware(pool: Pool) {
       return next();
     }
 
-    // Capture request timestamp
-    const requestTime = new Date();
-
     // Listen for response finish event to create audit log
     res.on('finish', async () => {
       try {

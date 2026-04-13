@@ -141,3 +141,51 @@ export interface ApiErrorResponse {
   code?: string;
   details?: string;
 }
+
+/**
+ * Setting value type - supports any JSON-serializable value
+ */
+export type SettingValue = string | number | boolean | object | null;
+
+/**
+ * Setting interface matching the backend settings table schema
+ */
+export interface Setting {
+  key: string;
+  value: SettingValue;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Settings list response (from GET /api/settings)
+ */
+export interface SettingsListResponse {
+  success: true;
+  data: Setting[];
+  count: number;
+}
+
+/**
+ * Single setting response (from GET /api/settings/:key)
+ */
+export interface SettingResponse {
+  success: true;
+  data: Setting;
+}
+
+/**
+ * Update setting response (from PUT /api/settings/:key)
+ */
+export interface UpdateSettingResponse {
+  success: true;
+  data: Setting;
+  message: string;
+}
+
+/**
+ * Update setting input (for PUT /api/settings/:key)
+ */
+export interface UpdateSettingInput {
+  value: SettingValue;
+}
