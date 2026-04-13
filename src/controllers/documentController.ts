@@ -9,6 +9,7 @@ import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } 
 // import { MetadataParserService } from '../services/metadataParser';
 import { PipelineClientService, PipelineError } from '../services/pipelineClient';
 import { AuditService } from '../services/auditService';
+import { ArchiveService, ArchiveDocumentRecord } from '../services/archiveService';
 import { logger } from '../utils/logger';
 
 /**
@@ -608,6 +609,253 @@ export class DocumentController {
           has_adresa_producator: extrRow.has_adresa_producator,
         },
       });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Upload and process multiple PDF documents with folder structure
+   *
+   * POST /api/documents/upload-folder
+   */
+  async uploadFolder(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const files = req.files as Express.Multer.File[] | undefined;
+      const relativePaths: string[] = req.body.relativePaths
+        ? (typeof req.body.relativePaths === 'string'
+          ? JSON.parse(req.body.relativePaths)
+          : req.body.relativePaths)
+        : [];
+
+      if (!files || files.length === 0) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'No files provided. Upload files via multipart form data.',
+            code: 'NO_FILES_PROVIDED',
+          }
+        });
+        return;
+      }
+
+      const results: Array<{
+        document: Document | null;
+        extraction: any;
+        relativePath: string | null;
+        success: boolean;
+        error: string | null;
+      }> = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const relativePath = relativePaths[i] || file.originalname;
+
+        // Skip non-PDF files
+        if (!file.originalname.toLowerCase().endsWith('.pdf')) {
+          results.push({
+            document: null,
+            extraction: null,
+            relativePath,
+            success: false,
+            error: 'Only PDF files are supported',
+          });
+          continue;
+        }
+
+        try {
+          // Step 1: Create document record with PENDING status
+          const documentInput: CreateDocumentInput = {
+            filename: file.filename,
+            original_filename: file.originalname,
+            file_path: file.path,
+            file_size: file.size,
+            mime_type: 'application/pdf',
+          };
+
+          const document = await this.documentModel.create(documentInput);
+          logger.info(`[uploadFolder] Document created with ID: ${document.id}, relativePath: ${relativePath}`);
+
+          // Step 2: Update status to PROCESSING
+          await this.documentModel.updateStatus(document.id, {
+            processing_status: ProcessingStatus.PROCESSING,
+            processing_started_at: new Date(),
+          });
+
+          // Step 3: Process document through pipeline
+          let extractionResult;
+          try {
+            const pipelineResponse = await this.pipelineClient.processDocument(file.path);
+            logger.info(`[uploadFolder] Pipeline processed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
+
+            if (pipelineResponse.error) {
+              throw new Error(pipelineResponse.error);
+            }
+
+            // Persist classification
+            if (pipelineResponse.classification) {
+              await this.documentModel.updateClassification(document.id, {
+                categorie: pipelineResponse.classification,
+                confidence: pipelineResponse.confidence ?? 0,
+                metoda_clasificare: pipelineResponse.method ?? 'ai',
+              });
+            }
+
+            // Map extraction data
+            const extraction = pipelineResponse.extraction || {};
+            const extractionStatus = pipelineResponse.confidence >= 0.8
+              ? ExtractionStatus.SUCCESS
+              : pipelineResponse.confidence >= 0.5
+                ? ExtractionStatus.PARTIAL
+                : ExtractionStatus.FAILED;
+
+            const extractionInput: CreateExtractionResultInput = {
+              document_id: document.id,
+              extracted_text: null,
+              metadata: {},
+              confidence_score: pipelineResponse.confidence ?? null,
+              extraction_status: extractionStatus,
+              material: extraction.material ?? null,
+              data_expirare: extraction.data_expirare ?? null,
+              companie: extraction.companie ?? null,
+              producator: extraction.producator ?? null,
+              distribuitor: extraction.distribuitor ?? null,
+              adresa_producator: extraction.adresa_producator ?? null,
+              extraction_model: extraction.extraction_model ?? null,
+            };
+
+            extractionResult = await this.extractionResultModel.create(extractionInput);
+
+            // Update status to COMPLETED
+            await this.documentModel.updateStatus(document.id, {
+              processing_status: ProcessingStatus.COMPLETED,
+              processing_completed_at: new Date(),
+            });
+
+          } catch (processingError: any) {
+            const errorMessage = processingError instanceof PipelineError
+              ? `Pipeline error: ${processingError.message}`
+              : processingError.message;
+            logger.error(`[uploadFolder] Processing failed for document ${document.id}:`, processingError);
+
+            const extractionInput: CreateExtractionResultInput = {
+              document_id: document.id,
+              extraction_status: ExtractionStatus.FAILED,
+              error_details: {
+                message: errorMessage,
+                code: processingError.code || (processingError instanceof PipelineError ? 'PIPELINE_ERROR' : 'PROCESSING_ERROR'),
+                timestamp: new Date().toISOString(),
+              },
+            };
+
+            extractionResult = await this.extractionResultModel.create(extractionInput);
+
+            await this.documentModel.updateStatus(document.id, {
+              processing_status: ProcessingStatus.FAILED,
+              error_message: errorMessage,
+              processing_completed_at: new Date(),
+            });
+          }
+
+          const updatedDocument = await this.documentModel.findById(document.id);
+
+          results.push({
+            document: updatedDocument,
+            extraction: extractionResult,
+            relativePath,
+            success: true,
+            error: null,
+          });
+
+        } catch (fileError: any) {
+          logger.error(`[uploadFolder] Failed to process file ${file.originalname}:`, fileError);
+          results.push({
+            document: null,
+            extraction: null,
+            relativePath,
+            success: false,
+            error: fileError.message,
+          });
+        }
+      }
+
+      res.status(201).json({
+        results,
+        totalProcessed: files.length,
+        totalFailed: results.filter(r => r.error).length,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Export documents as a ZIP archive with folder structure and Excel summary
+   *
+   * POST /api/documents/export-archive
+   */
+  async exportArchive(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { documents: documentEntries, folderName } = req.body || {};
+
+      if (!documentEntries || !Array.isArray(documentEntries) || documentEntries.length === 0) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'Request body must include a non-empty "documents" array with { id, relativePath } entries.',
+            code: 'INVALID_DOCUMENTS_INPUT',
+          }
+        });
+        return;
+      }
+
+      const archiveRecords: ArchiveDocumentRecord[] = [];
+
+      for (const entry of documentEntries) {
+        const documentId = typeof entry.id === 'string' ? parseInt(entry.id, 10) : entry.id;
+
+        if (isNaN(documentId) || documentId <= 0) {
+          logger.warn(`[exportArchive] Skipping invalid document ID: ${entry.id}`);
+          continue;
+        }
+
+        const document = await this.documentModel.findById(documentId);
+        if (!document) {
+          logger.warn(`[exportArchive] Document not found: ${documentId}`);
+          continue;
+        }
+
+        const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+
+        archiveRecords.push({
+          document,
+          extraction,
+          relativePath: entry.relativePath || document.original_filename,
+          absolutePath: document.file_path,
+        });
+      }
+
+      if (archiveRecords.length === 0) {
+        res.status(404).json({
+          error: {
+            name: 'NotFoundError',
+            message: 'No valid documents found for the given IDs.',
+            code: 'NO_DOCUMENTS_FOUND',
+          }
+        });
+        return;
+      }
+
+      const archiveFilename = folderName
+        ? `${folderName}.zip`
+        : `archive-${Date.now()}.zip`;
+
+      const archiveService = new ArchiveService();
+      await archiveService.generateArchive(archiveRecords, res, archiveFilename);
+
+      logger.info(`[exportArchive] Archive streamed with ${archiveRecords.length} documents`);
 
     } catch (error) {
       next(error);
