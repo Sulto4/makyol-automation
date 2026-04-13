@@ -354,6 +354,84 @@ export class DocumentController {
   }
 
   /**
+   * Reprocess a document through the pipeline
+   *
+   * POST /api/documents/:id/reprocess
+   */
+  async reprocessDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const documentId = parseInt(req.params.id, 10);
+
+      if (isNaN(documentId) || documentId <= 0) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'Invalid document ID. Must be a positive integer.',
+            code: 'INVALID_DOCUMENT_ID',
+          }
+        });
+        return;
+      }
+
+      const document = await this.documentModel.findById(documentId);
+
+      if (!document) {
+        res.status(404).json({
+          error: {
+            name: 'NotFoundError',
+            message: 'Document not found',
+            code: 'DOCUMENT_NOT_FOUND',
+          }
+        });
+        return;
+      }
+
+      try {
+        await this.reprocessSingleDocument(document);
+      } catch (error: any) {
+        if (error instanceof PipelineError && error.code === 'ECONNREFUSED') {
+          res.status(503).json({
+            error: {
+              name: 'ServiceUnavailableError',
+              message: 'Pipeline service is not available',
+              code: 'PIPELINE_UNAVAILABLE',
+            }
+          });
+          return;
+        }
+
+        // File-level errors (e.g., file not found, unreadable)
+        if (error instanceof PipelineError || error.code === 'ENOENT') {
+          res.status(422).json({
+            error: {
+              name: 'UnprocessableEntityError',
+              message: `Failed to reprocess document: ${error.message}`,
+              code: 'REPROCESS_FAILED',
+            }
+          });
+          return;
+        }
+
+        throw error;
+      }
+
+      // Get updated document and extraction
+      const updatedDocument = await this.documentModel.findById(documentId);
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+
+      logger.info(`Document ${documentId} reprocessed successfully`);
+
+      res.status(200).json({
+        document: updatedDocument,
+        extraction,
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a document by ID with its extraction results
    *
    * GET /api/documents/:id
