@@ -39,7 +39,7 @@ export default function ExtractionFillChart({ stats }: ExtractionFillChartProps)
 
     return ALL_FIELDS.map((field) => ({
       name: FIELD_LABELS[field],
-      percent: Math.round((stats.fieldCounts[field] / stats.total) * 100),
+      percent: Math.round(((stats[`has_${field}` as keyof ExtractionStats] as number) / stats.total) * 100),
       color: FIELD_COLORS[field],
     }));
   }, [stats]);

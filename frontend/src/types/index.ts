@@ -146,11 +146,14 @@ export interface ApiErrorResponse {
  * Classification statistics from GET /api/documents/stats
  */
 export interface DocumentStats {
-  total: number;
-  byStatus: Record<string, number>;
-  byMethod: Record<string, number>;
-  averageConfidence: number;
-  unknownCategory: number;
+  total_documents: number;
+  completed: number;
+  failed: number;
+  pending: number;
+  processing: number;
+  by_method: Record<string, number>;
+  average_confidence: number | null;
+  categorie_altele: number;
 }
 
 /**
@@ -158,14 +161,12 @@ export interface DocumentStats {
  */
 export interface ExtractionStats {
   total: number;
-  fieldCounts: {
-    companie: number;
-    material: number;
-    data_expirare: number;
-    producator: number;
-    distribuitor: number;
-    adresa_producator: number;
-  };
+  has_companie: number;
+  has_material: number;
+  has_data_expirare: number;
+  has_producator: number;
+  has_distribuitor: number;
+  has_adresa_producator: number;
 }
 
 /**
