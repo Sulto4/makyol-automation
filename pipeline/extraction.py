@@ -382,7 +382,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
     return normalized
 
 
-def extract_data_with_ai(text: str, category: str) -> dict | None:
+def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict | None:
     """Extract structured data from document text using AI.
 
     Sends text to OpenRouter API with category-specific extraction prompt.
@@ -391,6 +391,7 @@ def extract_data_with_ai(text: str, category: str) -> dict | None:
     Args:
         text: Extracted text from the PDF.
         category: Document category from classification.
+        filename: Optional source filename for error logging.
 
     Returns:
         Raw extraction result dict, or None on failure.
@@ -437,26 +438,32 @@ def extract_data_with_ai(text: str, category: str) -> dict | None:
         return parsed
 
     except requests.exceptions.Timeout:
-        logger.error("AI extraction timed out for category %s", category)
+        logger.error("AI extraction timed out for category %s [file=%s]", category, filename)
         return None
     except requests.exceptions.RequestException as e:
-        logger.error("AI extraction request failed: %s", e)
+        status_code = getattr(e.response, "status_code", "N/A")
+        response_body = getattr(e.response, "text", "")[:500]
+        logger.error(
+            "AI extraction request failed: %s | status=%s | file=%s | response=%s",
+            e, status_code, filename, response_body,
+        )
         return None
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.error("AI extraction response parsing failed: %s", e)
+        logger.error("AI extraction response parsing failed: %s [file=%s]", e, filename)
         return None
 
 
-def extract_document_data(text: str, category: str) -> dict:
+def extract_document_data(text: str, category: str, filename: str = "") -> dict:
     """Full extraction pipeline: AI extraction + normalization.
 
     Args:
         text: Extracted text from the PDF.
         category: Document category from classification.
+        filename: Optional source filename for error logging.
 
     Returns:
         Normalized extraction result dict with all expected fields.
     """
-    raw_result = extract_data_with_ai(text, category)
+    raw_result = extract_data_with_ai(text, category, filename=filename)
     normalized = normalize_extraction_result(raw_result, category, text)
     return normalized
