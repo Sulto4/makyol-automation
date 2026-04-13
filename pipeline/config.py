@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 from pathlib import Path
@@ -12,9 +13,14 @@ OPENROUTER_API_KEY = os.environ.get(
     "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",
 )
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-AI_MODEL = "google/gemini-2.0-flash-001"
+AI_MODEL = os.environ.get("AI_MODEL", "google/gemini-2.0-flash-001")
 AI_TEMPERATURE = 0.0  # NON-NEGOTIABLE
 AI_MAX_TOKENS = 4096
+
+# Startup config logging
+_logger = logging.getLogger(__name__)
+_masked_key = OPENROUTER_API_KEY[:8] + "..." + OPENROUTER_API_KEY[-4:] if len(OPENROUTER_API_KEY) > 12 else "***"
+_logger.info("AI config loaded: MODEL=%s, API_KEY=%s", AI_MODEL, _masked_key)
 
 # Tesseract Configuration (OS-aware)
 if platform.system() == "Windows":
