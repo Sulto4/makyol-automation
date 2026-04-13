@@ -53,7 +53,20 @@ export default function DocumentsTable({
 }: DocumentsTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200">
+      <table className="min-w-full table-fixed divide-y divide-gray-200">
+        <colgroup>
+          <col className="w-[15%]" /> {/* Fișier */}
+          <col className="w-[9%]" />  {/* Categorie */}
+          <col className="w-[12%]" /> {/* Material */}
+          <col className="w-[11%]" /> {/* Producător */}
+          <col className="w-[10%]" /> {/* Companie */}
+          <col className="w-[10%]" /> {/* Distribuitor */}
+          <col className="w-[8%]" />  {/* Data expirare */}
+          <col className="w-[7%]" />  {/* Încredere */}
+          <col className="w-[7%]" />  {/* Status procesare */}
+          <col className="w-[6%]" />  {/* Status revizie */}
+          <col className="w-[5%]" />  {/* Data încărcare */}
+        </colgroup>
         <thead className="bg-gray-50">
           <tr>
             {COLUMNS.map((col) => (

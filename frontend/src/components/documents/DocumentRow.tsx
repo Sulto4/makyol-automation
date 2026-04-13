@@ -16,31 +16,38 @@ export default function DocumentRow({ document, extraction }: DocumentRowProps) 
 
   return (
     <tr className="border-b border-gray-200 hover:bg-gray-50">
-      <td className="whitespace-nowrap px-4 py-3 text-sm">
-        <Link
-          to={`/documents/${document.id}`}
-          className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-          title={document.original_filename}
-        >
-          {document.original_filename.length > 40
-            ? `${document.original_filename.slice(0, 37)}...`
-            : document.original_filename}
-        </Link>
+      <td className="px-4 py-3 text-sm">
+        <div className="truncate" title={document.original_filename}>
+          <Link
+            to={`/documents/${document.id}`}
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {document.original_filename}
+          </Link>
+        </div>
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-sm">
         <CategoryBadge category={document.categorie} />
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-        {extraction?.material || '—'}
+      <td className="px-4 py-3 text-sm text-gray-700">
+        <div className="truncate" title={extraction?.material || ''}>
+          {extraction?.material || '—'}
+        </div>
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-        {extraction?.producator || '—'}
+      <td className="px-4 py-3 text-sm text-gray-700">
+        <div className="truncate" title={extraction?.producator || ''}>
+          {extraction?.producator || '—'}
+        </div>
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-        {extraction?.companie || '—'}
+      <td className="px-4 py-3 text-sm text-gray-700">
+        <div className="truncate" title={extraction?.companie || ''}>
+          {extraction?.companie || '—'}
+        </div>
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-        {extraction?.distribuitor || '—'}
+      <td className="px-4 py-3 text-sm text-gray-700">
+        <div className="truncate" title={extraction?.distribuitor || ''}>
+          {extraction?.distribuitor || '—'}
+        </div>
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-sm">
         <ExpirationWarning dataExpirare={extraction?.data_expirare ?? null} />
