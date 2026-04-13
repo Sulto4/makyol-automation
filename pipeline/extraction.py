@@ -459,15 +459,37 @@ def extract_data_with_ai(text: str, category: str) -> dict | None:
 
 
 def extract_document_data(text: str, category: str) -> dict:
-    """Full extraction pipeline: AI extraction + normalization.
+    """Full extraction pipeline: AI extraction + regex merge + normalization.
 
     Args:
         text: Extracted text from the PDF.
         category: Document category from classification.
 
     Returns:
-        Normalized extraction result dict with all expected fields.
+        Normalized extraction result dict with all expected fields,
+        including extraction_model tracking.
     """
+    from pipeline.regex_extraction import regex_extract
+
     raw_result = extract_data_with_ai(text, category)
+
+    if raw_result is None:
+        logger.warning("AI extraction returned None for category %s, using regex fallback", category)
+        raw_result = regex_extract(text, category)
+        extraction_model = "regex_fallback"
+    else:
+        extraction_model = AI_MODEL
+
     normalized = normalize_extraction_result(raw_result, category, text)
+
+    # Merge regex results into normalized: fill None fields with regex values
+    regex_result = regex_extract(text, category)
+    for field, regex_value in regex_result.items():
+        if normalized.get(field) is None and regex_value is not None:
+            logger.info("Filling field %s from regex for category %s", field, category)
+            normalized[field] = regex_value
+
+    # Set extraction_model AFTER normalization so it doesn't get wiped
+    normalized["extraction_model"] = extraction_model
+
     return normalized
