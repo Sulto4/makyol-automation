@@ -5,14 +5,59 @@ import os
 import tempfile
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 
 from pipeline import process_document
+from pipeline.config import OPENROUTER_API_KEY, OPENROUTER_URL, AI_MODEL
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Makyol Pipeline API", version="1.0.0")
+
+
+@app.on_event("startup")
+async def check_ai_connectivity():
+    """Verify AI provider connectivity at startup (non-blocking)."""
+    masked_key = (
+        OPENROUTER_API_KEY[:8] + "..." + OPENROUTER_API_KEY[-4:]
+        if len(OPENROUTER_API_KEY) > 12
+        else "***"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": AI_MODEL,
+                    "max_tokens": 1,
+                    "messages": [{"role": "user", "content": "ping"}],
+                },
+            )
+        if resp.status_code == 200:
+            logger.info("AI connectivity: OK (model=%s)", AI_MODEL)
+        elif resp.status_code in (401, 403):
+            logger.critical(
+                "AI connectivity: AUTH FAILED (status=%s, key=%s, response=%s)",
+                resp.status_code,
+                masked_key,
+                resp.text[:500],
+            )
+        else:
+            logger.error(
+                "AI connectivity: UNEXPECTED STATUS %s (response=%s)",
+                resp.status_code,
+                resp.text[:500],
+            )
+    except httpx.TimeoutException:
+        logger.critical("AI connectivity: TIMEOUT after 10s (url=%s)", OPENROUTER_URL)
+    except Exception as exc:
+        logger.critical("AI connectivity: FAILED (%s: %s)", type(exc).__name__, exc)
 
 
 class BatchRequest(BaseModel):
