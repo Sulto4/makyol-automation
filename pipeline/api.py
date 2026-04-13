@@ -19,21 +19,36 @@ logger = logging.getLogger(__name__)
 # In-memory stats accumulator (resets on service restart)
 _stats: dict = {
     "total_processed": 0,
-    "total_success": 0,
-    "total_failed": 0,
-    "by_status": {},
+    "successful": 0,
+    "failed": 0,
+    "total_duration_ms": 0,
+    "classification_methods": {},
+    "categories": {},
+    "ai_calls": 0,
+    "ai_failures": 0,
 }
 
 
 def _track_result(result: dict) -> None:
     """Update stats accumulator after processing a document."""
     _stats["total_processed"] += 1
-    status = result.get("review_status", "UNKNOWN")
-    if status == "FAILED":
-        _stats["total_failed"] += 1
+    if result.get("error") or result.get("review_status") == "FAILED":
+        _stats["failed"] += 1
     else:
-        _stats["total_success"] += 1
-    _stats["by_status"][status] = _stats["by_status"].get(status, 0) + 1
+        _stats["successful"] += 1
+    # Track duration
+    _stats["total_duration_ms"] += result.get("total_duration_ms", 0)
+    # Track classification method
+    method = result.get("method", "unknown")
+    _stats["classification_methods"][method] = _stats["classification_methods"].get(method, 0) + 1
+    # Track category
+    category = result.get("classification") or result.get("category") or "unknown"
+    _stats["categories"][category] = _stats["categories"].get(category, 0) + 1
+    # Track AI calls — if method is "ai", that counts as an AI call
+    if method == "ai":
+        _stats["ai_calls"] += 1
+        if result.get("error") or result.get("review_status") == "FAILED":
+            _stats["ai_failures"] += 1
 
 
 app = FastAPI(title="Makyol Pipeline API", version="1.0.0")
@@ -59,7 +74,10 @@ async def health_check():
 @app.get("/api/pipeline/stats")
 async def get_stats():
     """Return current in-memory processing statistics."""
-    return _stats
+    result = dict(_stats)
+    total = result["total_processed"]
+    result["avg_duration_ms"] = round(result.pop("total_duration_ms") / total, 1) if total > 0 else 0
+    return result
 
 
 @app.post("/api/pipeline/process")
@@ -87,9 +105,7 @@ async def process_single(file: UploadFile = File(...)):
 
     except Exception as e:
         logger.error("Processing failed for %s: %s", file.filename, e)
-        _stats["total_processed"] += 1
-        _stats["total_failed"] += 1
-        _stats["by_status"]["FAILED"] = _stats["by_status"].get("FAILED", 0) + 1
+        _track_result({"error": str(e), "review_status": "FAILED"})
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
