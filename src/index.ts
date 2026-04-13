@@ -5,6 +5,7 @@ import { databaseConfig } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { createDocumentRoutes } from './routes/documents';
+import { createAuditLogRoutes } from './routes/auditLogs';
 
 /**
  * Create and configure Express application
@@ -44,6 +45,7 @@ function createApp(pool: Pool): Express {
 
   // API routes
   app.use(`${appConfig.api.prefix}/documents`, createDocumentRoutes(pool));
+  app.use(`${appConfig.api.prefix}/audit-logs`, createAuditLogRoutes(pool));
 
   // 404 handler (must be after all routes)
   app.use(notFoundHandler);

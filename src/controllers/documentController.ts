@@ -6,6 +6,7 @@ import { DocumentModel, ProcessingStatus, CreateDocumentInput } from '../models/
 import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } from '../models/ExtractionResult';
 import { PDFExtractorService } from '../services/pdfExtractor';
 import { MetadataParserService } from '../services/metadataParser';
+import { AuditService } from '../services/auditService';
 import { logger } from '../utils/logger';
 import { appConfig } from '../config/app';
 
@@ -18,12 +19,14 @@ export class DocumentController {
   private extractionResultModel: ExtractionResultModel;
   private pdfExtractor: PDFExtractorService;
   private metadataParser: MetadataParserService;
+  private auditService: AuditService;
 
   constructor(pool: Pool) {
     this.documentModel = new DocumentModel(pool);
     this.extractionResultModel = new ExtractionResultModel(pool);
     this.pdfExtractor = new PDFExtractorService();
     this.metadataParser = new MetadataParserService();
+    this.auditService = new AuditService(pool);
   }
 
   /**
@@ -116,11 +119,39 @@ export class DocumentController {
       const document = await this.documentModel.create(documentInput);
       logger.info(`Document created with ID: ${document.id}`);
 
+      // Audit log: Document upload
+      try {
+        await this.auditService.logDocumentUpload({
+          filename: document.filename,
+          original_filename: document.original_filename,
+          file_size: document.file_size,
+          file_path: document.file_path,
+        }, null); // TODO: Add user_id when authentication is implemented
+        logger.info(`Audit log created for document upload: ${document.id}`);
+      } catch (auditError: any) {
+        logger.error(`Failed to create audit log for document upload ${document.id}:`, auditError);
+        // Continue processing even if audit logging fails
+      }
+
       // Step 2: Update status to PROCESSING
       await this.documentModel.updateStatus(document.id, {
         processing_status: ProcessingStatus.PROCESSING,
         processing_started_at: new Date(),
       });
+
+      // Audit log: Status change to PROCESSING
+      try {
+        await this.auditService.logDocumentStatusChange({
+          document_id: document.id,
+          filename: document.filename,
+          previous_status: ProcessingStatus.PENDING,
+          new_status: ProcessingStatus.PROCESSING,
+        }, null); // TODO: Add user_id when authentication is implemented
+        logger.info(`Audit log created for status change: ${document.id} -> PROCESSING`);
+      } catch (auditError: any) {
+        logger.error(`Failed to create audit log for status change ${document.id}:`, auditError);
+        // Continue processing even if audit logging fails
+      }
 
       // Step 3: Process PDF asynchronously
       // Note: In production, this should be done in a background job queue
@@ -156,6 +187,20 @@ export class DocumentController {
           processing_completed_at: new Date(),
         });
 
+        // Audit log: Status change to COMPLETED
+        try {
+          await this.auditService.logDocumentStatusChange({
+            document_id: document.id,
+            filename: document.filename,
+            previous_status: ProcessingStatus.PROCESSING,
+            new_status: ProcessingStatus.COMPLETED,
+          }, null); // TODO: Add user_id when authentication is implemented
+          logger.info(`Audit log created for status change: ${document.id} -> COMPLETED`);
+        } catch (auditError: any) {
+          logger.error(`Failed to create audit log for status change ${document.id}:`, auditError);
+          // Continue processing even if audit logging fails
+        }
+
       } catch (error: any) {
         // Handle extraction errors
         logger.error(`PDF extraction failed for document ${document.id}:`, error);
@@ -179,6 +224,21 @@ export class DocumentController {
           error_message: error.message,
           processing_completed_at: new Date(),
         });
+
+        // Audit log: Status change to FAILED
+        try {
+          await this.auditService.logDocumentStatusChange({
+            document_id: document.id,
+            filename: document.filename,
+            previous_status: ProcessingStatus.PROCESSING,
+            new_status: ProcessingStatus.FAILED,
+            reason: error.message,
+          }, null); // TODO: Add user_id when authentication is implemented
+          logger.info(`Audit log created for status change: ${document.id} -> FAILED`);
+        } catch (auditError: any) {
+          logger.error(`Failed to create audit log for status change ${document.id}:`, auditError);
+          // Continue processing even if audit logging fails
+        }
       }
 
       // Get the updated document
