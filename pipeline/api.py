@@ -8,9 +8,33 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 
+from pipeline.logging_config import setup_logging
+
+setup_logging()
+
 from pipeline import process_document
 
 logger = logging.getLogger(__name__)
+
+# In-memory stats accumulator (resets on service restart)
+_stats: dict = {
+    "total_processed": 0,
+    "total_success": 0,
+    "total_failed": 0,
+    "by_status": {},
+}
+
+
+def _track_result(result: dict) -> None:
+    """Update stats accumulator after processing a document."""
+    _stats["total_processed"] += 1
+    status = result.get("review_status", "UNKNOWN")
+    if status == "FAILED":
+        _stats["total_failed"] += 1
+    else:
+        _stats["total_success"] += 1
+    _stats["by_status"][status] = _stats["by_status"].get(status, 0) + 1
+
 
 app = FastAPI(title="Makyol Pipeline API", version="1.0.0")
 
@@ -30,6 +54,12 @@ class HealthResponse(BaseModel):
 async def health_check():
     """Health check endpoint."""
     return HealthResponse(status="ok", service="python-pipeline")
+
+
+@app.get("/api/pipeline/stats")
+async def get_stats():
+    """Return current in-memory processing statistics."""
+    return _stats
 
 
 @app.post("/api/pipeline/process")
@@ -52,10 +82,14 @@ async def process_single(file: UploadFile = File(...)):
             tmp_path = tmp.name
 
         result = process_document(tmp_path, filename=file.filename)
+        _track_result(result)
         return result
 
     except Exception as e:
         logger.error("Processing failed for %s: %s", file.filename, e)
+        _stats["total_processed"] += 1
+        _stats["total_failed"] += 1
+        _stats["by_status"]["FAILED"] = _stats["by_status"].get("FAILED", 0) + 1
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
@@ -82,14 +116,17 @@ async def process_batch(request: BatchRequest):
     for pdf_path in pdf_files:
         try:
             result = process_document(str(pdf_path), filename=pdf_path.name)
+            _track_result(result)
             results.append(result)
         except Exception as e:
             logger.error("Batch processing failed for %s: %s", pdf_path.name, e)
-            results.append({
+            error_result = {
                 "filename": pdf_path.name,
                 "error": str(e),
                 "review_status": "FAILED",
-            })
+            }
+            _track_result(error_result)
+            results.append(error_result)
 
     return {"total": len(pdf_files), "results": results}
 
