@@ -644,6 +644,7 @@ export class DocumentController {
         document: Document | null;
         extraction: any;
         relativePath: string | null;
+        success: boolean;
         error: string | null;
       }> = [];
 
@@ -657,6 +658,7 @@ export class DocumentController {
             document: null,
             extraction: null,
             relativePath,
+            success: false,
             error: 'Only PDF files are supported',
           });
           continue;
@@ -762,6 +764,7 @@ export class DocumentController {
             document: updatedDocument,
             extraction: extractionResult,
             relativePath,
+            success: true,
             error: null,
           });
 
@@ -771,6 +774,7 @@ export class DocumentController {
             document: null,
             extraction: null,
             relativePath,
+            success: false,
             error: fileError.message,
           });
         }
@@ -778,9 +782,8 @@ export class DocumentController {
 
       res.status(201).json({
         results,
-        total: files.length,
-        succeeded: results.filter(r => r.document && !r.error).length,
-        failed: results.filter(r => r.error).length,
+        totalProcessed: files.length,
+        totalFailed: results.filter(r => r.error).length,
       });
 
     } catch (error) {

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { uploadDocument, uploadFolderFiles } from '../api/documents';
+import { uploadDocument, uploadFolderFiles, downloadArchive as downloadArchiveApi } from '../api/documents';
 import type { UploadResponse, FolderUploadResponse } from '../types';
 
 /**
@@ -51,19 +51,20 @@ export function useFolderUpload() {
     },
   });
 
-  const downloadArchive = useCallback(() => {
+  const downloadArchive = useCallback(async () => {
     const data = resultsRef.current ?? mutation.data;
     if (!data) return;
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json',
+    const documents = data.results
+      .filter((r) => r.success && r.document)
+      .map((r) => ({ id: r.document.id, relativePath: r.relativePath }));
+
+    if (documents.length === 0) return;
+
+    await downloadArchiveApi({
+      documents,
+      folderName: 'documents',
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'folder-upload-results.json';
-    a.click();
-    URL.revokeObjectURL(url);
   }, [mutation.data]);
 
   return { ...mutation, progress, downloadArchive };

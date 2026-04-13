@@ -142,10 +142,10 @@ export default function UploadPage() {
     [mutateFolder],
   );
 
-  const handleDownloadArchive = useCallback(() => {
+  const handleDownloadArchive = useCallback(async () => {
     setIsDownloading(true);
     try {
-      downloadArchive();
+      await downloadArchive();
     } finally {
       setIsDownloading(false);
     }
