@@ -3,12 +3,6 @@ import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { databaseConfig } from '../src/config/database';
 
-interface MigrationFile {
-  filename: string;
-  path: string;
-  order: number;
-}
-
 async function runMigrations(): Promise<void> {
   const pool = new Pool(databaseConfig);
 
