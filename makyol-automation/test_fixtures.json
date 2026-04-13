@@ -1,0 +1,504 @@
+{
+  "_meta": {
+    "description": "Test fixtures - expected extraction results per category. Use for regression testing.",
+    "total_categories": 14,
+    "total_fixtures": 26
+  },
+  "fixtures": {
+    "ISO": [
+      {
+        "fisier": "11. ISO 9001.pdf",
+        "categorie": "ISO",
+        "expected": {
+          "nume_document": "Certificat ISO 9001",
+          "material": null,
+          "data_expirare": "14.02.2027",
+          "companie": "ZAKPREST CONSTRUCT SRL",
+          "producator": null,
+          "distribuitor": null,
+          "adresa_producator": "Str. Stanjeneilor, nr. 4, camera nr. 1, bl. 62, sc. 2, et. 1, ap. 61, sector 4, Bucuresti"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\Documente Zakprest\\11. ISO 9001.pdf"
+      },
+      {
+        "fisier": "12. ISO 14001.pdf",
+        "categorie": "ISO",
+        "expected": {
+          "nume_document": "Certificat ISO 14001",
+          "material": null,
+          "data_expirare": "14.02.2027",
+          "companie": "ZAKPREST CONSTRUCT SRL",
+          "producator": null,
+          "distribuitor": null,
+          "adresa_producator": "Str. Stanjeneilor, nr. 4, camera nr. 1, bl. 62, sc. 2, et. 1, ap. 61, sector 4, Bucuresti"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\Documente Zakprest\\12. ISO 14001.pdf"
+      }
+    ],
+    "DECLARATIE_CONFORMITATE": [
+      {
+        "fisier": "15. DC.pdf",
+        "categorie": "DECLARATIE_CONFORMITATE",
+        "expected": {
+          "nume_document": "Declaratie de Conformitate",
+          "material": "produse pentru construcții",
+          "data_expirare": null,
+          "companie": "ZAKPREST CONSTRUCT SRL",
+          "producator": "ZAKPREST CONSTRUCT SRL",
+          "distribuitor": null,
+          "adresa_producator": "Str Stinjeneilor, nr 4, Sector 4, Bucuresti"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\Documente Zakprest\\15. DC.pdf"
+      },
+      {
+        "fisier": "VLR 004.10_Declaratie de conformitate_Tevi si fit VLR PEHD apa VALWater_24_07_2028.pdf",
+        "categorie": "DECLARATIE_CONFORMITATE",
+        "expected": {
+          "nume_document": "Declaratie de Conformitate",
+          "material": "TEVI SI FITINGURI VALROM DIN PEID PENTRU INSTALATII DE ALIMENTARE CU APA RECE",
+          "data_expirare": null,
+          "companie": "VALROM INDUSTRIE SRL",
+          "producator": "VALROM INDUSTRIE SRL",
+          "distribuitor": null,
+          "adresa_producator": "B-dul Preciziei, Nr. 28, Sector 6, Bucuresti, Romania"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - VALROM\\VLR 004.10_Declaratie de conformitate_Tevi si fit VLR PEHD apa VALWater_24_07_2028.pdf"
+      }
+    ],
+    "FISA_TEHNICA": [
+      {
+        "fisier": "1. FT Teava PEHD apa.pdf",
+        "categorie": "FISA_TEHNICA",
+        "expected": {
+          "nume_document": "FIȘĂ TEHNICĂ PRODUS",
+          "material": "Țevi PE100 pentru APĂ",
+          "data_expirare": null,
+          "companie": null,
+          "producator": "TERAPLAST SA",
+          "distribuitor": null,
+          "adresa_producator": null
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - TERAPLAST\\1. FT Teava PEHD apa.pdf"
+      },
+      {
+        "fisier": "Data sheet WaterKIT PE100CERT pipes_vers vers 2.3 02.02.2026.pdf",
+        "categorie": "FISA_TEHNICA",
+        "expected": {
+          "nume_document": "DATA SHEET",
+          "material": "High density polyethylene HDPE <VALWater> PE100CERT pipes",
+          "data_expirare": null,
+          "companie": null,
+          "producator": "VALROM INDUSTRIE SRL",
+          "distribuitor": null,
+          "adresa_producator": null
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - VALROM\\Data sheet WaterKIT PE100CERT pipes_vers vers 2.3 02.02.2026.pdf"
+      }
+    ],
+    "AVIZ_SANITAR": [
+      {
+        "fisier": "7. AVS.pdf",
+        "categorie": "AVIZ_SANITAR",
+        "expected": {
+          "nume_document": "Aviz Sanitar",
+          "material": "Țevi din PEID pentru instalații de apă",
+          "data_expirare": null,
+          "companie": "TERAPLAST SA",
+          "producator": "TERAPLAST SA",
+          "distribuitor": null,
+          "adresa_producator": "sat Saratel, comuna Șieu-Măgheruș, DN 15 A. km. 45+500, Cod 427301, jud. Bistrița-Năsăud"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - TERAPLAST\\7. AVS.pdf"
+      },
+      {
+        "fisier": "6. AVS.pdf",
+        "categorie": "AVIZ_SANITAR",
+        "expected": {
+          "nume_document": "AVIZ SANITAR",
+          "material": "Țevi si fitinguri VALROM din PE 100 BorSafe HE3490-LS",
+          "data_expirare": "20.05.2025",
+          "companie": "VALROM INDUSTRIE SRL",
+          "producator": "VALROM INDUSTRIE SRL",
+          "distribuitor": null,
+          "adresa_producator": "București, Sector 6, B-dul Preciziei Nr.28"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - VALROM\\6. AVS.pdf"
+      }
+    ],
+    "AVIZ_TEHNIC": [
+      {
+        "fisier": "8.1 AVT.pdf",
+        "categorie": "AVIZ_TEHNIC",
+        "expected": {
+          "nume_document": "Aviz Tehnic",
+          "material": "Țevi din PEID pentru instalații de apă",
+          "data_expirare": "27.09.2026",
+          "companie": null,
+          "producator": "TERAPLAST SA",
+          "distribuitor": null,
+          "adresa_producator": "Sat Saratel, Comuna Sieu-Magherus, Calea Teraplast nr.1, județul Bistrița-Năsăud"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - TERAPLAST\\8.1 AVT.pdf"
+      },
+      {
+        "fisier": "5. AVT.pdf",
+        "categorie": "AVIZ_TEHNIC",
+        "expected": {
+          "nume_document": "AVIZ TEHNIC",
+          "material": "Țevi și fitinguri din PEID pentru instalații de apă",
+          "data_expirare": "27.06.2026",
+          "companie": "AXA-CERT SRL",
+          "producator": "TEHNO WORLD SRL",
+          "distribuitor": null,
+          "adresa_producator": "Loc. Baia, nr.1616, DN 2E Km 2, jud. Suceava"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\Teava apa PEHD - Tehnoworld\\5. AVT.pdf"
+      }
+    ],
+    "AGREMENT": [
+      {
+        "fisier": "9. AGT.pdf",
+        "categorie": "AGREMENT",
+        "expected": {
+          "nume_document": "Agrement Tehnic",
+          "material": "Tevi din PEID pentru instalatii de apa",
+          "data_expirare": "27.09.2026",
+          "companie": "TERAPLAST SA",
+          "producator": "TERAPLAST SA",
+          "distribuitor": null,
+          "adresa_producator": "Sat Sărățel, com. Sieu-Măgheruș, Calea Teraplast nr. 1 județ Bistrița-Năsăud"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - TERAPLAST\\9. AGT.pdf"
+      },
+      {
+        "fisier": "6. AGT.pdf",
+        "categorie": "AGREMENT",
+        "expected": {
+          "nume_document": "Agrement Tehnic",
+          "material": "Țevi si fitinguri din PEID pentru instalații de apă",
+          "data_expirare": "27.06.2027",
+          "companie": "TEHNO WORLD SRL",
+          "producator": "TEHNO WORLD SRL",
+          "distribuitor": null,
+          "adresa_producator": "Loc. Baia, nr. 1616, DN 2E Km 2, jud. Suceava"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\Teava apa PEHD - Tehnoworld\\6. AGT.pdf"
+      }
+    ],
+    "CERTIFICAT_GARANTIE": [
+      {
+        "fisier": "9. CG.pdf",
+        "categorie": "CERTIFICAT_GARANTIE",
+        "expected": {
+          "nume_document": "CERTIFICAT DE GARANTIE",
+          "material": "Tevi si Fitinguri PVC, PP, PEX, PE",
+          "data_expirare": "2 ani de la receptie",
+          "companie": null,
+          "producator": "TERAPLAST SA",
+          "distribuitor": null,
+          "adresa_producator": "sat Saratel, com Sieu-Magherus, calea Teraplast nr 1, 427301, jud Bistrita-Nasaud"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - TERAPLAST\\9. CG.pdf"
+      },
+      {
+        "fisier": "8. CG.pdf",
+        "categorie": "CERTIFICAT_GARANTIE",
+        "expected": {
+          "nume_document": "CERTIFICAT DE GARANTIE",
+          "material": "Tevi si Fitinguri PVC, PP, PEX, PE; Camine si accesorii din PE; Rezervoare pentru lichide din PE; Tuburi PVC si PE protectie cabluri; Microstatii epurare si separatoare grasimi; Granule",
+          "data_expirare": "2 ani de la receptie",
+          "companie": null,
+          "producator": "TERAPLAST SA",
+          "distribuitor": null,
+          "adresa_producator": "sat Saratel, com Sieu-Magherus, calea Teraplast nr 1, 427301, jud Bistrita-Nasaud"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\2\\2 PVC-KG - TERAPLAST\\APROBARE FURNIZOR\\8. CG.pdf"
+      }
+    ],
+    "AUTORIZATIE_DISTRIBUTIE": [
+      {
+        "fisier": "Autorizatie de distributie - furnizor Petrouzinex - producator Saint Gobain - semnat.pdf",
+        "categorie": "AUTORIZATIE_DISTRIBUTIE",
+        "expected": {
+          "nume_document": "Autorizare",
+          "material": "Țevi și fitinguri, vane, capace și grătare stradale din fontă ductilă",
+          "data_expirare": "18.02.2026",
+          "companie": null,
+          "producator": "SAINT-GOBAIN PAM Canalisation",
+          "distribuitor": "Petrouzinex SRL",
+          "adresa_producator": "21, avenue Camille Cavallier - BP 129, PONT-A-MOUSSON, Franța"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\3\\3 TEAVA FONTA\\Autorizatie de distributie - furnizor Petrouzinex - producator Saint Gobain - semnat.pdf"
+      },
+      {
+        "fisier": "Authorization Leter.pdf",
+        "categorie": "AUTORIZATIE_DISTRIBUTIE",
+        "expected": {
+          "nume_document": "AUTHORIZATION LETTER",
+          "material": "steel pipes and related products (Seamless, ERW, LSAW/SAWL, SSAW, line pipe and relevant accessories)",
+          "data_expirare": "30.12.2026",
+          "companie": null,
+          "producator": "Bestar Steel Co., Ltd.",
+          "distribuitor": "TITAN STEEL TRADING SRL",
+          "adresa_producator": "No.9 Xiangfu Road, Changsha, Hunan, China"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\3\\3 TR GAZ\\STEEL GATE\\Authorization Leter.pdf"
+      }
+    ],
+    "CERTIFICAT_CALITATE": [
+      {
+        "fisier": "9. CC.pdf",
+        "categorie": "CERTIFICAT_CALITATE",
+        "expected": {
+          "nume_document": "Certificat de Calitate",
+          "material": "Teava PE pentru apa (conform EN 12201)",
+          "data_expirare": null,
+          "companie": "TEHNO WORLD SRL",
+          "producator": "TEHNO WORLD SRL",
+          "distribuitor": null,
+          "adresa_producator": null
+        },
+        "classification": {
+          "metoda": "filename+text_agree",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\1\\Teava apa PEHD - Tehnoworld\\9. CC.pdf"
+      },
+      {
+        "fisier": "CC 15_ sablon CC teava PVC multistrat EN 13476-2_draft_lungime utila.pdf",
+        "categorie": "CERTIFICAT_CALITATE",
+        "expected": {
+          "nume_document": "Certificat de Calitate",
+          "material": "Teava PVC multistrat cu mufa si garnitura",
+          "data_expirare": null,
+          "companie": "TEHNO WORLD SRL",
+          "producator": "TEHNO WORLD SRL",
+          "distribuitor": null,
+          "adresa_producator": null
+        },
+        "classification": {
+          "metoda": "filename+text_agree",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\2\\2 PVC-KG Canalizare TEHNOWORLD\\CC 15_ sablon CC teava PVC multistrat EN 13476-2_draft_lungime utila.pdf"
+      }
+    ],
+    "AVIZ_TEHNIC_SI_AGREMENT": [
+      {
+        "fisier": "Aviz si AT 017-05-4295-2025.pdf",
+        "categorie": "AVIZ_TEHNIC_SI_AGREMENT",
+        "expected": {
+          "nume_document": "Aviz Tehnic si Agrement Tehnic",
+          "material": "Tevi si fitinguri VALROM din PEID pentru instalatii de alimentare cu apa rece si canalizare",
+          "data_expirare": "24.07.2028",
+          "companie": "VALROM INDUSTRIE SRL",
+          "producator": "VALROM INDUSTRIE SRL",
+          "distribuitor": null,
+          "adresa_producator": "Bd. Preciziei, nr. 28, sector 6, Bucuresti, ROMANIA"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - VALROM\\Aviz si AT 017-05-4295-2025.pdf"
+      },
+      {
+        "fisier": "Aviz-agrement-tehnic-4014-DC-Tevi si fit PEHD Water VLR.pdf",
+        "categorie": "AVIZ_TEHNIC_SI_AGREMENT",
+        "expected": {
+          "nume_document": "Aviz Tehnic",
+          "material": "Conducte si fitinguri din PEID pentru instalatii de apa",
+          "data_expirare": "25.10.2025",
+          "companie": "VALROM INDUSTRIE SRL",
+          "producator": "VALROM INDUSTRIE SRL",
+          "distribuitor": null,
+          "adresa_producator": "Bd. Preciziei, nr. 28, sector 6, Bucuresti, ROMANIA"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\1\\PEHD Apa - VALROM\\Aviz-agrement-tehnic-4014-DC-Tevi si fit PEHD Water VLR.pdf"
+      }
+    ],
+    "CUI": [
+      {
+        "fisier": "1. CUI.pdf",
+        "categorie": "CUI",
+        "expected": {
+          "nume_document": "Certificat de Inregistrare",
+          "material": null,
+          "data_expirare": null,
+          "companie": "TERAPLAST SA (CUI: 3094980)",
+          "producator": null,
+          "distribuitor": null,
+          "adresa_producator": "Sat Sărățel; Comuna Sieu-Magherus, Calea TERAPLAST; Nr. 1, Judet"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\2\\2 PVC-KG - TERAPLAST\\APROBARE FURNIZOR\\1. CUI.pdf"
+      },
+      {
+        "fisier": "10. CUI.pdf",
+        "categorie": "CUI",
+        "expected": {
+          "nume_document": "Certificat de Inregistrare",
+          "material": null,
+          "data_expirare": null,
+          "companie": "ZAKPREST CONSTRUCT SRL (CUI: 34646295)",
+          "producator": null,
+          "distribuitor": null,
+          "adresa_producator": "București Sectorul 4, Strada STANJENEILOR, Nr. 4, CAMERA NR. 1, Bloc 62, Scara 2, Etaj 1, Ap. 61"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\2\\2 PVC-KG - TERAPLAST\\APROBARE FURNIZOR\\10. CUI.pdf"
+      }
+    ],
+    "CE": [
+      {
+        "fisier": "Certificat CE PED producator Huayang - semnat.pdf",
+        "categorie": "CE",
+        "expected": {
+          "nume_document": "Certificat Sistem de management",
+          "material": "țevi sudate din oțel",
+          "data_expirare": "10.08.2026",
+          "companie": "TÜV Rheinland Industrie Service GmbH",
+          "producator": "Hebei Huayang Steel Pipe Co.,Ltd",
+          "distribuitor": null,
+          "adresa_producator": "Hope New Area, Mengcun Hui Autonomous County, Cangzhou City, 061400 Hebei, P.R. China"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\3\\3 TR GAZ\\HUAYANG\\Certificat CE PED producator Huayang - semnat.pdf"
+      },
+      {
+        "fisier": "Certificat CE PED 2014-68-EU teava fara sudura producator LUZHENG - semnat.pdf",
+        "categorie": "CE",
+        "expected": {
+          "nume_document": "Certificat CE PED",
+          "material": "țevile fără sudură din oțeluri feritice",
+          "data_expirare": "26.04.2026",
+          "companie": "TÜV SÜD Industrie Service GmbH",
+          "producator": "WEIFANG LUZHENG INDUSTRY AND TRADE CO., LTD.",
+          "distribuitor": null,
+          "adresa_producator": "No. 13-14, C District, Zhongrui Iron and steel Logistic Park, Qingzhou City Weifang City, Shandong Province, 262500 P. R. China"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.9
+        },
+        "cale_relativa": "Pachete Makyol\\3\\3 TR GAZ\\LUZHENG\\Certificat CE PED 2014-68-EU teava fara sudura producator LUZHENG - semnat.pdf"
+      }
+    ],
+    "ALTELE": [],
+    "DECLARATIE_PERFORMANTA": [
+      {
+        "fisier": "3. DOP.pdf",
+        "categorie": "DECLARATIE_PERFORMANTA",
+        "expected": {
+          "nume_document": "Declaratie de Performanta",
+          "material": "Robinet cu sertar cauciucat EPDM, F4/FS, PNl0/16 DN40-DN1200 corp din fonta ductila",
+          "data_expirare": null,
+          "companie": null,
+          "producator": "TIANJIN KEFA VALVE CO., LTD",
+          "distribuitor": null,
+          "adresa_producator": "Loe. Yuzhuang, Strada Hujiayuan, Tanggu, Tianjin, China"
+        },
+        "classification": {
+          "metoda": "filename_regex",
+          "confidence": 0.95
+        },
+        "cale_relativa": "Pachete Makyol\\4\\4 VANE-TIANJIN KEFA\\3. DOP.pdf"
+      },
+      {
+        "fisier": "DC-Placa+capac.pdf",
+        "categorie": "DECLARATIE_PERFORMANTA",
+        "expected": {
+          "nume_document": "DECLARATIE DE PERFORMANTA",
+          "material": "ELEMENTE PENTRU CAMINE DIN BETON, placi de acoperire din beton armat: rama rectangulara cu capac de fonta inglobat total",
+          "data_expirare": null,
+          "companie": null,
+          "producator": "BOMA PREFABRICATE SRL",
+          "distribuitor": null,
+          "adresa_producator": "Platforma Industrială Florea Grup, Sat Strejnicu, Com. Tȋrgșorul Vechi, DN1 A KM62+200, Jud. Prahova"
+        },
+        "classification": {
+          "metoda": "text_rules",
+          "confidence": 0.92
+        },
+        "cale_relativa": "Pachete Makyol\\5\\5 CAMINE\\BOMA\\DC-Placa+capac.pdf"
+      }
+    ]
+  }
+}

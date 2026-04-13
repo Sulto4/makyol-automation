@@ -1,0 +1,392 @@
+[
+  {
+    "filename": "11. ISO 9001.pdf",
+    "folder": "Documente Zakprest",
+    "doc_type": "Certificat ISO 9001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "14.02.2027",
+    "producer": "TERAPLAST SA",
+    "distributor": "ZAKPREST CONSTRUCT SRL",
+    "has_text": true
+  },
+  {
+    "filename": "12. ISO 14001.pdf",
+    "folder": "Documente Zakprest",
+    "doc_type": "Certificat ISO 14001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "14.02.2027",
+    "producer": "TERAPLAST SA",
+    "distributor": "ZAKPREST CONSTRUCT SRL",
+    "has_text": true
+  },
+  {
+    "filename": "13. ISO 45001.pdf",
+    "folder": "Documente Zakprest",
+    "doc_type": "Certificat ISO 45001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "14.02.2027",
+    "producer": "TERAPLAST SA",
+    "distributor": "ZAKPREST CONSTRUCT SRL",
+    "has_text": true
+  },
+  {
+    "filename": "14. ISO 50001.pdf",
+    "folder": "Documente Zakprest",
+    "doc_type": "Certificat ISO 50001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TERAPLAST SA",
+    "distributor": "ZAKPREST CONSTRUCT SRL",
+    "has_text": true
+  },
+  {
+    "filename": "15. DC.pdf",
+    "folder": "Documente Zakprest",
+    "doc_type": "Declaratie de conformitate",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TERAPLAST SA",
+    "distributor": "ZAKPREST CONSTRUCT SRL",
+    "has_text": true
+  },
+  {
+    "filename": "1. FT Teava PEHD apa.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Fisa tehnica",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "2. ISO 9001.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Certificat ISO 9001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "04.11.2027",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "3. ISO 14001.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Certificat ISO 14001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "04.11.2027",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "4. ISO 45001.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Certificat ISO 45001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "01.12.2027",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "7. AVS.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Aviz sanitar",
+    "material": "Tevi din PEID pentru instalatii de apa",
+    "expiry": "-",
+    "producer": "TERAPLAST S.A.",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "8.1 AVT.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Aviz tehnic",
+    "material": "Tevi din PEID pentru instalatii de apa ”, produs de",
+    "expiry": "27.09.2026",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "9. AGT.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Agrement tehnic",
+    "material": "TEVI DIN PEID PENTRU INSTALATII DE APA",
+    "expiry": "27.09.2026",
+    "producer": "TERAPLAST S.A.\nSa",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "9. CG.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Certificat de garantie",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "CC-01740.1 PE typ 2.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Certificat de calitate",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TERAPLAST SA",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "DOC001.pdf",
+    "folder": "PEHD Apa - TERAPLAST",
+    "doc_type": "Autorizare comercializare",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "Societatea TERAPLAST S.A.",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "2024-04-25-P1R0519_Valrom_A_2024_ro-_extsigned.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Document tehnic",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "-",
+    "producer": "Valrom Industrie srl",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "6. AVS.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Aviz sanitar",
+    "material": "Tevi si fitinguri VALROM din PE 100 BorSafe HE3490-LS,",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "7. AVS RC.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Aviz sanitar",
+    "material": "Tevi si fitinguri VALROM din PE 100RC BorSafe HE3490-LS-H,",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "A13__L4_0276_AB_26.02.26_teava PEID si fitinguri_ producatorfurnizor -  Valrom Industrie SRL.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Aprobare material",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Aviz si AT 017-05-4295-2025.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Agrement tehnic",
+    "material": "Tevi si fitinguri VALROM din PEID pentru instalatii de",
+    "expiry": "24.07.2028",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Aviz-agrement-tehnic-4014-DC-Tevi si fit PEHD Water VLR.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Agrement tehnic",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "25.10.2026",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Certificat ISO 14001 SRAC 2025_2026.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Certificat ISO 14001",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "24.11.2028",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Certificat ISO 45001 SRAC 2025_2026.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Certificat ISO 45001",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "24.11.2028",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Certificat ISO 9001 SRAC 2025_2026.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Certificat ISO 9001",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "24.11.2028",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Data sheet WaterKIT PE100CERT pipes_vers vers 2.3 02.02.2026.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Fisa tehnica",
+    "material": "PE100 CERT VALWater PIPES for DRINKING WATER",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Fisa tehnica Tevi VALWater PE100RC  vers 3.2 03.02.2026.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Fisa tehnica",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Fisa tehnica Tevi WaterKIT PE100CERT_vers 2.0 21.05.2025.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Fisa tehnica",
+    "material": "TEVI <WaterKIT> APA POTABILA PE100 CERT",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "Fisa tehnica Tevi Waterkit PE100RC  vers 3.0 21.05.2025.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Fisa tehnica",
+    "material": "Tevi PEHD PE100/PE100RC pentru apa",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "VLR 004.10_Declaratie de conformitate_Tevi si fit VLR PEHD apa VALWater_24_07_2028.pdf",
+    "folder": "PEHD Apa - VALROM",
+    "doc_type": "Declaratie de conformitate",
+    "material": "TEVI SI FITINGURI VALROM DIN PEID PENTRU INSTALATII DE ALIMENTARE CU APA RECE",
+    "expiry": "-",
+    "producer": "VALROM INDUSTRIE SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "1. FT PEHD.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Fisa tehnica",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TEHNO WORLD SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "2. FT FITINGURI.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Fisa tehnica",
+    "material": "FITINGURI SEGMENTATE",
+    "expiry": "-",
+    "producer": "TEHNO WORLD SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "2. ISO 9001.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Certificat ISO 9001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "31.08.2028",
+    "producer": "TEHNO WORLD S.R.L.",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "3. ISO 14001.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Certificat ISO 14001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "31.08.2028",
+    "producer": "TEHNO WORLD S.R.L.",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "4. ISO 45001.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Certificat ISO 45001",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "02.09.2028",
+    "producer": "TEHNO WORLD S.R.L.",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "5. AVT.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Aviz tehnic",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "27.06.2027",
+    "producer": "TEHNO WORLD SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "6. AGT.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Agrement tehnic",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "27.06.2027",
+    "producer": "TEHNO WORLD SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "7. AVS.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Aviz sanitar",
+    "material": "Tevi monostrat/multistrat si fitinguridin polietilenad de inalta densitate",
+    "expiry": "-",
+    "producer": "TEHNO WORLD SRL\nAdresa",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "8. DC.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Declaratie de conformitate",
+    "material": "Tevi multistrat din polietilena de inalta densitate pentru instalatii de apa",
+    "expiry": "-",
+    "producer": "TEHNO WORLD SRL",
+    "distributor": "-",
+    "has_text": true
+  },
+  {
+    "filename": "9. CC.pdf",
+    "folder": "Teava apa PEHD - Tehnoworld",
+    "doc_type": "Certificat de calitate",
+    "material": "Tevi PEHD PE100 pentru apa",
+    "expiry": "-",
+    "producer": "TEHNO WORLD SRL",
+    "distributor": "-",
+    "has_text": true
+  }
+]

@@ -1,0 +1,547 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Knowledge base for Makyol document automation - companies, aliases, addresses",
+    "last_updated": "2026-04-12",
+    "source": "Extracted from 309 documents audit + manual verification"
+  },
+
+  "companies": {
+    "TERAPLAST_SA": {
+      "canonical": "TERAPLAST SA",
+      "aliases": [
+        "TERAPLAST", "TERAPLAST SA", "TERAPLAST SRL", "TERAPLAST-SA",
+        "TERAPIA", "SC TERAPLAST SA", "S.C. TERAPLAST S.A."
+      ],
+      "type": "producator",
+      "country": "RO",
+      "cui": "3094980",
+      "canonical_address": "Sat Sărățel, Comuna Șieu-Măgheruș, Calea Teraplast nr. 1, jud. Bistrița-Năsăud",
+      "address_aliases": [
+        "Sat Sărățel; Comuna Sieu-Magherus, Calea TERAPLAST; Nr. 1",
+        "sat Sărățel, comuna Șieu-Măgheruș, Calea TERAPLAST, Nr. 1, 427301, județ Bistrița-Năsăud"
+      ],
+      "products": ["Țevi PEHD PE100", "Țevi PVC", "Fitinguri PE", "Fitinguri PVC"]
+    },
+
+    "VALROM_INDUSTRIE_SRL": {
+      "canonical": "VALROM INDUSTRIE SRL",
+      "aliases": [
+        "VALROM INDUSTRIE", "VALROM INDUSTRIE SRL", "VALROM INDUSTRIE S.R.L.",
+        "VALROM INDUSTRIE SA", "VALROM", "SC VALROM INDUSTRIE SRL"
+      ],
+      "type": "producator",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": "Bd. General Nicolae Dăscălescu nr. 261, Piatra Neamț, jud. Neamț, România",
+      "address_aliases": [
+        "Bd.General Nicolae Dăscălescu, Nr. 261, Loc. Piatra Neamt, Județul Neamt, România",
+        "Bd. General Nicolae Dăscălescu nr.261 610201 Piatra-Neamt, Jud. Neamt",
+        "Piatra-Neamt, Str.Bulevardul General Nicolae Dascalescu , Nr.261, Judetul Neamt",
+        "Piatra-Neamt, Str.Bulevardul General Nicolae Dascalescu , Nr.261, Judetul: Neamt",
+        "Piatra-Neamt, Str.Bulevardul General Nicolae Dascalescu , Nr.261 Judetul: Neamt"
+      ],
+      "products": ["Țevi PEHD PE100", "Țevi PVC", "Fitinguri PE", "WaterKIT PE100CERT", "VALWater PE100RC"]
+    },
+
+    "TEHNO_WORLD_SRL": {
+      "canonical": "TEHNO WORLD SRL",
+      "aliases": [
+        "TEHNO WORLD", "TEHNO WORLD SRL", "TEHNOWORLD", "TEHNOWORLD SRL",
+        "SC TEHNO WORLD SRL"
+      ],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Țevi PEHD (distribuție)"]
+    },
+
+    "ZAKPREST_CONSTRUCT_SRL": {
+      "canonical": "ZAKPREST CONSTRUCT SRL",
+      "aliases": [
+        "ZAKPREST CONSTRUCT", "ZAKPREST CONSTRUCT SRL", "ZAKPREST",
+        "SC ZAKPREST CONSTRUCT SRL"
+      ],
+      "type": "distribuitor_subcontractor",
+      "country": "RO",
+      "cui": "34646295",
+      "canonical_address": "Str. Stânjeneilor nr. 4, camera nr. 1, bl. 62, sc. 2, et. 1, ap. 61, sector 4, București",
+      "address_aliases": [
+        "Str. Stânjeneilor, nr. 4, camera nr. 1, bl. 62, sc. 2, et. 1, ap. 61, sector 4, Bucuresti",
+        "Str. Stânjeneilor, nr. 4, camera nr. 1, bl. 62, sc. 2, et. 1, ap. 61, sector 4, București",
+        "Str Stinjeneilor, nr 4, Sector 4, Bucuresti",
+        "București Sectorul 4, Strada STANJENEILOR, Nr. 4, CAMERA NR. 1, Bloc 62, Scara 2, Etaj 1, Ap. 61"
+      ],
+      "products": []
+    },
+
+    "PRECON_SRL": {
+      "canonical": "PRECON SRL",
+      "aliases": ["PRECON", "PRECON SRL", "SC PRECON SRL"],
+      "type": "producator",
+      "country": "RO",
+      "cui": "382733",
+      "canonical_address": "Comuna Jilava, Șos. Giurgiului nr. 5, Județul Ilfov, cod poștal 077120",
+      "address_aliases": [
+        "Comuna Jilava , Sos. Giurgiului nr. 5, Județul Ilfov ,cod poștal 077120",
+        "Comuna Jilava , Sos. Giurgiului nr. 5, Județul Ilfov „cod postal 077120"
+      ],
+      "products": ["Prefabricate beton"]
+    },
+
+    "BOMA_PREFABRICATE_SRL": {
+      "canonical": "BOMA PREFABRICATE SRL",
+      "aliases": ["BOMA PREFABRICATE", "BOMA PREFABRICATE SRL", "SC BOMA PREFABRICATE SRL"],
+      "type": "producator",
+      "country": "RO",
+      "cui": "80006102",
+      "canonical_address": "Municipiul Alba Iulia, str. Seini nr. 19E2, jud. Alba",
+      "address_aliases": [],
+      "products": ["Prefabricate"]
+    },
+
+    "SAINT_GOBAIN_PAM": {
+      "canonical": "SAINT-GOBAIN PAM CANALISATION",
+      "aliases": [
+        "SAINT GOBAIN PAM CANALISATION", "SAINT-GOBAIN PAM CANALISATION",
+        "SAINT - GOBAIN PAM CANALISATION", "SAINT - GOBAIN PAM Canalisation",
+        "SAINT-GOBAIN PAM Canalisation", "Saint-Gobain PAM Canalisation"
+      ],
+      "type": "producator",
+      "country": "FR",
+      "cui": null,
+      "canonical_address": "21, avenue Camille Cavallier - BP 129, 54705 PONT-A-MOUSSON CEDEX, France",
+      "address_aliases": [
+        "21, avenue Camille Cavallier - BP 129, PONT-A-MOUSSON, Franța",
+        "21, avenue Camille Cavallier - BP 129 | 54705 PONT-A-MOUSSON CEDEX | FRANCE"
+      ],
+      "products": ["Țevi fontă ductilă", "Fitinguri fontă"]
+    },
+
+    "SAINT_GOBAIN_CPR": {
+      "canonical": "SAINT-GOBAIN CONSTRUCTION PRODUCTS ROMANIA SRL",
+      "aliases": [
+        "SAINT — GOBAIN CONSTRUCTION PRODUCTS ROMANIA SRL",
+        "SAINT — GOBAIN CONSTRUCTION PRODUCTS ROMÂNIA SRL",
+        "SAINT- GOBAIN CONSTRUCTION PRODUCTS ROMÂNIA SRL",
+        "SAINT-GOBAIN CONSTRUCTION PRODUCTS ROMANIA SRL",
+        "SAINT-GOBAIN CONSTRUCTION PRODUCTS ROMÂNIA SRL"
+      ],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": "București, Sector 6, B-dul Preciziei Nr. 28",
+      "address_aliases": [
+        "București, Sector 6, B-dul Preciziei Nr.28",
+        "Bdul Preciziei, nr.28, Sector 6, Bucuresti, Romania",
+        "Bdul Preciziei, nr.28, Sector 6, Bucuresti, ROMANIA"
+      ],
+      "products": ["Distribuție produse Saint-Gobain"]
+    },
+
+    "HEBEI_HUAYANG": {
+      "canonical": "HEBEI HUAYANG STEEL PIPE CO., LTD",
+      "aliases": [
+        "HEBEI HUA YANG STEEL PIPE CO., LTD.",
+        "HEBEI HUAYANG STEEL PIPE CO., LTD",
+        "HEBEI HUAYANG STEEL PIPE CO.,LTD",
+        "HEBEI HUAYANG STEELPIPE CO., LTD",
+        "Hebei Huayang Steel Pipe Co., Ltd",
+        "Hebei Huayang Steel Pipe Co.,Ltd",
+        "河北华洋钢管有限公司 HEBEI HUAYANG STEEL PIPE CO.,LTD",
+        "河北华洋钢管有限公司"
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": "Yuzhuangzi Village, Hujiayuan Street, Binhai New Area, Tanggu, Tianjin, China",
+      "address_aliases": [
+        "Yuzhuangzi Village, Hujiayuan Street, Binhai New Area, Tanggu, Tianjin",
+        "Yuzhuangzi Village, Hujiayuan Street, Binhai New Area, Tanggu, Tianjin, People's Republic of China",
+        "Yuzhuangzi Village, Hujiayuan Street, Binhai New Area, Tanggu, Tianjin,China",
+        "yuzhuang village,hujiayuan street,tanggu,tianjin,China",
+        "yuzhuang village,hujiayuan street,tanggu,tianjin,china"
+      ],
+      "products": ["Țevi oțel sudate LSAW", "Țevi oțel carbon"]
+    },
+
+    "TIANJIN_KEFA": {
+      "canonical": "TIANJIN KEFA VALVE CO., LTD",
+      "aliases": [
+        "Tianjin KEFA Valve Co., Ltd.",
+        "Tianjin KEFA Valve Co.,Ltd.",
+        "TIANJIN KEFA VALVE CO., LTD",
+        "TIANJIN KEFA VALVE CO.,LTD",
+        "TIANJIN KEFA VALVE CO..LTD"
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": "No. 59, District 3, Yihezhuang Village, Beizhakou Town, Jinnan District, Tianjin, China",
+      "address_aliases": [
+        "No.59, District 3, Yihezhuang Village, Beizhakou, District Jinnan, Tianjin, China",
+        "No. 59, District 3, Yihezhuang Village, Beizhakou Town, Jinnan District, Tianjin, P. R. China"
+      ],
+      "products": ["Vane industriale", "Compensatoare"]
+    },
+
+    "TIANJIN_BBK_VALVE": {
+      "canonical": "TIANJIN BBK VALVE MANUFACTURE CO., LTD",
+      "aliases": [
+        "TIANJIN BBK VALVE MANUFACTURE CO., LTD",
+        "TIANJIN BBK VALVE MANUFACTURE CO., LTD."
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Vane industriale"]
+    },
+
+    "BBK_VALVE_GROUP": {
+      "canonical": "BBK VALVE GROUP CO., LTD",
+      "aliases": [
+        "BBK VALVE GROUP CO., LTD",
+        "BBK VALVE GROUP CO., LTD.",
+        "BBK VALVE Group Company Limited"
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Vane industriale"],
+      "_note": "Posibil aceeași entitate ca TIANJIN BBK VALVE sau companie-mamă"
+    },
+
+    "TIANJIN_HUILIFENG": {
+      "canonical": "TIANJIN HUILIFENG ANTI-CORROSION AND INSULATION STEEL PIPE GROUP CO., LTD",
+      "aliases": [
+        "TIANJIN HUILIFENG ANTI-CORROSION AND INSULATION STEEL PIPE GROUP CO.,LTD",
+        "TIANJINHUILIFENGANTI-CORROSIONANDINSULATIONSTEELPIPEGROUP CO.LTD"
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Izolație exterioară 3LPE pentru țevi oțel", "Acoperire interioară țevi"]
+    },
+
+    "BESTAR_STEEL": {
+      "canonical": "BESTAR STEEL CO., LTD",
+      "aliases": [
+        "BESTAR STEEL CO., LTD",
+        "Bestar Steel Co., Ltd",
+        "Bestar Steel Co., Ltd.",
+        "Bestar Steel CO., LTD."
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Țevi oțel"]
+    },
+
+    "WEIFANG_LUZHENG": {
+      "canonical": "WEIFANG LUZHENG INDUSTRY AND TRADE CO., LTD",
+      "aliases": [
+        "WEIFANG LUZHENG INDUSTRY AND TRADE CO.,LTD.",
+        "WEIFANG LUZHENG INDUSTRY AND TRADE CO., LTD.",
+        "Weifang Luzheng Industry and Trade Co ltd"
+      ],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Țevi oțel"]
+    },
+
+    "SHANDONG_LUXING": {
+      "canonical": "SHANDONG LUXING STEEL PIPE CO., LTD",
+      "aliases": ["SHANDONG LUXING STEEL PIPE CO., LTD"],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Țevi oțel"]
+    },
+
+    "AKMERMER": {
+      "canonical": "AKMERMER DEMIR CELIK TIC. VE SAN. LTD. STI.",
+      "aliases": [
+        "AKMERMER DEMIR CELIK TIC. SAN. LTD. ȘTI.",
+        "AKMERMER DEMIR CELIK. TIC. VE SAN. LTD. ȘTI.",
+        "AKMERMER DEMIR GELIK TIC. VE SAN. LTD. ȘTI.",
+        "AKMERMER DEMIR CELIK TIC. VE SA. LTD. ȘTI.",
+        "AKMERMER DEMIR CELIK TIC. VE SAN. LTD. ȘTI.",
+        "AKMERMER DEMIR GELIK TIC. VE SAN. LTD. STI.",
+        "AKMERMER DEMİR ÇELİK TİC. VE SAN. LT D. ȘTİ.",
+        "AKMERMER DEMİR ÇELİK TİC. VE SAN. LTD. ȘTI.",
+        "AKMERMER DEMİR ÇELİK TİC. VE SAN. LTD. ȘTİ.",
+        "Akmermer Demir Celik Tc. Ve San. Ltd. Ști.",
+        "Akmermer Demir Çelik Tic. ve San. Ltd. Ști."
+      ],
+      "type": "producator",
+      "country": "TR",
+      "cui": null,
+      "canonical_address": "Bașkent OSB Mah. Recep Tayyip Erdogan Bulv. Nr. 13, Malikoy/Ankara 06909, Turcia",
+      "address_aliases": [
+        "Bașkent OSB Mah. Recep Tayyip Erdoğan Bulv. No:13 Malıköy/Ankara 06909",
+        "Bașkent OSB Mah. Recep Tayyip Erdogan Bulv. Nr. 13 Malikoy/Ankara 06909",
+        "MALIKOY BAȘKENT OSB. MAH RECEP TAYYIP ERDOGAN BULV. NR.: 13 MALIKOY/ANKARA",
+        "MALIKOY BAȘKENT OSB. MAH RECEP TATTIP ERDOGAN BULV. NR.: 13 MALIKOY/ANKARA",
+        "Malikoy Bașkent OSB, Mah. Recep Tayyip Erdogan Bulv. Nr: 13 Malikoy/Ankara/Turcia",
+        "Malikoy Bașkent OSB. Mah. Recep Tayyip Erdogan Bulv. Nr: 13 Malikoy/Ankara/Turcia"
+      ],
+      "products": ["Oțel, fitinguri oțel"]
+    },
+
+    "KANAT": {
+      "canonical": "KANAT BOYACILIK TIC. VE SAN. A.S.",
+      "aliases": [
+        "KANAT",
+        "KANAT Boyacilik Tic. ve San. A.S",
+        "KANAT Boyacilik Tic. ve San. A.S.",
+        "KANAT PAINTS AND COATINGS"
+      ],
+      "type": "producator",
+      "country": "TR",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Vopsele industriale", "Acoperiri anti-coroziune"]
+    },
+
+    "TUV_RHEINLAND": {
+      "canonical": "TÜV Rheinland Industrie Service GmbH",
+      "aliases": ["TÜV Rheinland", "TUV Rheinland", "TUV Rheinland Industrie Service GmbH"],
+      "type": "organism_certificare",
+      "country": "DE",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["CE/PED"]
+    },
+
+    "TUV_SUD": {
+      "canonical": "TÜV SÜD Industrie Service GmbH",
+      "aliases": ["TÜV SÜD", "TUV SUD", "TUV SÜD Industrie Service GmbH"],
+      "type": "organism_certificare",
+      "country": "DE",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["CE/PED"]
+    },
+
+    "TUV_AUSTRIA_TURK": {
+      "canonical": "TÜV AUSTRIA TURK",
+      "aliases": [
+        "TUV AUSTRIA TURK",
+        "TÜV AUSTRIA TURK",
+        "TUV Austria Turk",
+        "TUV Austria Türk",
+        "TUV AUSTRIA TURK Belgelendirme Egitim ve Gozetim Hizmetleri Ltd. Ști."
+      ],
+      "type": "organism_certificare",
+      "country": "TR",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["ISO", "CE"]
+    },
+
+    "LLOYDS": {
+      "canonical": "Lloyd's Register Quality Assurance",
+      "aliases": [
+        "Lloyd's Register Quality Assurance (Shanghai) Co., Ltd",
+        "Lloyd's Register Quality Assurance (Shanghai) Co., Ltd"
+      ],
+      "type": "organism_certificare",
+      "country": "UK",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["ISO"]
+    },
+
+    "LRQA": {
+      "canonical": "LRQA Nederland B.V.",
+      "aliases": ["LRQA Nederland B.V.", "LRQA"],
+      "type": "organism_certificare",
+      "country": "NL",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["ISO"]
+    },
+
+    "EUROCERT": {
+      "canonical": "EUROCERT SA",
+      "aliases": ["EUROCERT SA", "EUROCERT"],
+      "type": "organism_certificare",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["ISO"]
+    },
+
+    "AXA_CERT": {
+      "canonical": "AXA CERT SRL",
+      "aliases": ["AXA CERT SRL", "AXA-CERT SRL", "AXA CERT"],
+      "type": "organism_certificare",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["ISO"]
+    },
+
+    "IRD_CERTIFICARE": {
+      "canonical": "IRD CERTIFICARE",
+      "aliases": ["IRD CERTIFICARE", "IRD"],
+      "type": "organism_certificare",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "certifications": ["ISO"]
+    },
+
+    "TITAN_STEEL_TRADING": {
+      "canonical": "TITAN STEEL TRADING SRL",
+      "aliases": ["TITAN STEEL TRADING", "TITAN STEEL TRADING SRL"],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": "Galați, strada Portului nr. 56, birou 17, et. 1, județul Galați",
+      "address_aliases": [
+        "Galati, strada Portului, nr. 56, biroul 17, et. 1, județul Galați",
+        "Galati, strada Portului, nr. 56, birou 17, et. 1, judetul Galati"
+      ],
+      "products": ["Distribuție țevi oțel"]
+    },
+
+    "PETROUZINEX": {
+      "canonical": "PETROUZINEX SRL",
+      "aliases": ["PETROUZINEX SRL", "PETROUZINEX", "PIROUZINEX"],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": "Platforma Industrială Florea Grup, Sat Strejnicu, Com. Târgșorul Vechi, DN1A KM62+200, Jud. Prahova",
+      "address_aliases": [
+        "Platforma Industrială Florea Grup, Sat Strejnicu, Com. Tȋrgșorul Vechi, DN2E km 2 Jud. Suceava, RO-727020",
+        "Platforma Industrială Florea Grup, Sat Strejnicu, Com. Tirgsorul Vechi, DNI A KM62+200, Jud. Prahova"
+      ],
+      "products": ["Distribuție țevi fontă, oțel"]
+    },
+
+    "NIMFA_COM": {
+      "canonical": "NIMFA COM SRL",
+      "aliases": ["NIMFA COM SRL", "NIMFA - COM SRL", "NIMFA COM"],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Distribuție"]
+    },
+
+    "METALTRADE": {
+      "canonical": "METALTRADE INTERNATIONAL SRL",
+      "aliases": ["METALTRADE INTERNATIONAL SRL", "METAL TRADE INTERNATIONAL SRL", "METALTRADE"],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Distribuție materiale metalice"]
+    },
+
+    "HALLS_TRADING": {
+      "canonical": "HALLS TRADING EDIL SRL",
+      "aliases": ["HALLS TRADING EDIL SRL", "HALLS TRADING EDI", "HALLS TRADING EDIL"],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Distribuție"]
+    },
+
+    "INNOTECH_VALVES": {
+      "canonical": "INNOTECH VALVES SRL",
+      "aliases": ["INNOTECH VALVES SRL", "INNOTECH VALVES"],
+      "type": "distribuitor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Distribuție vane"]
+    },
+
+    "NATURAL": {
+      "canonical": "NATURAL",
+      "aliases": ["NATURAL"],
+      "type": "producator",
+      "country": "unknown",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Fitinguri apă potabilă, garnituri"],
+      "_note": "Companie verificată - numele e corect, fără formă juridică în documente"
+    },
+
+    "SHINESTAR": {
+      "canonical": "Shinestar Holdings Group",
+      "aliases": ["Shinestar Holdings Group"],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Țevi oțel"]
+    },
+
+    "RELIABLE_INDUSTRIAL": {
+      "canonical": "Dalian Reliable Metal Co., Ltd.",
+      "aliases": ["Dalian Reliable Metal Co., Ltd.", "RELIABLE INDUSTRIAL"],
+      "type": "producator",
+      "country": "CN",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "products": ["Metale, țevi"]
+    },
+
+    "TECNIC_CONSULTING": {
+      "canonical": "TECNIC Consulting Engineering România SRL",
+      "aliases": ["TECNIC Consulting Engineering România SRL", "TECNIC"],
+      "type": "supervizor",
+      "country": "RO",
+      "cui": null,
+      "canonical_address": null,
+      "address_aliases": [],
+      "_note": "Supervizorul tehnic al proiectului - primește documentele"
+    }
+  },
+
+  "normalization_rules": {
+    "strip_cui": "Remove (CUI: XXXXX) from company name field",
+    "strip_sc_prefix": "Remove SC / S.C. prefix (archaic Romanian legal form)",
+    "normalize_srl": "S.R.L. / S.R.L / srl → SRL",
+    "normalize_sa": "S.A. / S.A / sa → SA",
+    "normalize_dashes": "SAINT — GOBAIN / SAINT- GOBAIN → SAINT-GOBAIN",
+    "strip_chinese_if_latin_present": "If field has both Chinese + Latin chars, keep only Latin",
+    "fuzzy_match_threshold": "90% similarity or Levenshtein distance ≤ 3 against aliases",
+    "uppercase_canonical": "Store canonical forms in consistent case"
+  }
+}
