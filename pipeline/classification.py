@@ -272,6 +272,29 @@ def classify_by_text(text: str) -> tuple[str, float, str] | None:
     return (best_category, confidence, "text_rules")
 
 
+def _get_text_score(text: str, category: str) -> int:
+    """Sum TEXT_MARKERS weights for a specific category against given text.
+
+    Args:
+        text: Extracted text from the PDF.
+        category: Category to score (must be in VALID_CATEGORIES).
+
+    Returns:
+        Total score (sum of matching marker weights), or 0 if text is empty
+        or category is unknown.
+    """
+    if not text or not text.strip():
+        return 0
+    if category not in VALID_CATEGORIES:
+        return 0
+
+    score = 0
+    for pattern, cat, weight in TEXT_MARKERS:
+        if cat == category and re.search(pattern, text):
+            score += weight
+    return score
+
+
 def classify_by_ai(text: str) -> tuple[str, float, str] | None:
     """Classify document using AI via OpenRouter API.
 
