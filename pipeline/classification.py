@@ -295,6 +295,113 @@ def _get_text_score(text: str, category: str) -> int:
     return score
 
 
+# ---------------------------------------------------------------------------
+# Post-classification validation patterns
+# Each category maps to a list of regex patterns for confidence boosting.
+# If >=2 patterns match, confidence is boosted by +0.05 (capped at 0.99).
+# ---------------------------------------------------------------------------
+
+_VALIDATION_PATTERNS: dict[str, list[str]] = {
+    "ISO": [
+        r"(?i)ISO\s*\d{4,5}",
+        r"(?i)management\s*system",
+        r"(?i)certificat(?:e|ul)?",
+        r"(?i)\bASRO\b",
+        r"(?i)\bIQNet\b",
+        r"(?i)\bCERTIND\b",
+        r"(?i)SR\s*EN\s*\d+",
+    ],
+    "CE": [
+        r"(?i)\bCE\b",
+        r"(?i)marcaj\s*CE",
+        r"(?i)\bPED\b",
+        r"(?i)organism\s*notificat",
+        r"(?i)directiva",
+    ],
+    "FISA_TEHNICA": [
+        r"(?i)fi[sș][aă]\s*tehnic[aă]",
+        r"(?i)technical\s*data\s*sheet",
+        r"(?i)caracteristici\s*tehnice",
+        r"(?i)propriet[aă][tț]i",
+    ],
+    "AGREMENT": [
+        r"(?i)agrement\s*tehnic",
+        r"(?i)ETA-\d+",
+        r"(?i)\bEOTA\b",
+        r"(?i)\bINCERC\b",
+    ],
+    "AVIZ_TEHNIC": [
+        r"(?i)aviz\s*tehnic",
+        r"(?i)avizul\s*tehnic",
+    ],
+    "AVIZ_SANITAR": [
+        r"(?i)aviz\s*sanitar",
+        r"(?i)ministerul\s*s[aă]n[aă]t[aă][tț]ii",
+        r"(?i)ap[aă]\s*potabil[aă]",
+    ],
+    "DECLARATIE_CONFORMITATE": [
+        r"(?i)declara[tț]i[ea]\s*de\s*conformitate",
+        r"(?i)declaration\s*of\s*conformity",
+        r"(?i)conform\s*cu\s*cerin[tț]ele",
+    ],
+    "CERTIFICAT_CALITATE": [
+        r"(?i)certificat\s*de\s*calitate",
+        r"(?i)quality\s*certificate",
+        r"(?i)certificat\s*de\s*conformitate",
+    ],
+    "AUTORIZATIE_DISTRIBUTIE": [
+        r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]",
+        r"(?i)distribu[tț]ie\s*autorizat[aă]",
+    ],
+    "CUI": [
+        r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare",
+        r"(?i)certificat\s*constatator",
+        r"(?i)registrul\s*comer[tț]ului",
+        r"(?i)capital\s*social",
+    ],
+    "CERTIFICAT_GARANTIE": [
+        r"(?i)certificat\s*de\s*garan[tț]ie",
+        r"(?i)warranty\s*certificate",
+        r"(?i)garan[tț]ie.*ani",
+    ],
+    "DECLARATIE_PERFORMANTA": [
+        r"(?i)declara[tț]i[ea]\s*(?:de\s*)?performan[tț][aă]",
+        r"(?i)declaration\s*of\s*performance",
+        r"(?i)\bDoP\b",
+    ],
+    "AVIZ_TEHNIC_SI_AGREMENT": [
+        r"(?i)aviz\s*tehnic.*agrement",
+        r"(?i)agrement.*aviz\s*tehnic",
+    ],
+}
+
+
+def validate_classification(category: str, confidence: float, text: str) -> float:
+    """Validate classification by checking text against validation patterns.
+
+    If >=2 patterns match for the given category, boost confidence by +0.05
+    (capped at 0.99).
+
+    Args:
+        category: The classified category.
+        confidence: The current confidence score.
+        text: Extracted text from the PDF.
+
+    Returns:
+        The (possibly boosted) confidence score.
+    """
+    patterns = _VALIDATION_PATTERNS.get(category)
+    if not patterns or not text:
+        return confidence
+
+    match_count = sum(1 for p in patterns if re.search(p, text))
+
+    if match_count >= 2:
+        return round(min(confidence + 0.05, 0.99), 2)
+
+    return confidence
+
+
 def classify_by_ai(text: str) -> tuple[str, float, str] | None:
     """Classify document using AI via OpenRouter API.
 
