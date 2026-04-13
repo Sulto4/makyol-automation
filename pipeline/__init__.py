@@ -92,6 +92,19 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         result["error"] = f"Extraction failed: {e}"
         return result
 
+    # Step 4b: Retry extraction if all values are null
+    try:
+        all_null = all(
+            v is None for k, v in extraction.items() if k != "extraction_model"
+        )
+        if all_null and len(text.strip()) >= 50:
+            logger.warning(
+                "First extraction returned all null for %s, retrying...", filename
+            )
+            extraction = extract_document_data(text, category)
+    except Exception as e:
+        logger.error("Extraction retry failed for %s: %s", filename, e)
+
     # Step 5: Normalize company names and addresses
     try:
         for field in ("companie", "producator", "distribuitor"):
