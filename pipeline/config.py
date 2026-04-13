@@ -10,7 +10,7 @@ SCHEMAS_DIR = PIPELINE_DIR / "schemas"
 # AI Configuration
 OPENROUTER_API_KEY = os.environ.get(
     "OPENROUTER_API_KEY",
-    "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",
+    "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",
 )
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 AI_MODEL = os.environ.get("AI_MODEL", "google/gemini-2.0-flash-001")
