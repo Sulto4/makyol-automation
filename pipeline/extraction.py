@@ -90,68 +90,45 @@ EXTRACTION_SCHEMA = {
 }
 
 # ---------------------------------------------------------------------------
-# Extraction system prompt (tuned across 5 iterations — DO NOT MODIFY)
+# Extraction system prompt — ported from MVP (clasificare_documente_final.py)
+# 14 rules: MVP rules 1-8, new rule 9 (adresa_distribuitor), MVP rules 9-13
 # ---------------------------------------------------------------------------
 
-_EXTRACTION_SYSTEM_PROMPT = """Esti un expert in extragerea datelor din documente din domeniul constructiilor si materialelor de constructii din Romania.
+_EXTRACTION_SYSTEM_PROMPT = """You are a precise data extraction system for Romanian construction industry documents.
+Extract ONLY the requested fields from the document text. Follow these rules strictly:
 
-Analizeaza urmatorul text extras dintr-un document PDF clasificat ca "{category}" si extrage urmatoarele informatii:
+1. Return ONLY valid JSON with the exact field names requested
+2. If a field is not found in the document, use null (not empty string)
+3. For dates, use format DD.MM.YYYY when possible
+4. For "data_expirare" (expiration date): look for "valabil pana la", "valid until", "data expirarii", "valabilitate", "expires", "date of expiry". If only issue date + validity period exist, CALCULATE the expiration date (e.g., issued 01.01.2024 + 3 years = 01.01.2027). ALWAYS try hard to find or calculate an expiration date.
+5. For "material": extract the ACTUAL PRODUCT/MATERIAL name, NOT standard references.
+   - CORRECT: "Tevi PEHD PE100 RC SDR11 DN110-DN630", "Fitinguri PVC-U PN10/PN16"
+   - WRONG: "Executat dupa EN 12201-2" (this is a standard reference, not a material)
+   - If the document is about a specific product, extract its commercial name and specifications
+   - Include dimensions, standards references AFTER the product name if present
+6. For "producator": the manufacturer/producer of the product.
+   - Fix obvious OCR errors in company names (e.g., "TERAPIA" should be "TERAPLAST" if context shows Teraplast)
+   - For well-known Romanian companies, use the correct name: TERAPLAST, VALROM, TEHNO WORLD
+7. For "distribuitor": the company authorized to distribute the product
+8. For "companie": if the company is neither clearly a producer nor distributor, use this field. For ISO certs, this is the certified company.
+   - Same OCR correction rules as producator
+9. For "adresa_distribuitor": full address of the distributor company. Fix obvious OCR errors in addresses.
+10. For "adresa_producator": full address of the producer/manufacturer. Fix obvious OCR errors in addresses.
+11. For "cui_number": just the numeric CUI code
+12. For "standard_iso": the ISO standard number (e.g., "ISO 9001:2015", "ISO 14001:2015")
+13. Fix obvious OCR errors in ALL extracted values:
+    - "lndustrie" → "Industrie", "ser,;ce" → "Service", "TUV" → "TÜV"
+    - "Să'ațel" → "Sărățel", "TERAPIA" → "TERAPLAST" (when context shows Teraplast)
+    - Interpret Romanian diacritics: "Ţ" = "Ț", "ş" = "ș", "ã" = "ă"
+14. For "nume_document": extract ONLY the document type/title, MAX 40 characters.
+    - CORRECT examples: "Agrement Tehnic", "Aviz Sanitar", "Certificat CE PED", "Certificat ISO 9001", "Certificat de Inregistrare", "Fisa Tehnica Produs", "Declaratie de Performanta"
+    - Do NOT include document numbers, dates, reference codes, or descriptions
+    - Do NOT include newlines
+    - For CE/PED certificates: use "Certificat CE PED"
+    - For ISO certificates: use "Certificat ISO [standard]" (e.g., "Certificat ISO 9001")
+    - WRONG: "Certificat Sistem de management al calității pentru Producător" (too long, includes description)
 
-1. **companie** — Numele companiei principale mentionate in document (producator sau emitent).
-   - Extrage DOAR numele companiei, fara CUI, adresa, sau alte detalii.
-   - Daca sunt mai multe companii, alege compania PRINCIPALA (emitentul/producatorul).
-   - NU include liste separate prin virgula cu mai multe companii.
-   - Maxim {max_company} caractere.
-
-2. **material** — Descrierea materialului/produsului.
-   - Extrage o descriere CONCISA a materialului sau produsului principal.
-   - Include tipul produsului, dimensiunile relevante, standardele (daca sunt mentionate scurt).
-   - NU include descrieri generice precum "Produse", "Materiale", "Diverse".
-   - NU repeta informatii deja prezente in alte campuri.
-   - Maxim {max_material} caractere.
-
-3. **data_expirare** — Data de expirare a documentului.
-   - Format: DD.MM.YYYY (ex: 31.12.2025).
-   - Daca documentul mentioneaza o durata de valabilitate (ex: "valabil 5 ani de la 01.01.2020"),
-     calculeaza data de expirare: 01.01.2020 + 5 ani = 01.01.2025.
-   - Daca nu exista data de expirare clara, returneaza null.
-   - NU inventa date — daca nu este clar, returneaza null.
-
-4. **producator** — Numele producatorului (daca este diferit de companie).
-   - Daca producatorul este acelasi cu compania, returneaza null.
-   - Maxim {max_company} caractere.
-
-5. **distribuitor** — Numele distribuitorului (daca este mentionat).
-   - Returneaza null daca nu este mentionat un distribuitor.
-   - Maxim {max_company} caractere.
-
-6. **adresa_producator** — Adresa producatorului sau a companiei.
-   - Extrage adresa completa daca este disponibila.
-   - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
-   - Maxim {max_address} caractere.
-
-REGULI IMPORTANTE:
-- Raspunde DOAR cu un JSON valid, fara explicatii sau text suplimentar.
-- Foloseste null pentru campurile care nu pot fi determinate din text.
-- NU inventa informatii care nu sunt in text.
-- NU include caractere chinezesti in raspuns — daca textul original contine caractere chinezesti
-  amestecate cu text latin, extrage DOAR textul latin.
-- Daca textul este prea scurt sau ilizibil, returneaza un JSON cu toate campurile null.
-- Corecteaza GRESELI EVIDENTE de OCR (ex: "lndustrie" → "Industrie", "TERAPIA" → "TERAPLAST"
-  daca contextul indica clar compania TERAPLAST).
-
-Format raspuns:
-{{
-    "companie": "Numele Companiei" sau null,
-    "material": "Descrierea materialului" sau null,
-    "data_expirare": "DD.MM.YYYY" sau null,
-    "producator": "Numele Producatorului" sau null,
-    "distribuitor": "Numele Distribuitorului" sau null,
-    "adresa_producator": "Adresa completa" sau null
-}}
-
-Textul documentului ({category}):
-{text}"""
+Respond with ONLY the JSON object, no markdown, no explanation."""
 
 # ---------------------------------------------------------------------------
 # OCR error corrections
@@ -396,7 +373,9 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
 def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict | None:
     """Extract structured data from document text using AI.
 
-    Sends text to OpenRouter API with category-specific extraction prompt.
+    Uses two-message approach (system + user) matching MVP pattern.
+    System prompt contains extraction rules; user prompt contains
+    document-specific context (filename, category, fields, text).
     Temperature is 0.0 (NON-NEGOTIABLE).
 
     Args:
@@ -425,12 +404,36 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
         }},
     )
 
-    prompt = _EXTRACTION_SYSTEM_PROMPT.format(
-        category=category,
-        text=truncated_text,
-        max_company=MAX_COMPANY_LENGTH,
-        max_material=MAX_MATERIAL_LENGTH,
-        max_address=MAX_ADDRESS_LENGTH,
+    # Build dynamic user prompt from schema (MVP pattern)
+    schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
+    output_fields = list(set(schema["fields"] + ["nume_document"]))
+
+    user_prompt = (
+        f"Document filename: {filename}\n"
+        f"Document category: {category}\n"
+        f"Required fields: {json.dumps(output_fields)}\n"
+        f"\n"
+        f"Instructions: {schema['instructions']}\n"
+        f"\n"
+        f"Also extract:\n"
+        f'- "nume_document": the official title of the document as it appears '
+        f"in the header/title area\n"
+        f"\n"
+        f"Document text:\n"
+        f"---\n"
+        f"{truncated_text}\n"
+        f"---\n"
+        f"\n"
+        f"Return a JSON object with the requested fields. "
+        f"Use null for fields not found in the document."
+    )
+
+    # DEBUG logging for prompt diagnostics
+    logger.debug(
+        "Extraction system prompt length: %d chars", len(_EXTRACTION_SYSTEM_PROMPT),
+    )
+    logger.debug(
+        "Extraction user prompt (first 2000 chars): %s", user_prompt[:2000],
     )
 
     headers = {
@@ -439,7 +442,10 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
     }
     payload = {
         "model": AI_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [
+            {"role": "system", "content": _EXTRACTION_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
         "temperature": AI_TEMPERATURE,  # 0.0 — NON-NEGOTIABLE
         "max_tokens": AI_MAX_TOKENS,
     }
@@ -464,6 +470,9 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
 
         result = response.json()
         content = result["choices"][0]["message"]["content"]
+
+        # DEBUG logging for raw AI response before parsing
+        logger.debug("Raw AI response content: %s", content)
 
         # Strip markdown code fences if present
         content = re.sub(r"^```json\s*", "", content.strip())
