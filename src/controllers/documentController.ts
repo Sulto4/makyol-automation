@@ -709,6 +709,7 @@ export class DocumentController {
             file_path: file.path,
             file_size: file.size,
             mime_type: 'application/pdf',
+            relative_path: relativePath,
           };
 
           const document = await this.documentModel.create(documentInput);
@@ -855,7 +856,7 @@ export class DocumentController {
         archiveRecords.push({
           document,
           extraction,
-          relativePath: entry.relativePath || document.original_filename,
+          relativePath: entry.relativePath || document.relative_path || document.original_filename,
           absolutePath: document.file_path,
         });
       }

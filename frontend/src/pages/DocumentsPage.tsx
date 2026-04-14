@@ -197,7 +197,7 @@ export default function DocumentsPage() {
       await downloadArchive({
         documents: completedDocs.map((d) => ({
           id: d.id,
-          relativePath: d.original_filename,
+          relativePath: d.relative_path || d.original_filename,
         })),
         folderName: 'documente',
       });

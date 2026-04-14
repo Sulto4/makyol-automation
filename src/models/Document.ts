@@ -38,6 +38,7 @@ export interface Document {
   confidence: number | null;
   metoda_clasificare: string | null;
   review_status: ReviewStatus | null;
+  relative_path: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -55,6 +56,7 @@ export interface CreateDocumentInput {
   confidence?: number;
   metoda_clasificare?: string;
   review_status?: ReviewStatus;
+  relative_path?: string;
 }
 
 /**
@@ -101,8 +103,9 @@ export class DocumentModel {
         original_filename,
         file_path,
         file_size,
-        mime_type
-      ) VALUES ($1, $2, $3, $4, $5)
+        mime_type,
+        relative_path
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
 
@@ -112,6 +115,7 @@ export class DocumentModel {
       input.file_path,
       input.file_size,
       input.mime_type || 'application/pdf',
+      input.relative_path || null,
     ];
 
     const result: QueryResult<Document> = await this.pool.query(query, values);

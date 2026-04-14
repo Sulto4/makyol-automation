@@ -61,6 +61,7 @@ export interface Document {
   metoda_clasificare: ClassificationMethod | null;
   review_status: ReviewStatus | null;
   error_message: string | null;
+  relative_path: string | null;
   uploaded_at: string;
   processing_started_at: string | null;
   processing_completed_at: string | null;
