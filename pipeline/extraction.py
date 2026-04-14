@@ -286,6 +286,10 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
         Cleaned and normalized extraction dict.
     """
     if not result or not isinstance(result, dict):
+        logger.info("Normalization skipped: empty/invalid result", extra={"extra_data": {
+            "category": category,
+            "result_type": type(result).__name__,
+        }})
         return {
             "companie": None,
             "material": None,
@@ -296,6 +300,14 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
             "adresa_distribuitor": None,
             "nume_document": None,
         }
+
+    # Snapshot before-fields for logging
+    before_fields = [k for k, v in result.items() if v is not None]
+
+    # Category-specific normalization flags (tracked for logging)
+    iso_material_nulled = False
+    cui_number_merged = False
+    date_calculated = False
 
     # --- Category-specific pre-processing (before per-field loop) ---
 
@@ -318,6 +330,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
 
     # ISO: null material, set nume_document with standard
     if category == "ISO":
+        iso_material_nulled = result.get("material") is not None
         result["material"] = None  # ISO certifies management systems, not materials
         if result.get("standard_iso"):
             std = str(result["standard_iso"]).strip()
@@ -382,6 +395,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                 calculated = _calculate_expiry_date(text) if text else None
                 if calculated:
                     value = calculated
+                    date_calculated = True
                 else:
                     # Keep non-standard date strings (e.g., "nelimitat", "permanent")
                     # but truncate to reasonable length
@@ -425,12 +439,26 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
     # CUI: merge cui_number into companie AFTER company name cleanup
     # (must be post-loop because _clean_company_name strips CUI patterns)
     if category == "CUI" and result.get("cui_number"):
+        cui_number_merged = True
         if normalized.get("companie"):
             normalized["companie"] = (
                 f"{normalized['companie']} (CUI: {result['cui_number']})"
             )
         else:
             normalized["companie"] = f"CUI: {result['cui_number']}"
+
+    # Log before vs after normalization with category-specific flags
+    after_fields = [k for k, v in normalized.items() if v is not None]
+    logger.info("Normalization before vs after fields", extra={"extra_data": {
+        "category": category,
+        "before_fields": before_fields,
+        "after_fields": after_fields,
+        "before_count": len(before_fields),
+        "after_count": len(after_fields),
+        "iso_material_nulled": iso_material_nulled,
+        "cui_number_merged": cui_number_merged,
+        "date_calculated": date_calculated,
+    }})
 
     return normalized
 
@@ -620,16 +648,32 @@ def extract_document_data(text: str, category: str, filename: str = "") -> dict:
     else:
         extraction_model = AI_MODEL
 
+    # Track AI-sourced fields (non-null from AI/regex_fallback result)
+    ai_fields = [k for k, v in raw_result.items() if v is not None] if raw_result else []
+
     normalized = normalize_extraction_result(raw_result, category, text)
 
     # Merge regex results into normalized: fill None fields with regex values
+    regex_filled = []
     regex_result = regex_extract(text, category)
     for field, regex_value in regex_result.items():
         if normalized.get(field) is None and regex_value is not None:
             logger.info("Filling field %s from regex for category %s", field, category)
             normalized[field] = regex_value
+            regex_filled.append(field)
 
     # Set extraction_model AFTER normalization so it doesn't get wiped
     normalized["extraction_model"] = extraction_model
+
+    # Log AI vs regex field sources
+    final_non_null = [k for k, v in normalized.items() if v is not None]
+    logger.info("AI vs regex field sources", extra={"extra_data": {
+        "category": category,
+        "filename": filename,
+        "ai_fields": ai_fields,
+        "regex_filled": regex_filled,
+        "final_non_null": final_non_null,
+        "extraction_model": extraction_model,
+    }})
 
     return normalized
