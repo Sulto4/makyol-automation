@@ -142,6 +142,11 @@ _OCR_FIXES = [
     ("lnstalatii", "Instalatii"),
     ("lzolatii", "Izolatii"),
     ("lmperm", "Imperm"),
+    ("ser,;ce", "Service"),
+    ("ser;ce", "Service"),
+    ("lron", "Iron"),
+    ("PEÎD", "PEID"),
+    ("PEÎ D", "PEID"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -288,13 +293,49 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
             "producator": None,
             "distribuitor": None,
             "adresa_producator": None,
+            "adresa_distribuitor": None,
+            "nume_document": None,
         }
+
+    # --- Category-specific pre-processing (before per-field loop) ---
+
+    # AUTORIZATIE_DISTRIBUTIE: calculate data_expirare from data_emitere + valabilitate
+    if category == "AUTORIZATIE_DISTRIBUTIE":
+        if not result.get("data_expirare") and result.get("data_emitere") and result.get("valabilitate"):
+            valab = str(result["valabilitate"]).lower()
+            if "contract" in valab or "nedeterminat" in valab:
+                result["data_expirare"] = "Pe durata contractului"
+            else:
+                result["data_expirare"] = (
+                    f"Emitere: {result['data_emitere']}, "
+                    f"Valabilitate: {result['valabilitate']}"
+                )
+
+    # CUI: fallback adresa to adresa_producator (merge cui_number happens post-loop)
+    if category == "CUI":
+        if result.get("adresa") and not result.get("adresa_producator"):
+            result["adresa_producator"] = str(result["adresa"]).strip()
+
+    # ISO: null material, set nume_document with standard
+    if category == "ISO":
+        result["material"] = None  # ISO certifies management systems, not materials
+        if result.get("standard_iso"):
+            std = str(result["standard_iso"]).strip()
+            current_name = str(result.get("nume_document") or "").lower()
+            if "iso" not in current_name:
+                result["nume_document"] = f"Certificat {std}"
+
+    # --- Per-field normalization loop ---
 
     normalized = {}
 
     # Process each expected field
     schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
-    all_fields = ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"]
+    all_fields = [
+        "companie", "material", "data_expirare", "producator",
+        "distribuitor", "adresa_producator", "adresa_distribuitor",
+        "nume_document",
+    ]
 
     for field in all_fields:
         value = result.get(field)
@@ -347,10 +388,22 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                     if len(value) > 50:
                         value = value[:50]
 
-        elif field == "adresa_producator":
+        elif field in ("adresa_producator", "adresa_distribuitor"):
             # Truncate address
             if len(value) > MAX_ADDRESS_LENGTH:
                 value = value[:MAX_ADDRESS_LENGTH].rsplit(" ", 1)[0]
+
+        elif field == "nume_document":
+            # Strip doc numbers/dates (e.g., "Agrement 012-04/123-2024")
+            value = re.sub(r'\s+\d{3}[-/]\d{2}[-/]\d+[-/]?\d*$', '', value).strip()
+            value = re.sub(r'\s+Nr\.?\s*\d+.*$', '', value).strip()
+            # Truncate to max 50 chars at word boundary
+            if len(value) > 50:
+                cut = value[:50].rfind(' ')
+                if cut > 20:
+                    value = value[:cut].rstrip(' ,;')
+                else:
+                    value = value[:50]
 
         # Remove Chinese characters if Latin text present
         if value and any(ord(c) >= 0x4E00 and ord(c) <= 0x9FFF for c in value):
@@ -366,6 +419,18 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                     continue
 
         normalized[field] = value if value else None
+
+    # --- Category-specific post-processing (after per-field cleanup) ---
+
+    # CUI: merge cui_number into companie AFTER company name cleanup
+    # (must be post-loop because _clean_company_name strips CUI patterns)
+    if category == "CUI" and result.get("cui_number"):
+        if normalized.get("companie"):
+            normalized["companie"] = (
+                f"{normalized['companie']} (CUI: {result['cui_number']})"
+            )
+        else:
+            normalized["companie"] = f"CUI: {result['cui_number']}"
 
     return normalized
 
