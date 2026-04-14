@@ -31,127 +31,104 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 EXTRACTION_SCHEMA = {
-    "ISO": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "CE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "FISA_TEHNICA": {
-        "fields": ["companie", "material", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
+    "AUTORIZATIE_DISTRIBUTIE": {
+        "fields": ["distribuitor", "producator", "data_emitere", "valabilitate", "data_expirare", "material", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: distributor company, producer company, issue date, validity period, expiration date, material/product, producer address. The material is the product authorized for distribution (e.g., 'tevi si fitinguri PEID', 'vane industriale'). If the authorization is generic ('produsele achizitionate'), write 'Produse diverse (autorizatie generala)'. If no explicit expiration date but has validity period, CALCULATE it. If validity = 'pe durata contractului', write 'Pe durata contractului'.",
     },
     "AGREMENT": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "AVIZ_TEHNIC": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "AVIZ_SANITAR": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "DECLARATIE_CONFORMITATE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "CERTIFICAT_CALITATE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "AUTORIZATIE_DISTRIBUTIE": {
-        "fields": ["companie", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie"],
-    },
-    "CUI": {
-        "fields": ["companie", "adresa_producator"],
-        "required": ["companie"],
-    },
-    "CERTIFICAT_GARANTIE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
-    },
-    "DECLARATIE_PERFORMANTA": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
+        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: producer name, expiration date, material/product name, company that holds the agrement, producer address. Look for 'valabil pana la', 'valabilitate' for the expiration date.",
     },
     "AVIZ_TEHNIC_SI_AGREMENT": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": ["companie", "material"],
+        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: producer name, expiration date, material/product, company name, producer address. For 'nume_document', this should be 'Aviz Tehnic si Agrement Tehnic' (NOT just 'Aviz Tehnic').",
+    },
+    "AVIZ_TEHNIC": {
+        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: producer name, expiration date, material/product, company (the certification body if applicable), producer address.",
+    },
+    "AVIZ_SANITAR": {
+        "fields": ["companie", "material", "data_expirare", "producator", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: company holding the sanitary approval, material/product, expiration date, producer, producer address. Look very carefully for expiration - check for 'valabil', 'expira', 'pana la', and also check if the approval number contains a year-based validity. If no expiration is stated anywhere, use null.",
+    },
+    "ISO": {
+        "fields": ["companie", "data_expirare", "standard_iso", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: certified company name, certificate expiration date, ISO standard number (e.g., 'ISO 9001:2015'), company address. NOTE: Do NOT put the ISO standard in the 'material' field - ISO certifies management systems, not physical materials. For 'nume_document', write 'Certificat ISO [standard]' (e.g., 'Certificat ISO 9001').",
+    },
+    "DECLARATIE_PERFORMANTA": {
+        "fields": ["material", "producator", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: product/material name (full description with specs), producer name, producer address. Keep material name concise but specific (max 100 chars).",
+    },
+    "FISA_TEHNICA": {
+        "fields": ["producator", "material", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: producer name, product/material name (full name with type, e.g., 'Tevi PE100 PEHD pentru apa'), producer address.",
+    },
+    "CERTIFICAT_GARANTIE": {
+        "fields": ["material", "producator", "adresa_producator", "data_expirare", "adresa_distribuitor"],
+        "instructions": "Extract: product/material under warranty (keep CONCISE, max 80 chars - summarize if the list is long, e.g., 'Tevi si fitinguri PVC, PP, PE, PEX'), producer name, producer address, warranty period/expiration. For data_expirare: extract the warranty DURATION (e.g., '2 ani de la receptie', '24 luni'). If multiple warranty periods exist, extract the main/longest one.",
+    },
+    "DECLARATIE_CONFORMITATE": {
+        "fields": ["material", "producator", "companie", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: product/material name (the actual product - if generic like 'produse pentru constructii', keep it as is but add any specifics from the document context), producer name, declaring company, producer address.",
+    },
+    "CE": {
+        "fields": ["producator", "companie", "material", "data_expirare", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract data from this CE/PED certificate. IMPORTANT distinction: 'producator' = the manufacturer of the product (e.g., Hebei Huayang Steel Pipe). 'companie' = the CERTIFICATION BODY that issued the certificate (e.g., TÜV Rheinland, TÜV SUD, Bureau Veritas, Lloyd's). These are DIFFERENT entities. Also extract material/product, expiration date, producer address. For 'nume_document', write 'Certificat CE PED' or 'Certificat CE'.",
+    },
+    "CERTIFICAT_CALITATE": {
+        "fields": ["material", "producator", "companie", "adresa_distribuitor"],
+        "instructions": "Extract: product/material name - the PHYSICAL PRODUCT being certified. Look for pipe type (PEHD, PVC, PE100), dimensions (DN, PN, SDR), and product description. Common materials: 'Teava PEHD PE100', 'Teava PVC multistrat', 'Fitinguri PEID'. If the product field is empty (template document) but a standard reference exists, DEDUCE the material from the standard: EN 12201 = 'Teava PE pentru apa (conform EN 12201)', EN 13476 = 'Teava PVC multistrat (conform EN 13476)', EN 1452 = 'Teava PVC-U presiune (conform EN 1452)', EN 10204 = 'Tevi/produse din otel (conform EN 10204)'. Also extract producer and company.",
+    },
+    "CUI": {
+        "fields": ["companie", "cui_number", "adresa_producator", "adresa_distribuitor"],
+        "instructions": "Extract: company name (EXACTLY as registered - common companies: TERAPLAST, VALROM INDUSTRIE, TEHNO WORLD, ZAKPREST CONSTRUCT), CUI number (just digits), registered address. For 'nume_document', use 'Certificat de Inregistrare'.",
     },
     "ALTELE": {
-        "fields": ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"],
-        "required": [],
+        "fields": ["companie", "material", "adresa_distribuitor"],
+        "instructions": "Extract: any company name and material/product mentioned.",
     },
 }
 
 # ---------------------------------------------------------------------------
-# Extraction system prompt (tuned across 5 iterations — DO NOT MODIFY)
+# Extraction system prompt — ported from MVP (clasificare_documente_final.py)
+# 14 rules: MVP rules 1-8, new rule 9 (adresa_distribuitor), MVP rules 9-13
 # ---------------------------------------------------------------------------
 
-_EXTRACTION_SYSTEM_PROMPT = """Esti un expert in extragerea datelor din documente din domeniul constructiilor si materialelor de constructii din Romania.
+_EXTRACTION_SYSTEM_PROMPT = """You are a precise data extraction system for Romanian construction industry documents.
+Extract ONLY the requested fields from the document text. Follow these rules strictly:
 
-Analizeaza urmatorul text extras dintr-un document PDF clasificat ca "{category}" si extrage urmatoarele informatii:
+1. Return ONLY valid JSON with the exact field names requested
+2. If a field is not found in the document, use null (not empty string)
+3. For dates, use format DD.MM.YYYY when possible
+4. For "data_expirare" (expiration date): look for "valabil pana la", "valid until", "data expirarii", "valabilitate", "expires", "date of expiry". If only issue date + validity period exist, CALCULATE the expiration date (e.g., issued 01.01.2024 + 3 years = 01.01.2027). ALWAYS try hard to find or calculate an expiration date.
+5. For "material": extract the ACTUAL PRODUCT/MATERIAL name, NOT standard references.
+   - CORRECT: "Tevi PEHD PE100 RC SDR11 DN110-DN630", "Fitinguri PVC-U PN10/PN16"
+   - WRONG: "Executat dupa EN 12201-2" (this is a standard reference, not a material)
+   - If the document is about a specific product, extract its commercial name and specifications
+   - Include dimensions, standards references AFTER the product name if present
+6. For "producator": the manufacturer/producer of the product.
+   - Fix obvious OCR errors in company names (e.g., "TERAPIA" should be "TERAPLAST" if context shows Teraplast)
+   - For well-known Romanian companies, use the correct name: TERAPLAST, VALROM, TEHNO WORLD
+7. For "distribuitor": the company authorized to distribute the product
+8. For "companie": if the company is neither clearly a producer nor distributor, use this field. For ISO certs, this is the certified company.
+   - Same OCR correction rules as producator
+9. For "adresa_distribuitor": full address of the distributor company. Fix obvious OCR errors in addresses.
+10. For "adresa_producator": full address of the producer/manufacturer. Fix obvious OCR errors in addresses.
+11. For "cui_number": just the numeric CUI code
+12. For "standard_iso": the ISO standard number (e.g., "ISO 9001:2015", "ISO 14001:2015")
+13. Fix obvious OCR errors in ALL extracted values:
+    - "lndustrie" → "Industrie", "ser,;ce" → "Service", "TUV" → "TÜV"
+    - "Să'ațel" → "Sărățel", "TERAPIA" → "TERAPLAST" (when context shows Teraplast)
+    - Interpret Romanian diacritics: "Ţ" = "Ț", "ş" = "ș", "ã" = "ă"
+14. For "nume_document": extract ONLY the document type/title, MAX 40 characters.
+    - CORRECT examples: "Agrement Tehnic", "Aviz Sanitar", "Certificat CE PED", "Certificat ISO 9001", "Certificat de Inregistrare", "Fisa Tehnica Produs", "Declaratie de Performanta"
+    - Do NOT include document numbers, dates, reference codes, or descriptions
+    - Do NOT include newlines
+    - For CE/PED certificates: use "Certificat CE PED"
+    - For ISO certificates: use "Certificat ISO [standard]" (e.g., "Certificat ISO 9001")
+    - WRONG: "Certificat Sistem de management al calității pentru Producător" (too long, includes description)
 
-1. **companie** — Numele companiei principale mentionate in document (producator sau emitent).
-   - Extrage DOAR numele companiei, fara CUI, adresa, sau alte detalii.
-   - Daca sunt mai multe companii, alege compania PRINCIPALA (emitentul/producatorul).
-   - NU include liste separate prin virgula cu mai multe companii.
-   - Maxim {max_company} caractere.
-
-2. **material** — Descrierea materialului/produsului.
-   - Extrage o descriere CONCISA a materialului sau produsului principal.
-   - Include tipul produsului, dimensiunile relevante, standardele (daca sunt mentionate scurt).
-   - NU include descrieri generice precum "Produse", "Materiale", "Diverse".
-   - NU repeta informatii deja prezente in alte campuri.
-   - Maxim {max_material} caractere.
-
-3. **data_expirare** — Data de expirare a documentului.
-   - Format: DD.MM.YYYY (ex: 31.12.2025).
-   - Daca documentul mentioneaza o durata de valabilitate (ex: "valabil 5 ani de la 01.01.2020"),
-     calculeaza data de expirare: 01.01.2020 + 5 ani = 01.01.2025.
-   - Daca nu exista data de expirare clara, returneaza null.
-   - NU inventa date — daca nu este clar, returneaza null.
-
-4. **producator** — Numele producatorului (daca este diferit de companie).
-   - Daca producatorul este acelasi cu compania, returneaza null.
-   - Maxim {max_company} caractere.
-
-5. **distribuitor** — Numele distribuitorului (daca este mentionat).
-   - Returneaza null daca nu este mentionat un distribuitor.
-   - Maxim {max_company} caractere.
-
-6. **adresa_producator** — Adresa producatorului sau a companiei.
-   - Extrage adresa completa daca este disponibila.
-   - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
-   - Maxim {max_address} caractere.
-
-REGULI IMPORTANTE:
-- Raspunde DOAR cu un JSON valid, fara explicatii sau text suplimentar.
-- Foloseste null pentru campurile care nu pot fi determinate din text.
-- NU inventa informatii care nu sunt in text.
-- NU include caractere chinezesti in raspuns — daca textul original contine caractere chinezesti
-  amestecate cu text latin, extrage DOAR textul latin.
-- Daca textul este prea scurt sau ilizibil, returneaza un JSON cu toate campurile null.
-- Corecteaza GRESELI EVIDENTE de OCR (ex: "lndustrie" → "Industrie", "TERAPIA" → "TERAPLAST"
-  daca contextul indica clar compania TERAPLAST).
-
-Format raspuns:
-{{
-    "companie": "Numele Companiei" sau null,
-    "material": "Descrierea materialului" sau null,
-    "data_expirare": "DD.MM.YYYY" sau null,
-    "producator": "Numele Producatorului" sau null,
-    "distribuitor": "Numele Distribuitorului" sau null,
-    "adresa_producator": "Adresa completa" sau null
-}}
-
-Textul documentului ({category}):
-{text}"""
+Respond with ONLY the JSON object, no markdown, no explanation."""
 
 # ---------------------------------------------------------------------------
 # OCR error corrections
@@ -165,6 +142,11 @@ _OCR_FIXES = [
     ("lnstalatii", "Instalatii"),
     ("lzolatii", "Izolatii"),
     ("lmperm", "Imperm"),
+    ("ser,;ce", "Service"),
+    ("ser;ce", "Service"),
+    ("lron", "Iron"),
+    ("PEÎD", "PEID"),
+    ("PEÎ D", "PEID"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -304,6 +286,10 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
         Cleaned and normalized extraction dict.
     """
     if not result or not isinstance(result, dict):
+        logger.info("Normalization skipped: empty/invalid result", extra={"extra_data": {
+            "category": category,
+            "result_type": type(result).__name__,
+        }})
         return {
             "companie": None,
             "material": None,
@@ -311,13 +297,58 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
             "producator": None,
             "distribuitor": None,
             "adresa_producator": None,
+            "adresa_distribuitor": None,
+            "nume_document": None,
         }
+
+    # Snapshot before-fields for logging
+    before_fields = [k for k, v in result.items() if v is not None]
+
+    # Category-specific normalization flags (tracked for logging)
+    iso_material_nulled = False
+    cui_number_merged = False
+    date_calculated = False
+
+    # --- Category-specific pre-processing (before per-field loop) ---
+
+    # AUTORIZATIE_DISTRIBUTIE: calculate data_expirare from data_emitere + valabilitate
+    if category == "AUTORIZATIE_DISTRIBUTIE":
+        if not result.get("data_expirare") and result.get("data_emitere") and result.get("valabilitate"):
+            valab = str(result["valabilitate"]).lower()
+            if "contract" in valab or "nedeterminat" in valab:
+                result["data_expirare"] = "Pe durata contractului"
+            else:
+                result["data_expirare"] = (
+                    f"Emitere: {result['data_emitere']}, "
+                    f"Valabilitate: {result['valabilitate']}"
+                )
+
+    # CUI: fallback adresa to adresa_producator (merge cui_number happens post-loop)
+    if category == "CUI":
+        if result.get("adresa") and not result.get("adresa_producator"):
+            result["adresa_producator"] = str(result["adresa"]).strip()
+
+    # ISO: null material, set nume_document with standard
+    if category == "ISO":
+        iso_material_nulled = result.get("material") is not None
+        result["material"] = None  # ISO certifies management systems, not materials
+        if result.get("standard_iso"):
+            std = str(result["standard_iso"]).strip()
+            current_name = str(result.get("nume_document") or "").lower()
+            if "iso" not in current_name:
+                result["nume_document"] = f"Certificat {std}"
+
+    # --- Per-field normalization loop ---
 
     normalized = {}
 
     # Process each expected field
     schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
-    all_fields = ["companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator"]
+    all_fields = [
+        "companie", "material", "data_expirare", "producator",
+        "distribuitor", "adresa_producator", "adresa_distribuitor",
+        "nume_document",
+    ]
 
     for field in all_fields:
         value = result.get(field)
@@ -364,16 +395,29 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                 calculated = _calculate_expiry_date(text) if text else None
                 if calculated:
                     value = calculated
+                    date_calculated = True
                 else:
                     # Keep non-standard date strings (e.g., "nelimitat", "permanent")
                     # but truncate to reasonable length
                     if len(value) > 50:
                         value = value[:50]
 
-        elif field == "adresa_producator":
+        elif field in ("adresa_producator", "adresa_distribuitor"):
             # Truncate address
             if len(value) > MAX_ADDRESS_LENGTH:
                 value = value[:MAX_ADDRESS_LENGTH].rsplit(" ", 1)[0]
+
+        elif field == "nume_document":
+            # Strip doc numbers/dates (e.g., "Agrement 012-04/123-2024")
+            value = re.sub(r'\s+\d{3}[-/]\d{2}[-/]\d+[-/]?\d*$', '', value).strip()
+            value = re.sub(r'\s+Nr\.?\s*\d+.*$', '', value).strip()
+            # Truncate to max 50 chars at word boundary
+            if len(value) > 50:
+                cut = value[:50].rfind(' ')
+                if cut > 20:
+                    value = value[:cut].rstrip(' ,;')
+                else:
+                    value = value[:50]
 
         # Remove Chinese characters if Latin text present
         if value and any(ord(c) >= 0x4E00 and ord(c) <= 0x9FFF for c in value):
@@ -390,13 +434,41 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
 
         normalized[field] = value if value else None
 
+    # --- Category-specific post-processing (after per-field cleanup) ---
+
+    # CUI: merge cui_number into companie AFTER company name cleanup
+    # (must be post-loop because _clean_company_name strips CUI patterns)
+    if category == "CUI" and result.get("cui_number"):
+        cui_number_merged = True
+        if normalized.get("companie"):
+            normalized["companie"] = (
+                f"{normalized['companie']} (CUI: {result['cui_number']})"
+            )
+        else:
+            normalized["companie"] = f"CUI: {result['cui_number']}"
+
+    # Log before vs after normalization with category-specific flags
+    after_fields = [k for k, v in normalized.items() if v is not None]
+    logger.info("Normalization before vs after fields", extra={"extra_data": {
+        "category": category,
+        "before_fields": before_fields,
+        "after_fields": after_fields,
+        "before_count": len(before_fields),
+        "after_count": len(after_fields),
+        "iso_material_nulled": iso_material_nulled,
+        "cui_number_merged": cui_number_merged,
+        "date_calculated": date_calculated,
+    }})
+
     return normalized
 
 
 def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict | None:
     """Extract structured data from document text using AI.
 
-    Sends text to OpenRouter API with category-specific extraction prompt.
+    Uses two-message approach (system + user) matching MVP pattern.
+    System prompt contains extraction rules; user prompt contains
+    document-specific context (filename, category, fields, text).
     Temperature is 0.0 (NON-NEGOTIABLE).
 
     Args:
@@ -425,12 +497,36 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
         }},
     )
 
-    prompt = _EXTRACTION_SYSTEM_PROMPT.format(
-        category=category,
-        text=truncated_text,
-        max_company=MAX_COMPANY_LENGTH,
-        max_material=MAX_MATERIAL_LENGTH,
-        max_address=MAX_ADDRESS_LENGTH,
+    # Build dynamic user prompt from schema (MVP pattern)
+    schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
+    output_fields = list(set(schema["fields"] + ["nume_document"]))
+
+    user_prompt = (
+        f"Document filename: {filename}\n"
+        f"Document category: {category}\n"
+        f"Required fields: {json.dumps(output_fields)}\n"
+        f"\n"
+        f"Instructions: {schema['instructions']}\n"
+        f"\n"
+        f"Also extract:\n"
+        f'- "nume_document": the official title of the document as it appears '
+        f"in the header/title area\n"
+        f"\n"
+        f"Document text:\n"
+        f"---\n"
+        f"{truncated_text}\n"
+        f"---\n"
+        f"\n"
+        f"Return a JSON object with the requested fields. "
+        f"Use null for fields not found in the document."
+    )
+
+    # DEBUG logging for prompt diagnostics
+    logger.debug(
+        "Extraction system prompt length: %d chars", len(_EXTRACTION_SYSTEM_PROMPT),
+    )
+    logger.debug(
+        "Extraction user prompt (first 2000 chars): %s", user_prompt[:2000],
     )
 
     headers = {
@@ -439,7 +535,10 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
     }
     payload = {
         "model": AI_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [
+            {"role": "system", "content": _EXTRACTION_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
         "temperature": AI_TEMPERATURE,  # 0.0 — NON-NEGOTIABLE
         "max_tokens": AI_MAX_TOKENS,
     }
@@ -464,6 +563,9 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
 
         result = response.json()
         content = result["choices"][0]["message"]["content"]
+
+        # DEBUG logging for raw AI response before parsing
+        logger.debug("Raw AI response content: %s", content)
 
         # Strip markdown code fences if present
         content = re.sub(r"^```json\s*", "", content.strip())
@@ -546,16 +648,32 @@ def extract_document_data(text: str, category: str, filename: str = "") -> dict:
     else:
         extraction_model = AI_MODEL
 
+    # Track AI-sourced fields (non-null from AI/regex_fallback result)
+    ai_fields = [k for k, v in raw_result.items() if v is not None] if raw_result else []
+
     normalized = normalize_extraction_result(raw_result, category, text)
 
     # Merge regex results into normalized: fill None fields with regex values
+    regex_filled = []
     regex_result = regex_extract(text, category)
     for field, regex_value in regex_result.items():
         if normalized.get(field) is None and regex_value is not None:
             logger.info("Filling field %s from regex for category %s", field, category)
             normalized[field] = regex_value
+            regex_filled.append(field)
 
     # Set extraction_model AFTER normalization so it doesn't get wiped
     normalized["extraction_model"] = extraction_model
+
+    # Log AI vs regex field sources
+    final_non_null = [k for k, v in normalized.items() if v is not None]
+    logger.info("AI vs regex field sources", extra={"extra_data": {
+        "category": category,
+        "filename": filename,
+        "ai_fields": ai_fields,
+        "regex_filled": regex_filled,
+        "final_non_null": final_non_null,
+        "extraction_model": extraction_model,
+    }})
 
     return normalized
