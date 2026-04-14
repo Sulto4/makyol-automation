@@ -42,7 +42,7 @@ export function useDocumentDetails(ids: number[]) {
       queryKey: ['documents', id],
       queryFn: () => getDocument(id),
       enabled: id > 0,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 10_000, // 10s — short so extraction data appears after background processing
     })),
   });
 }
