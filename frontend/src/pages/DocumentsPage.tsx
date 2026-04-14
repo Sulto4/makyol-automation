@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Download, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { Download, FileSpreadsheet, Trash2, Archive } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDocuments, useDocumentDetails, useClearDocuments } from '../hooks/useDocuments';
 import { useFilterStore } from '../store/filterStore';
@@ -14,6 +14,7 @@ import LoadingSpinner from '../components/shared/LoadingSpinner';
 import EmptyState from '../components/shared/EmptyState';
 import { exportToCSV } from '../utils/csv';
 import { exportToExcel } from '../utils/excel';
+import { downloadArchive } from '../api/documents';
 import { getCategoryLabel } from '../utils/categories';
 import type { ExtractionResult } from '../types';
 
@@ -181,6 +182,33 @@ export default function DocumentsPage() {
     exportToCSV(items);
   }
 
+  const [isArchiving, setIsArchiving] = useState(false);
+
+  async function handleExportArchive() {
+    const completedDocs = sortedDocuments.filter(
+      (d) => d.processing_status === 'completed',
+    );
+    if (completedDocs.length === 0) {
+      toast.error('Nu există documente finalizate pentru export');
+      return;
+    }
+    setIsArchiving(true);
+    try {
+      await downloadArchive({
+        documents: completedDocs.map((d) => ({
+          id: d.id,
+          relativePath: d.original_filename,
+        })),
+        folderName: 'documente',
+      });
+      toast.success('Arhiva a fost descărcată');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Eroare la descărcarea arhivei');
+    } finally {
+      setIsArchiving(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -221,6 +249,14 @@ export default function DocumentsPage() {
           >
             <Download className="h-4 w-4" />
             Export CSV
+          </button>
+          <button
+            onClick={handleExportArchive}
+            disabled={sortedDocuments.length === 0 || isArchiving}
+            className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Archive className="h-4 w-4" />
+            {isArchiving ? 'Se descarcă...' : 'Descarcă Arhivă ZIP'}
           </button>
           <button
             onClick={() => setShowClearDialog(true)}
