@@ -14,44 +14,55 @@ BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:3000")
 SETTINGS_API_ENDPOINT = f"{BACKEND_API_URL}/api/settings"
 
 
-def fetch_settings_from_api(timeout: int = 5) -> Optional[Dict[str, Any]]:
+def fetch_settings_from_api(timeout: int = 5, retries: int = 5, retry_delay: float = 2.0) -> Optional[Dict[str, Any]]:
     """
-    Fetch settings from the backend API.
+    Fetch settings from the backend API with retries.
+    Backend may not be ready at pipeline startup, so retry a few times.
 
     Args:
-        timeout: Request timeout in seconds (default: 5)
+        timeout: Request timeout in seconds per attempt
+        retries: Number of retry attempts
+        retry_delay: Seconds to wait between retries
 
     Returns:
         Dictionary mapping setting keys to their values, or None if fetch fails
     """
-    try:
-        response = requests.get(SETTINGS_API_ENDPOINT, timeout=timeout)
-        response.raise_for_status()
+    import time as _time
 
-        response_data = response.json()
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(SETTINGS_API_ENDPOINT, timeout=timeout)
+            response.raise_for_status()
 
-        # Handle backend API response format: {"success": true, "data": [...], "count": N}
-        if isinstance(response_data, dict) and "data" in response_data:
-            settings_list = response_data["data"]
-        else:
-            settings_list = response_data
+            response_data = response.json()
 
-        if not isinstance(settings_list, list):
-            return None
+            # Handle backend API response format: {"success": true, "data": [...], "count": N}
+            if isinstance(response_data, dict) and "data" in response_data:
+                settings_list = response_data["data"]
+            else:
+                settings_list = response_data
 
-        # Convert list of settings objects to key-value dictionary
-        settings_dict = {}
-        for setting in settings_list:
-            if isinstance(setting, dict) and "key" in setting and "value" in setting:
-                settings_dict[setting["key"]] = setting["value"]
+            if not isinstance(settings_list, list):
+                return None
 
-        return settings_dict
-    except (requests.RequestException, ValueError, KeyError):
-        # API unavailable or invalid response - will fallback to defaults
-        return None
+            # Convert list of settings objects to key-value dictionary
+            settings_dict = {}
+            for setting in settings_list:
+                if isinstance(setting, dict) and "key" in setting and "value" in setting:
+                    settings_dict[setting["key"]] = setting["value"]
+
+            print(f"[config] Settings loaded from API ({len(settings_dict)} keys)")
+            return settings_dict
+        except (requests.RequestException, ValueError, KeyError) as e:
+            if attempt < retries:
+                print(f"[config] Settings API unavailable (attempt {attempt+1}/{retries+1}): {e}. Retrying in {retry_delay}s...")
+                _time.sleep(retry_delay)
+            else:
+                print(f"[config] Settings API unavailable after {retries+1} attempts. Using defaults.")
+                return None
 
 
-# Fetch settings from API (with fallback to defaults)
+# Fetch settings from API (with retries — backend may start after pipeline)
 _api_settings = fetch_settings_from_api()
 
 
@@ -90,12 +101,11 @@ _masked_key = OPENROUTER_API_KEY[:8] + "..." + OPENROUTER_API_KEY[-4:] if len(OP
 _logger.info("AI config loaded: MODEL=%s, API_KEY=%s", AI_MODEL, _masked_key)
 
 # Tesseract Configuration (OS-aware)
-_default_tesseract = (
-    r"D:\Tesseract-OCR\tesseract.exe"
-    if platform.system() == "Windows"
-    else "/usr/bin/tesseract"
-)
-TESSERACT_CMD = _get_setting("tesseract_path", _default_tesseract)
+# On Linux (Docker), always use system tesseract — ignore Windows DB setting
+if platform.system() == "Windows":
+    TESSERACT_CMD = _get_setting("tesseract_path", r"D:\Tesseract-OCR\tesseract.exe")
+else:
+    TESSERACT_CMD = "/usr/bin/tesseract"
 OCR_LANGUAGES = "ron+eng"
 
 # Vision fallback threshold

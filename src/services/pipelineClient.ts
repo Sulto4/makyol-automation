@@ -11,8 +11,9 @@ export interface PipelineExtractionData {
   producator?: string | null;
   distribuitor?: string | null;
   adresa_producator?: string | null;
+  adresa_distribuitor?: string | null;
   extraction_model?: string | null;
-  [key: string]: unknown;
+  [key: string]: string | null | undefined;
 }
 
 export interface PipelineResponse {

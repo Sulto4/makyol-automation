@@ -547,10 +547,10 @@ export class DocumentController {
       const classificationQuery = `
         SELECT
           COUNT(*)::int AS total_documents,
-          COUNT(*) FILTER (WHERE processing_status = 'COMPLETED')::int AS completed,
-          COUNT(*) FILTER (WHERE processing_status = 'FAILED')::int AS failed,
-          COUNT(*) FILTER (WHERE processing_status = 'PENDING')::int AS pending,
-          COUNT(*) FILTER (WHERE processing_status = 'PROCESSING')::int AS processing,
+          COUNT(*) FILTER (WHERE processing_status = 'completed')::int AS completed,
+          COUNT(*) FILTER (WHERE processing_status = 'failed')::int AS failed,
+          COUNT(*) FILTER (WHERE processing_status = 'pending')::int AS pending,
+          COUNT(*) FILTER (WHERE processing_status = 'processing')::int AS processing,
           COUNT(*) FILTER (WHERE metoda_clasificare = 'filename_regex')::int AS method_filename_regex,
           COUNT(*) FILTER (WHERE metoda_clasificare = 'text_rules')::int AS method_text_rules,
           COUNT(*) FILTER (WHERE metoda_clasificare = 'ai')::int AS method_ai,
@@ -654,6 +654,9 @@ export class DocumentController {
   /**
    * Upload and process multiple PDF documents with folder structure
    *
+   * Accepts files, creates document records immediately (PENDING),
+   * responds with 202, then processes documents in the background.
+   *
    * POST /api/documents/upload-folder
    */
   async uploadFolder(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -676,6 +679,7 @@ export class DocumentController {
         return;
       }
 
+      // Phase 1: Create document records immediately (fast, no pipeline calls)
       const results: Array<{
         document: Document | null;
         extraction: any;
@@ -683,6 +687,8 @@ export class DocumentController {
         success: boolean;
         error: string | null;
       }> = [];
+
+      const documentsToProcess: Array<{ document: Document; filePath: string }> = [];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -701,7 +707,6 @@ export class DocumentController {
         }
 
         try {
-          // Step 1: Create document record with PENDING status
           const documentInput: CreateDocumentInput = {
             filename: file.filename,
             original_filename: file.originalname,
@@ -713,99 +718,17 @@ export class DocumentController {
           const document = await this.documentModel.create(documentInput);
           logger.info(`[uploadFolder] Document created with ID: ${document.id}, relativePath: ${relativePath}`);
 
-          // Step 2: Update status to PROCESSING
-          await this.documentModel.updateStatus(document.id, {
-            processing_status: ProcessingStatus.PROCESSING,
-            processing_started_at: new Date(),
-          });
-
-          // Step 3: Process document through pipeline
-          let extractionResult;
-          try {
-            const pipelineResponse = await this.pipelineClient.processDocument(file.path);
-            logger.info(`[uploadFolder] Pipeline processed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
-
-            if (pipelineResponse.error) {
-              throw new Error(pipelineResponse.error);
-            }
-
-            // Persist classification
-            if (pipelineResponse.classification) {
-              await this.documentModel.updateClassification(document.id, {
-                categorie: pipelineResponse.classification,
-                confidence: pipelineResponse.confidence ?? 0,
-                metoda_clasificare: pipelineResponse.method ?? 'ai',
-              });
-            }
-
-            // Map extraction data
-            const extraction = pipelineResponse.extraction || {};
-            const extractionStatus = pipelineResponse.confidence >= 0.8
-              ? ExtractionStatus.SUCCESS
-              : pipelineResponse.confidence >= 0.5
-                ? ExtractionStatus.PARTIAL
-                : ExtractionStatus.FAILED;
-
-            const extractionInput: CreateExtractionResultInput = {
-              document_id: document.id,
-              extracted_text: null,
-              metadata: {},
-              confidence_score: pipelineResponse.confidence ?? null,
-              extraction_status: extractionStatus,
-              material: extraction.material ?? null,
-              data_expirare: extraction.data_expirare ?? null,
-              companie: extraction.companie ?? null,
-              producator: extraction.producator ?? null,
-              distribuitor: extraction.distribuitor ?? null,
-              adresa_producator: extraction.adresa_producator ?? null,
-              extraction_model: extraction.extraction_model ?? null,
-            };
-
-            extractionResult = await this.extractionResultModel.create(extractionInput);
-
-            // Update status to COMPLETED
-            await this.documentModel.updateStatus(document.id, {
-              processing_status: ProcessingStatus.COMPLETED,
-              processing_completed_at: new Date(),
-            });
-
-          } catch (processingError: any) {
-            const errorMessage = processingError instanceof PipelineError
-              ? `Pipeline error: ${processingError.message}`
-              : processingError.message;
-            logger.error(`[uploadFolder] Processing failed for document ${document.id}:`, processingError);
-
-            const extractionInput: CreateExtractionResultInput = {
-              document_id: document.id,
-              extraction_status: ExtractionStatus.FAILED,
-              error_details: {
-                message: errorMessage,
-                code: processingError.code || (processingError instanceof PipelineError ? 'PIPELINE_ERROR' : 'PROCESSING_ERROR'),
-                timestamp: new Date().toISOString(),
-              },
-            };
-
-            extractionResult = await this.extractionResultModel.create(extractionInput);
-
-            await this.documentModel.updateStatus(document.id, {
-              processing_status: ProcessingStatus.FAILED,
-              error_message: errorMessage,
-              processing_completed_at: new Date(),
-            });
-          }
-
-          const updatedDocument = await this.documentModel.findById(document.id);
+          documentsToProcess.push({ document, filePath: file.path });
 
           results.push({
-            document: updatedDocument,
-            extraction: extractionResult,
+            document,
+            extraction: null,
             relativePath,
             success: true,
             error: null,
           });
-
         } catch (fileError: any) {
-          logger.error(`[uploadFolder] Failed to process file ${file.originalname}:`, fileError);
+          logger.error(`[uploadFolder] Failed to create record for ${file.originalname}:`, fileError);
           results.push({
             document: null,
             extraction: null,
@@ -816,11 +739,79 @@ export class DocumentController {
         }
       }
 
-      res.status(201).json({
+      const jobId = `folder-upload-${Date.now()}`;
+
+      // Phase 2: Respond immediately with created documents
+      res.status(202).json({
         results,
         totalProcessed: files.length,
         totalFailed: results.filter(r => r.error).length,
+        totalAccepted: documentsToProcess.length,
+        jobId,
+        message: `${documentsToProcess.length} document(s) accepted for processing in the background`,
       });
+
+      // Phase 3: Process documents in the background (fire-and-forget)
+      void (async () => {
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        let processed = 0;
+        let failed = 0;
+        const total = documentsToProcess.length;
+
+        for (let idx = 0; idx < total; idx++) {
+          const { document } = documentsToProcess[idx];
+          try {
+            // Update status to PROCESSING
+            await this.documentModel.updateStatus(document.id, {
+              processing_status: ProcessingStatus.PROCESSING,
+              processing_started_at: new Date(),
+            });
+
+            await this.reprocessSingleDocument(document);
+            processed++;
+            logger.info(`[${jobId}] Processed document ${document.id} (${processed}/${total})`);
+          } catch (error: any) {
+            failed++;
+            const errorMessage = error instanceof PipelineError
+              ? `Pipeline error: ${error.message}`
+              : error.message;
+            logger.error(`[${jobId}] Failed to process document ${document.id}: ${errorMessage}`);
+
+            try {
+              await this.extractionResultModel.create({
+                document_id: document.id,
+                extraction_status: ExtractionStatus.FAILED,
+                error_details: {
+                  message: errorMessage,
+                  code: error.code || 'PROCESSING_ERROR',
+                  timestamp: new Date().toISOString(),
+                },
+              });
+            } catch (extractionError: any) {
+              logger.error(`[${jobId}] Failed to create error extraction for document ${document.id}: ${extractionError.message}`);
+            }
+
+            try {
+              await this.documentModel.updateStatus(document.id, {
+                processing_status: ProcessingStatus.FAILED,
+                error_message: errorMessage,
+                processing_completed_at: new Date(),
+              });
+            } catch (statusError: any) {
+              logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${statusError.message}`);
+            }
+          }
+
+          // Small delay between documents to avoid overwhelming the pipeline
+          if (idx < total - 1) {
+            await delay(500);
+          }
+        }
+
+        logger.info(`[${jobId}] Folder upload processing complete: ${processed} succeeded, ${failed} failed out of ${total}`);
+      })();
+
+      return;
 
     } catch (error) {
       next(error);

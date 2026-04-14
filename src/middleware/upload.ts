@@ -65,11 +65,11 @@ export const upload = multer({
 });
 
 /**
- * Multer upload middleware for folder/batch uploads (up to 100 PDFs)
+ * Multer upload middleware for folder/batch uploads (up to 500 PDFs)
  *
  * @example
  * ```typescript
  * router.post('/upload-folder', folderUpload, controller.handleFolderUpload);
  * ```
  */
-export const folderUpload = upload.array('files', 100);
+export const folderUpload = upload.array('files', 500);

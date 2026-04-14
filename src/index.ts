@@ -1,5 +1,7 @@
 import express, { Express } from 'express';
 import { Pool } from 'pg';
+import * as fs from 'fs';
+import * as path from 'path';
 import { appConfig } from './config/app';
 import { databaseConfig } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -7,6 +9,44 @@ import { logger } from './utils/logger';
 import { createDocumentRoutes } from './routes/documents';
 import { createAuditLogRoutes } from './routes/auditLogs';
 import { createSettingsRoutes } from './routes/settings';
+
+/**
+ * Run all SQL migrations from the migrations/ directory.
+ * Uses IF NOT EXISTS / IF EXISTS patterns so re-running is safe.
+ */
+async function runMigrations(pool: Pool): Promise<void> {
+  const migrationsDir = path.join(process.cwd(), 'migrations');
+
+  if (!fs.existsSync(migrationsDir)) {
+    logger.warn('Migrations directory not found, skipping');
+    return;
+  }
+
+  const files = fs.readdirSync(migrationsDir)
+    .filter(file => file.endsWith('.sql'))
+    .sort();
+
+  if (files.length === 0) {
+    return;
+  }
+
+  logger.info(`Running ${files.length} migration(s)...`);
+
+  for (const file of files) {
+    const filePath = path.join(migrationsDir, file);
+    try {
+      const sql = fs.readFileSync(filePath, 'utf8');
+      await pool.query(sql);
+      logger.info(`Migration applied: ${file}`);
+    } catch (error: any) {
+      if (error.message?.includes('already exists')) {
+        logger.debug(`Migration skipped (already applied): ${file}`);
+      } else {
+        logger.error(`Migration failed: ${file} — ${error.message}`);
+      }
+    }
+  }
+}
 
 /**
  * Create and configure Express application
@@ -98,6 +138,9 @@ async function startServer(): Promise<void> {
       logger.error('Database connection failed', error as Error);
       throw error;
     }
+
+    // Run pending database migrations
+    await runMigrations(pool);
 
     // Start listening
     const port = appConfig.port;

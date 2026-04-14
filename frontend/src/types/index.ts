@@ -16,7 +16,10 @@ export type ClassificationMethod =
   | 'text_rules'
   | 'ai'
   | 'text_override'
-  | 'vision';
+  | 'vision'
+  | 'filename+text_agree'
+  | 'filename_wins'
+  | 'fallback';
 
 /**
  * Extraction status
@@ -264,20 +267,24 @@ export interface FolderUploadFile {
  * Per-file result from folder upload processing
  */
 export interface FolderUploadResult {
-  document: Document;
+  document: Document | null;
   extraction: ExtractionResult | null;
-  relativePath: string;
+  relativePath: string | null;
   success: boolean;
-  error?: string;
+  error?: string | null;
 }
 
 /**
- * Batch response from folder upload (from POST /api/documents/folder-upload)
+ * Batch response from folder upload (from POST /api/documents/upload-folder)
+ * Returns 202 — documents are created immediately, processing happens in background.
  */
 export interface FolderUploadResponse {
   results: FolderUploadResult[];
   totalProcessed: number;
   totalFailed: number;
+  totalAccepted?: number;
+  jobId?: string;
+  message?: string;
 }
 
 /**

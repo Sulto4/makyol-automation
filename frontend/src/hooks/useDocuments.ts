@@ -3,12 +3,21 @@ import { listDocuments, getDocument, getDocumentStats, clearAllDocuments } from 
 import type { ClearAllResponse } from '../types';
 
 /**
- * Fetch all documents for client-side pagination / filtering
+ * Fetch all documents for client-side pagination / filtering.
+ * Auto-polls every 5s when any document is in pending/processing state.
  */
 export function useDocuments() {
   return useQuery({
     queryKey: ['documents'],
     queryFn: listDocuments,
+    refetchInterval: (query) => {
+      const docs = query.state.data?.documents;
+      if (!docs) return false;
+      const hasProcessing = docs.some(
+        (d) => d.processing_status === 'pending' || d.processing_status === 'processing',
+      );
+      return hasProcessing ? 5000 : false;
+    },
   });
 }
 

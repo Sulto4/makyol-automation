@@ -128,8 +128,9 @@ export default function UploadPage() {
           }),
         );
 
+        const accepted = result.totalAccepted ?? (result.totalProcessed - result.totalFailed);
         toast.success(
-          `Folder procesat: ${result.totalProcessed - result.totalFailed} reușite, ${result.totalFailed} erori`,
+          `${accepted} documente acceptate pentru procesare. Verifică lista de documente pentru progres.`,
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Eroare la procesare folder';

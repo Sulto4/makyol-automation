@@ -51,15 +51,15 @@ VALID_CATEGORIES = [
 # ---------------------------------------------------------------------------
 
 FILENAME_RULES = [
-    # ISO certificates (various standards)
-    (r"(?i)ISO\s*9001", "ISO"),
-    (r"(?i)ISO\s*14001", "ISO"),
-    (r"(?i)ISO\s*45001", "ISO"),
-    (r"(?i)ISO\s*50001", "ISO"),
-    (r"(?i)ISO\s*22000", "ISO"),
-    (r"(?i)ISO\s*13485", "ISO"),
-    (r"(?i)ISO\s*27001", "ISO"),
-    (r"(?i)\bISO\b.*(?:certificat|certificate)", "ISO"),
+    # ISO certificates (various standards) — [\s_]* handles both spaces and underscores
+    (r"(?i)ISO[\s_]*9001", "ISO"),
+    (r"(?i)ISO[\s_]*14001", "ISO"),
+    (r"(?i)ISO[\s_]*45001", "ISO"),
+    (r"(?i)ISO[\s_]*50001", "ISO"),
+    (r"(?i)ISO[\s_]*22000", "ISO"),
+    (r"(?i)ISO[\s_]*13485", "ISO"),
+    (r"(?i)ISO[\s_]*27001", "ISO"),
+    (r"(?i)\bISO\b", "ISO"),
     # CE / PED certificates
     (r"(?i)\bCE\b.*(?:certificat|certificate|PED)", "CE"),
     (r"(?i)\bPED\b", "CE"),
@@ -213,7 +213,7 @@ Categorii valide:
 - ALTELE: Alte documente care nu se incadreaza in categoriile de mai sus
 
 Raspunde DOAR cu un JSON in formatul:
-{"categorie": "CATEGORIA", "confidence": 0.XX}
+{{"categorie": "CATEGORIA", "confidence": 0.XX}}
 
 Nu include explicatii sau text suplimentar.
 

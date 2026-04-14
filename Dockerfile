@@ -36,6 +36,9 @@ RUN npm install --only=production && npm cache clean --force
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Copy migrations for auto-apply on startup
+COPY migrations ./migrations
+
 # Create uploads directory
 RUN mkdir -p ./uploads && chown -R nodejs:nodejs ./uploads
 
