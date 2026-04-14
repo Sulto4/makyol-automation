@@ -6,6 +6,8 @@ Moved verbatim from clasificare_documente_final.py.
 
 import logging
 import io
+import os
+import re
 
 import pdfplumber
 import fitz  # PyMuPDF
@@ -27,6 +29,46 @@ logging.getLogger("pdfminer.pdfdocument").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
+def _extraction_metrics(pdf_path: str, text: str, engine: str) -> dict:
+    """Compute structured metrics for text extraction logging.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        text: Extracted text content.
+        engine: Name of the engine that produced the text.
+
+    Returns:
+        Dict of structured metrics for logging.
+    """
+    filename = os.path.basename(pdf_path)
+
+    # Count pages in PDF
+    try:
+        doc = fitz.open(pdf_path)
+        page_count = len(doc)
+        doc.close()
+    except Exception:
+        page_count = 0
+
+    # Detect Chinese characters (\u4e00-\u9fff range)
+    has_chinese_chars = bool(re.search(r'[\u4e00-\u9fff]', text))
+
+    # Average word length (OCR quality indicator — short avg suggests garbled text)
+    words = text.split()
+    avg_word_length = round(
+        sum(len(w) for w in words) / len(words), 1
+    ) if words else 0.0
+
+    return {
+        "filename": filename,
+        "engine": engine,
+        "text_length": len(text),
+        "page_count": page_count,
+        "has_chinese_chars": has_chinese_chars,
+        "avg_word_length": avg_word_length,
+    }
+
+
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text from a PDF using multi-engine strategy.
 
@@ -42,11 +84,18 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         Extracted text string. May be empty if all engines fail.
     """
     text = ""
+    engine = "none"
 
     # Engine 1: pdfplumber
     try:
         text = _extract_with_pdfplumber(pdf_path)
+        if text.strip():
+            engine = "pdfplumber"
         if len(text.strip()) >= MIN_TEXT_LENGTH:
+            logger.info("Text extraction result for %s",
+                        os.path.basename(pdf_path),
+                        extra={"extra_data": _extraction_metrics(
+                            pdf_path, text, engine)})
             return text
     except Exception as e:
         logger.warning("pdfplumber failed for %s: %s", pdf_path, e)
@@ -56,7 +105,12 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         text_pymupdf = _extract_with_pymupdf(pdf_path)
         if len(text_pymupdf.strip()) > len(text.strip()):
             text = text_pymupdf
+            engine = "pymupdf"
         if len(text.strip()) >= MIN_TEXT_LENGTH:
+            logger.info("Text extraction result for %s",
+                        os.path.basename(pdf_path),
+                        extra={"extra_data": _extraction_metrics(
+                            pdf_path, text, engine)})
             return text
     except Exception as e:
         logger.warning("PyMuPDF failed for %s: %s", pdf_path, e)
@@ -66,9 +120,13 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         text_ocr = _extract_with_ocr(pdf_path)
         if len(text_ocr.strip()) > len(text.strip()):
             text = text_ocr
+            engine = "ocr"
     except Exception as e:
         logger.warning("OCR failed for %s: %s", pdf_path, e)
 
+    logger.info("Text extraction result for %s", os.path.basename(pdf_path),
+                extra={"extra_data": _extraction_metrics(
+                    pdf_path, text, engine)})
     return text
 
 
