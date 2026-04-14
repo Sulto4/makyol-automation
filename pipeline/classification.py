@@ -61,6 +61,7 @@ FILENAME_RULES = [
     (r"(?i)ISO[\s_]*27001", "ISO"),
     (r"(?i)\bISO\b", "ISO"),
     # CE / PED certificates
+    (r"(?i)^CE[\s_-]", "CE"),
     (r"(?i)\bCE\b.*(?:certificat|certificate|PED)", "CE"),
     (r"(?i)\bPED\b", "CE"),
     (r"(?i)certificat.*\bCE\b", "CE"),
@@ -137,9 +138,12 @@ TEXT_MARKERS = [
     (r"(?i)valabilitate.*certificat", "ISO", 2),
     # CE / PED
     (r"(?i)declara[tț]i[ea]\s*CE", "CE", 3),
-    (r"(?i)directiva.*echipamente.*presiune", "CE", 2),
-    (r"(?i)pressure\s*equipment\s*directive", "CE", 2),
+    (r"(?i)directiva.*echipamente.*presiune", "CE", 3),
+    (r"(?i)pressure\s*equipment\s*directive", "CE", 3),
+    (r"(?i)echipamente\s*sub\s*presiune", "CE", 3),
+    (r"(?i)2014/68/UE|2014/68/EU", "CE", 3),
     (r"(?i)marcaj\s*CE", "CE", 2),
+    (r"(?i)modul\s*[A-H]\d?", "CE", 2),
     # Fisa tehnica
     (r"(?i)fi[sș][aă]\s*tehnic[aă]", "FISA_TEHNICA", 3),
     (r"(?i)technical\s*data\s*sheet", "FISA_TEHNICA", 3),
