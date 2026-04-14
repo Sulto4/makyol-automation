@@ -51,7 +51,18 @@ VALID_CATEGORIES = [
 # ---------------------------------------------------------------------------
 
 FILENAME_RULES = [
-    # ISO certificates (various standards) — [\s_]* handles both spaces and underscores
+    # === HIGH PRIORITY: Combined/specific patterns FIRST ===
+
+    # Combined aviz + agrement (MUST be before individual aviz/agrement rules)
+    (r"(?i)aviz.*agrement", "AVIZ_TEHNIC_SI_AGREMENT"),
+    (r"(?i)agrement.*aviz", "AVIZ_TEHNIC_SI_AGREMENT"),
+    (r"(?i)aviz.*\bAT\b", "AVIZ_TEHNIC_SI_AGREMENT"),
+    (r"(?i)\bAT\b.*aviz", "AVIZ_TEHNIC_SI_AGREMENT"),
+
+    # Aviz sanitar (before generic aviz)
+    (r"(?i)(?:\bAVS\b|aviz\s*sanitar)", "AVIZ_SANITAR"),
+
+    # ISO certificates
     (r"(?i)ISO[\s_]*9001", "ISO"),
     (r"(?i)ISO[\s_]*14001", "ISO"),
     (r"(?i)ISO[\s_]*45001", "ISO"),
@@ -60,53 +71,57 @@ FILENAME_RULES = [
     (r"(?i)ISO[\s_]*13485", "ISO"),
     (r"(?i)ISO[\s_]*27001", "ISO"),
     (r"(?i)\bISO\b", "ISO"),
+
     # CE / PED certificates
     (r"(?i)^CE[\s_-]", "CE"),
     (r"(?i)\bCE\b.*(?:certificat|certificate|PED)", "CE"),
     (r"(?i)\bPED\b", "CE"),
     (r"(?i)certificat.*\bCE\b", "CE"),
-    # Fisa tehnica / Technical data sheets
-    (r"(?i)(?:\bFT\b.*\bPEHD\b|\bFT\b.*\bteav|fisa\s*tehnica|\bFT\b.*\bfiting|data\s*sheet)", "FISA_TEHNICA"),
-    (r"(?i)fi[sș][aă]\s*tehnic[aă]", "FISA_TEHNICA"),
-    (r"(?i)technical\s*data\s*sheet", "FISA_TEHNICA"),
-    # Agrement tehnic
-    (r"(?i)(?:\bAGT\b|agrement\s*tehnic|\bAT\b.*\d{3})", "AGREMENT"),
-    (r"(?i)aviz.*agrement.*tehnic", "AVIZ_TEHNIC_SI_AGREMENT"),
-    (r"(?i)agrement.*aviz", "AVIZ_TEHNIC_SI_AGREMENT"),
-    # Aviz tehnic
-    (r"(?i)(?:\bAVT\b|aviz\s*tehnic)", "AVIZ_TEHNIC"),
-    # Aviz sanitar
-    (r"(?i)(?:\bAVS\b|aviz\s*sanitar)", "AVIZ_SANITAR"),
-    # Declaratie de conformitate
-    (r"(?i)(?:\bDC\b(?!\s*-)|declarati[ea]\s*de\s*conformitate)", "DECLARATIE_CONFORMITATE"),
+
+    # Declaratie de conformitate (before CC/certificat rules)
+    (r"(?i)declarati[ea]\s*de\s*conformitate", "DECLARATIE_CONFORMITATE"),
     (r"(?i)declara[tț]i[ea]\s*conformitate", "DECLARATIE_CONFORMITATE"),
     (r"(?i)certificate?\s*de\s*conformitate", "DECLARATIE_CONFORMITATE"),
     (r"(?i)^CC-\d+", "DECLARATIE_CONFORMITATE"),
-    # Certificat de calitate
-    # Note: "CC" abbreviation is ambiguous (Certificat Calitate vs Certificat Conformitate)
-    # Only match when explicitly "certificat de calitate" in filename
-    (r"(?i)certificat\s*de\s*calitate", "CERTIFICAT_CALITATE"),
-    (r"(?i)certificat.*P1R", "CERTIFICAT_CALITATE"),
-    (r"(?i)certificat.*CERT", "CERTIFICAT_CALITATE"),
-    # Certificat de garantie
-    (r"(?i)(?:\bCG\b|certificat\s*de\s*garantie|certificat\s*garan[tț]ie)", "CERTIFICAT_GARANTIE"),
-    # Autorizatie distributie
-    (r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]", "AUTORIZATIE_DISTRIBUTIE"),
-    (r"(?i)\bAD\b.*autorizati", "AUTORIZATIE_DISTRIBUTIE"),
-    # CUI / Company registration
-    (r"(?i)\bCUI\b", "CUI"),
-    (r"(?i)certificat\s*(?:de\s*)?inregistrare", "CUI"),
-    (r"(?i)certificat\s*constatator", "CUI"),
+    (r"(?i)\bDC\b(?!\s*-)", "DECLARATIE_CONFORMITATE"),
+
     # Declaratie de performanta
     (r"(?i)declara[tț]i[ea]\s*(?:de\s*)?performan[tț][aă]", "DECLARATIE_PERFORMANTA"),
     (r"(?i)\bDoP\b", "DECLARATIE_PERFORMANTA"),
     (r"(?i)\bDP\b.*performan", "DECLARATIE_PERFORMANTA"),
-    # Combined aviz + agrement
-    (r"(?i)aviz.*agrement", "AVIZ_TEHNIC_SI_AGREMENT"),
-    # CUI - ONRC / registrul comertului
+
+    # Fisa tehnica / Technical data sheets
+    (r"(?i)(?:\bFT\b.*\bPEHD\b|\bFT\b.*\bteav|fisa\s*tehnica|\bFT\b.*\bfiting|data\s*sheet)", "FISA_TEHNICA"),
+    (r"(?i)fi[sș][aă]\s*tehnic[aă]", "FISA_TEHNICA"),
+    (r"(?i)technical\s*data\s*sheet", "FISA_TEHNICA"),
+
+    # Agrement tehnic (after combined aviz+agrement)
+    (r"(?i)(?:\bAGT\b|agrement\s*tehnic)", "AGREMENT"),
+    (r"(?i)\bAT\b.*\d{3}", "AGREMENT"),
+
+    # Aviz tehnic (after combined and sanitar)
+    (r"(?i)(?:\bAVT\b|aviz\s*tehnic)", "AVIZ_TEHNIC"),
+
+    # Certificat de calitate
+    (r"(?i)certificat\s*de\s*calitate", "CERTIFICAT_CALITATE"),
+    (r"(?i)certificat.*P1R", "CERTIFICAT_CALITATE"),
+    (r"(?i)certificat.*CERT", "CERTIFICAT_CALITATE"),
+
+    # Certificat de garantie
+    (r"(?i)(?:\bCG\b|certificat\s*de\s*garantie|certificat\s*garan[tț]ie)", "CERTIFICAT_GARANTIE"),
+
+    # Autorizatie distributie
+    (r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]", "AUTORIZATIE_DISTRIBUTIE"),
+    (r"(?i)\bAD\b.*autorizati", "AUTORIZATIE_DISTRIBUTIE"),
+
+    # CUI / Company registration
+    (r"(?i)\bCUI\b", "CUI"),
+    (r"(?i)certificat\s*(?:de\s*)?inregistrare", "CUI"),
+    (r"(?i)certificat\s*constatator", "CUI"),
     (r"(?i)\bONRC\b", "CUI"),
     (r"(?i)registrul\s*comer[tț]ului", "CUI"),
     (r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare\s*fiscal[aă]", "CUI"),
+
     # Certificat calitate - lab reports
     (r"(?i)buletin\s*(?:de\s*)?analiz[aă]", "CERTIFICAT_CALITATE"),
     (r"(?i)raport\s*(?:de\s*)?[iî]ncerc(?:are|[aă]ri)", "CERTIFICAT_CALITATE"),
@@ -585,25 +600,17 @@ def classify_document(
             final_result = (fn_cat, confidence, "filename+text_agree")
             decision_reason = "filename+text_agree"
         else:
-            # Disagreement — text overrides only if significantly stronger
-            text_score = _get_text_score(text, txt_cat)
-            fn_score = _get_text_score(text, fn_cat)
-            if text_score >= 6 and txt_cat != "ALTELE" and text_score > fn_score + 3:
-                confidence = validate_classification(txt_cat, 0.90, text)
-                logger.info(
-                    "Classified '%s' by text_override (score=%d, fn=%s, txt=%s): %s (%.2f)",
-                    filename, text_score, fn_cat, txt_cat, txt_cat, confidence,
-                )
-                final_result = (txt_cat, confidence, "text_override")
-                decision_reason = "text_override"
-            else:
-                confidence = validate_classification(fn_cat, 0.85, text)
-                logger.info(
-                    "Classified '%s' by filename_wins (score=%d, fn=%s, txt=%s): %s (%.2f)",
-                    filename, text_score, fn_cat, txt_cat, fn_cat, confidence,
-                )
-                final_result = (fn_cat, confidence, "filename_wins")
-                decision_reason = "filename_wins"
+            # Disagreement — filename wins. Humans name files intentionally and
+            # filename is the most reliable signal. Text often contains references
+            # to other categories (e.g., ISO standards in a DC document) that mislead
+            # text scoring. We never override a strong filename match.
+            confidence = validate_classification(fn_cat, 0.90, text)
+            logger.info(
+                "Classified '%s' by filename_wins (fn=%s, txt=%s): %s (%.2f)",
+                filename, fn_cat, txt_cat, fn_cat, confidence,
+            )
+            final_result = (fn_cat, confidence, "filename_wins")
+            decision_reason = "filename_wins"
 
     if final_result is None and fn_only:
         confidence = validate_classification(fn_result[0], fn_result[1], text)
