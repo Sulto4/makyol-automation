@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { DocumentWithExtraction } from '../../types';
 import CategoryBadge from './CategoryBadge';
 import StatusBadge from './StatusBadge';
 import ConfidenceBar from './ConfidenceBar';
 import ExpirationWarning from '../shared/ExpirationWarning';
+import RejectionModal from './RejectionModal';
+import { useReviewDocument } from '../../hooks/useDocuments';
 
 interface DocumentDetailProps {
   data: DocumentWithExtraction;
@@ -13,6 +16,8 @@ interface DocumentDetailProps {
 export default function DocumentDetail({ data }: DocumentDetailProps) {
   const { document: doc, extraction } = data;
   const [aiExpanded, setAiExpanded] = useState(false);
+  const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
+  const reviewMutation = useReviewDocument();
 
   const pdfUrl = `/uploads/${doc.filename}`;
 
@@ -134,35 +139,56 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <h3 className="mb-3 text-lg font-semibold text-gray-900">Acțiuni</h3>
           <div className="flex gap-3">
-            <div className="group relative">
-              <button
-                disabled
-                className="rounded-lg bg-green-100 px-4 py-2 text-sm font-medium text-green-400 cursor-not-allowed"
-              >
-                Aprobă
-              </button>
-              <Tooltip text="Funcționalitate în dezvoltare" />
-            </div>
-            <div className="group relative">
-              <button
-                disabled
-                className="rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-400 cursor-not-allowed"
-              >
-                Respinge
-              </button>
-              <Tooltip text="Funcționalitate în dezvoltare" />
-            </div>
+            <button
+              onClick={() => {
+                reviewMutation.mutate(
+                  { id: doc.id, payload: { action: 'approve' } },
+                  {
+                    onSuccess: () => toast.success('Document aprobat'),
+                    onError: (err) => toast.error(err.message),
+                  }
+                );
+              }}
+              disabled={reviewMutation.isPending}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              {reviewMutation.isPending ? 'Se procesează...' : 'Aprobă'}
+            </button>
+            <button
+              onClick={() => setRejectionModalOpen(true)}
+              disabled={reviewMutation.isPending}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              Respinge
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function Tooltip({ text }: { text: string }) {
-  return (
-    <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-      {text}
+        <RejectionModal
+          isOpen={rejectionModalOpen}
+          onClose={() => setRejectionModalOpen(false)}
+          onSubmit={(data) => {
+            reviewMutation.mutate(
+              {
+                id: doc.id,
+                payload: {
+                  action: 'reject' as const,
+                  ...data,
+                },
+              },
+              {
+                onSuccess: () => {
+                  toast.success('Feedback trimis');
+                  setRejectionModalOpen(false);
+                },
+                onError: (err) => toast.error(err.message),
+              }
+            );
+          }}
+          currentCategory={doc.categorie}
+          isSubmitting={reviewMutation.isPending}
+        />
+      </div>
     </div>
   );
 }

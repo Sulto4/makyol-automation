@@ -355,6 +355,51 @@ export class AuditService {
   }
 
   /**
+   * Log a document review event (approve or reject)
+   *
+   * @param metadata - Document review metadata
+   * @param userId - Optional user ID performing the review
+   */
+  async logDocumentReview(
+    metadata: {
+      document_id: number;
+      filename: string;
+      review_action: 'approve' | 'reject';
+      rejection_reason?: 'wrong_classification' | 'wrong_extraction';
+      original_category?: string;
+      corrected_category?: string;
+      wrong_fields?: string[];
+      comment?: string;
+    },
+    userId: string | null
+  ): Promise<void> {
+    const beforeValue: Record<string, any> | null =
+      metadata.original_category
+        ? { categorie: metadata.original_category }
+        : null;
+
+    const afterValue: Record<string, any> | null =
+      metadata.corrected_category
+        ? { categorie: metadata.corrected_category }
+        : null;
+
+    const input: CreateAuditLogInput = {
+      user_id: userId,
+      action_type: ActionType.DOCUMENT_REVIEW,
+      entity_type: EntityType.DOCUMENT,
+      entity_id: metadata.document_id,
+      before_value: beforeValue,
+      after_value: afterValue,
+      metadata: {
+        ...metadata,
+        reviewed_at: new Date().toISOString(),
+      },
+    };
+
+    await this.auditLogModel.create(input);
+  }
+
+  /**
    * Get the underlying AuditLogModel for advanced queries
    *
    * @returns AuditLogModel instance

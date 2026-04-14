@@ -106,6 +106,23 @@ export function createDocumentRoutes(pool: Pool): Router {
   router.post('/export-archive', (req, res, next) => controller.exportArchive(req, res, next));
 
   /**
+   * PATCH /api/documents/:id/review
+   * Review a document (approve or reject with reason)
+   *
+   * @param id - Document ID
+   * @body action - 'approve' or 'reject'
+   * @body rejection_reason - 'wrong_classification' or 'wrong_extraction' (when rejecting)
+   * @body corrected_category - New category (when rejection_reason is 'wrong_classification')
+   * @body wrong_fields - Array of incorrect field names (when rejection_reason is 'wrong_extraction')
+   * @body comment - Optional review comment
+   * @returns 200 - Document reviewed successfully
+   * @returns 400 - Invalid request
+   * @returns 404 - Document not found
+   * @returns 500 - Server error
+   */
+  router.patch('/:id/review', (req, res, next) => controller.reviewDocument(req, res, next));
+
+  /**
    * GET /api/documents/:id
    * Retrieve a document and its extraction results by ID
    *

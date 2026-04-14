@@ -1,6 +1,6 @@
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listDocuments, getDocument, getDocumentStats, clearAllDocuments } from '../api/documents';
-import type { ClearAllResponse } from '../types';
+import { listDocuments, getDocument, getDocumentStats, clearAllDocuments, reviewDocument } from '../api/documents';
+import type { ClearAllResponse, DocumentWithExtraction } from '../types';
 
 /**
  * Fetch all documents for client-side pagination / filtering.
@@ -67,6 +67,36 @@ export function useClearDocuments() {
   return useMutation<ClearAllResponse, Error, void>({
     mutationFn: clearAllDocuments,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ['document-stats'] });
+    },
+  });
+}
+
+/**
+ * Mutation to review (approve/reject) a document.
+ * Invalidates the document cache on success.
+ */
+export function useReviewDocument() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    DocumentWithExtraction,
+    Error,
+    {
+      id: number;
+      payload: {
+        action: 'approve' | 'reject';
+        rejection_reason?: 'wrong_classification' | 'wrong_extraction';
+        corrected_category?: string;
+        wrong_fields?: string[];
+        comment?: string;
+      };
+    }
+  >({
+    mutationFn: ({ id, payload }) => reviewDocument(id, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['documents', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       queryClient.invalidateQueries({ queryKey: ['document-stats'] });
     },

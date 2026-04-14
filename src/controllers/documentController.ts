@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { DocumentModel, Document, ProcessingStatus, CreateDocumentInput } from '../models/Document';
+import { DocumentModel, Document, ProcessingStatus, ReviewStatus, CreateDocumentInput } from '../models/Document';
 import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } from '../models/ExtractionResult';
 // Legacy services kept for potential fallback - pipeline now handles extraction
 // import { PDFExtractorService } from '../services/pdfExtractor';
@@ -880,6 +880,159 @@ export class DocumentController {
       await archiveService.generateArchive(archiveRecords, res, archiveFilename);
 
       logger.info(`[exportArchive] Archive streamed with ${archiveRecords.length} documents`);
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Review a document (approve or reject)
+   *
+   * PATCH /api/documents/:id/review
+   */
+  async reviewDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const VALID_CATEGORIES = [
+      'ISO', 'CE', 'FISA_TEHNICA', 'AGREMENT', 'AVIZ_TEHNIC', 'AVIZ_SANITAR',
+      'DECLARATIE_CONFORMITATE', 'CERTIFICAT_CALITATE', 'AUTORIZATIE_DISTRIBUTIE',
+      'CUI', 'CERTIFICAT_GARANTIE', 'DECLARATIE_PERFORMANTA', 'AVIZ_TEHNIC_SI_AGREMENT', 'ALTELE',
+    ];
+
+    try {
+      const documentId = parseInt(req.params.id, 10);
+
+      if (isNaN(documentId) || documentId <= 0) {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'Invalid document ID. Must be a positive integer.',
+            code: 'INVALID_DOCUMENT_ID',
+          }
+        });
+        return;
+      }
+
+      const document = await this.documentModel.findById(documentId);
+
+      if (!document) {
+        res.status(404).json({
+          error: {
+            name: 'NotFoundError',
+            message: 'Document not found',
+            code: 'DOCUMENT_NOT_FOUND',
+          }
+        });
+        return;
+      }
+
+      const { action, rejection_reason, corrected_category, wrong_fields, comment } = req.body;
+
+      if (action !== 'approve' && action !== 'reject') {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'Action must be "approve" or "reject".',
+            code: 'INVALID_ACTION',
+          }
+        });
+        return;
+      }
+
+      let updatedDocument: Document | null = null;
+
+      if (action === 'approve') {
+        updatedDocument = await this.documentModel.updateReviewStatus(documentId, ReviewStatus.OK);
+
+        try {
+          await this.auditService.logDocumentReview({
+            document_id: documentId,
+            filename: document.filename,
+            review_action: 'approve',
+            comment,
+          }, null);
+        } catch (auditError: any) {
+          logger.error(`Failed to create audit log for document review ${documentId}:`, auditError);
+        }
+
+      } else if (rejection_reason === 'wrong_classification') {
+        if (!corrected_category || !VALID_CATEGORIES.includes(corrected_category)) {
+          res.status(400).json({
+            error: {
+              name: 'ValidationError',
+              message: `corrected_category must be one of: ${VALID_CATEGORIES.join(', ')}`,
+              code: 'INVALID_CATEGORY',
+            }
+          });
+          return;
+        }
+
+        const originalCategory = document.categorie;
+
+        updatedDocument = await this.documentModel.updateClassification(documentId, {
+          categorie: corrected_category,
+          confidence: 1.0,
+          metoda_clasificare: 'human_review',
+          review_status: ReviewStatus.OK,
+        });
+
+        try {
+          await this.auditService.logDocumentReview({
+            document_id: documentId,
+            filename: document.filename,
+            review_action: 'reject',
+            rejection_reason: 'wrong_classification',
+            original_category: originalCategory || undefined,
+            corrected_category,
+            comment,
+          }, null);
+        } catch (auditError: any) {
+          logger.error(`Failed to create audit log for document review ${documentId}:`, auditError);
+        }
+
+      } else if (rejection_reason === 'wrong_extraction') {
+        if (!wrong_fields || !Array.isArray(wrong_fields) || wrong_fields.length === 0) {
+          res.status(400).json({
+            error: {
+              name: 'ValidationError',
+              message: 'wrong_fields must be a non-empty array.',
+              code: 'INVALID_WRONG_FIELDS',
+            }
+          });
+          return;
+        }
+
+        updatedDocument = await this.documentModel.updateReviewStatus(documentId, ReviewStatus.REVIEW);
+
+        try {
+          await this.auditService.logDocumentReview({
+            document_id: documentId,
+            filename: document.filename,
+            review_action: 'reject',
+            rejection_reason: 'wrong_extraction',
+            wrong_fields,
+            comment,
+          }, null);
+        } catch (auditError: any) {
+          logger.error(`Failed to create audit log for document review ${documentId}:`, auditError);
+        }
+
+      } else {
+        res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: 'rejection_reason must be "wrong_classification" or "wrong_extraction" when action is "reject".',
+            code: 'INVALID_REJECTION_REASON',
+          }
+        });
+        return;
+      }
+
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+
+      res.status(200).json({
+        document: updatedDocument,
+        extraction,
+      });
 
     } catch (error) {
       next(error);

@@ -11,6 +11,7 @@ export enum ActionType {
   REPORT_GENERATION = 'report_generation',
   USER_LOGIN = 'user_login',
   CONFIG_CHANGE = 'config_change',
+  DOCUMENT_REVIEW = 'document_review',
 }
 
 /**

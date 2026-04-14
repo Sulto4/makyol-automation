@@ -130,6 +130,26 @@ export async function uploadFolderFiles(
  *
  * @param request - Archive export configuration
  */
+/**
+ * Review a document (approve or reject with feedback)
+ */
+export async function reviewDocument(
+  id: number,
+  payload: {
+    action: 'approve' | 'reject';
+    rejection_reason?: 'wrong_classification' | 'wrong_extraction';
+    corrected_category?: string;
+    wrong_fields?: string[];
+    comment?: string;
+  },
+): Promise<DocumentWithExtraction> {
+  const { data } = await apiClient.patch<DocumentWithExtraction>(`/documents/${id}/review`, payload);
+  return data;
+}
+
+/**
+ * Export documents as a ZIP archive and trigger browser download
+ */
 export async function downloadArchive(request: ExportArchiveRequest): Promise<void> {
   const { data } = await apiClient.post('/documents/export-archive', request, {
     responseType: 'blob',

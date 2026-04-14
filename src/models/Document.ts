@@ -275,6 +275,21 @@ export class DocumentModel {
   }
 
   /**
+   * Update only the review_status column of a document
+   */
+  async updateReviewStatus(
+    id: number,
+    reviewStatus: ReviewStatus
+  ): Promise<Document | null> {
+    const query = `
+      UPDATE documents SET review_status = $1 WHERE id = $2 RETURNING *
+    `;
+
+    const result: QueryResult<Document> = await this.pool.query(query, [reviewStatus, id]);
+    return result.rows[0] || null;
+  }
+
+  /**
    * Find documents pending processing
    */
   async findPending(limit?: number): Promise<Document[]> {
