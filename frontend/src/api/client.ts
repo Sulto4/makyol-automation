@@ -19,8 +19,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (axios.isAxiosError(error) && error.response) {
-      const data = error.response.data as ApiErrorResponse | undefined;
-      const message = data?.error ?? 'A apărut o eroare neașteptată';
+      const data = error.response.data as any;
+      const errorObj = data?.error;
+      const message = typeof errorObj === 'string'
+        ? errorObj
+        : errorObj?.message ?? 'A apărut o eroare neașteptată';
       return Promise.reject(new Error(message));
     }
     return Promise.reject(new Error('Eroare de conexiune la server'));

@@ -140,7 +140,7 @@ export interface UploadResponse {
  * API error response
  */
 export interface ApiErrorResponse {
-  error: string;
+  error: string | { name: string; message: string; code?: string };
   code?: string;
   details?: string;
 }

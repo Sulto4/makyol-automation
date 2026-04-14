@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { Pool } from 'pg';
+import multer from 'multer';
 import { DocumentController } from '../controllers/documentController';
 import { upload, folderUpload } from '../middleware/upload';
 
@@ -75,7 +76,23 @@ export function createDocumentRoutes(pool: Pool): Router {
    * @returns 400 - Invalid request (no files, invalid file types)
    * @returns 500 - Server error
    */
-  router.post('/upload-folder', folderUpload, (req, res, next) => controller.uploadFolder(req, res, next));
+  router.post('/upload-folder', (req, res, next) => {
+    folderUpload(req, res, (err: any) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+          error: {
+            name: 'ValidationError',
+            message: err.code === 'LIMIT_FILE_SIZE'
+              ? 'Un fișier depășește limita de 50MB'
+              : err.message,
+            code: err.code,
+          },
+        });
+      }
+      if (err) return next(err);
+      controller.uploadFolder(req, res, next);
+    });
+  });
 
   /**
    * POST /api/documents/export-archive

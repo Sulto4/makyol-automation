@@ -65,11 +65,15 @@ export const upload = multer({
 });
 
 /**
- * Multer upload middleware for folder/batch uploads (up to 500 PDFs)
+ * Multer upload middleware for folder/batch uploads (up to 500 PDFs, 50MB per file)
  *
- * @example
- * ```typescript
- * router.post('/upload-folder', folderUpload, controller.handleFolderUpload);
- * ```
+ * Uses a higher file size limit than single uploads because construction
+ * documents (scanned ISO certificates, agrements) can be 15-20MB.
  */
-export const folderUpload = upload.array('files', 500);
+export const folderUpload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB for folder uploads
+  },
+}).array('files', 500);
