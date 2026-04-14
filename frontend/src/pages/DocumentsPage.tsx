@@ -20,12 +20,12 @@ import type { ExtractionResult } from '../types';
 
 export default function DocumentsPage() {
   const { data, isLoading, isError, error } = useDocuments();
-  const { categories, processingStatus, reviewStatus, search } = useFilterStore();
+  const {
+    categories, processingStatus, reviewStatus, search,
+    currentPage, setCurrentPage, perPage, setPerPage,
+    sortField, setSortField, sortDirection, setSortDirection,
+  } = useFilterStore();
 
-  const [sortField, setSortField] = useState<SortField>('uploaded_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
   const [showClearDialog, setShowClearDialog] = useState(false);
 
   const clearMutation = useClearDocuments();
@@ -118,11 +118,11 @@ export default function DocumentsPage() {
     return sortedDocuments.slice(start, start + perPage);
   }, [sortedDocuments, currentPage, perPage]);
 
-  // Reset page when filters change
+  // Store sorted document IDs for prev/next navigation in detail view
   useMemo(() => {
-    setCurrentPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, processingStatus, reviewStatus, search]);
+    const ids = sortedDocuments.map((d) => d.id);
+    sessionStorage.setItem('docNavIds', JSON.stringify(ids));
+  }, [sortedDocuments]);
 
   // Fetch extraction data for visible rows
   const visibleIds = useMemo(
@@ -144,13 +144,13 @@ export default function DocumentsPage() {
   const handleSort = useCallback(
     (field: SortField) => {
       if (field === sortField) {
-        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
         setSortField(field);
         setSortDirection('asc');
       }
     },
-    [sortField]
+    [sortField, sortDirection, setSortField, setSortDirection]
   );
 
   function handleExportExcel() {
