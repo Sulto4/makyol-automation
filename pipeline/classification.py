@@ -79,9 +79,12 @@ FILENAME_RULES = [
     # Declaratie de conformitate
     (r"(?i)(?:\bDC\b(?!\s*-)|declarati[ea]\s*de\s*conformitate)", "DECLARATIE_CONFORMITATE"),
     (r"(?i)declara[tț]i[ea]\s*conformitate", "DECLARATIE_CONFORMITATE"),
-    # Certificat de calitate / conformitate
-    (r"(?i)(?:\bCC\b|certificat\s*de\s*calitate)", "CERTIFICAT_CALITATE"),
-    (r"(?i)certificat\s*de\s*conformitate", "CERTIFICAT_CALITATE"),
+    (r"(?i)certificate?\s*de\s*conformitate", "DECLARATIE_CONFORMITATE"),
+    (r"(?i)^CC-\d+", "DECLARATIE_CONFORMITATE"),
+    # Certificat de calitate
+    # Note: "CC" abbreviation is ambiguous (Certificat Calitate vs Certificat Conformitate)
+    # Only match when explicitly "certificat de calitate" in filename
+    (r"(?i)certificat\s*de\s*calitate", "CERTIFICAT_CALITATE"),
     (r"(?i)certificat.*P1R", "CERTIFICAT_CALITATE"),
     (r"(?i)certificat.*CERT", "CERTIFICAT_CALITATE"),
     # Certificat de garantie
@@ -118,13 +121,20 @@ FILENAME_RULES = [
 # ---------------------------------------------------------------------------
 
 TEXT_MARKERS = [
-    # ISO
-    (r"(?i)ISO\s*9001", "ISO", 3),
-    (r"(?i)ISO\s*14001", "ISO", 3),
-    (r"(?i)ISO\s*45001", "ISO", 3),
-    (r"(?i)ISO\s*50001", "ISO", 3),
-    (r"(?i)management\s*system\s*certificate", "ISO", 2),
-    (r"(?i)certificat\s*de\s*management", "ISO", 2),
+    # ISO — standalone ISO standard mentions are low weight (many docs reference standards)
+    # Only high weight when combined with certification context
+    (r"(?i)ISO\s*9001", "ISO", 1),
+    (r"(?i)ISO\s*14001", "ISO", 1),
+    (r"(?i)ISO\s*45001", "ISO", 1),
+    (r"(?i)ISO\s*50001", "ISO", 1),
+    (r"(?i)management\s*system\s*certificate", "ISO", 3),
+    (r"(?i)certificat\s*de\s*management", "ISO", 3),
+    (r"(?i)certificat.*ISO", "ISO", 3),
+    (r"(?i)ISO.*certificat", "ISO", 3),
+    (r"(?i)scope\s*of\s*certification", "ISO", 2),
+    (r"(?i)domeniu\s*de\s*certificare", "ISO", 2),
+    (r"(?i)validity.*certificate", "ISO", 2),
+    (r"(?i)valabilitate.*certificat", "ISO", 2),
     # CE / PED
     (r"(?i)declara[tț]i[ea]\s*CE", "CE", 3),
     (r"(?i)directiva.*echipamente.*presiune", "CE", 2),
@@ -571,9 +581,10 @@ def classify_document(
             final_result = (fn_cat, confidence, "filename+text_agree")
             decision_reason = "filename+text_agree"
         else:
-            # Disagreement — text overrides if strong and non-ALTELE
+            # Disagreement — text overrides only if significantly stronger
             text_score = _get_text_score(text, txt_cat)
-            if text_score >= 5 and txt_cat != "ALTELE":
+            fn_score = _get_text_score(text, fn_cat)
+            if text_score >= 6 and txt_cat != "ALTELE" and text_score > fn_score + 3:
                 confidence = validate_classification(txt_cat, 0.90, text)
                 logger.info(
                     "Classified '%s' by text_override (score=%d, fn=%s, txt=%s): %s (%.2f)",
