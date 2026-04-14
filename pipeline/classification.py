@@ -553,6 +553,11 @@ def classify_document(
     fn_only = fn_result is not None and txt_result is None
     txt_only = fn_result is None and txt_result is not None
 
+    # Track cascade outcome for structured logging
+    ai_result = None
+    final_result = None
+    decision_reason = None
+
     if both_match:
         fn_cat = fn_result[0]
         txt_cat = txt_result[0]
@@ -563,7 +568,8 @@ def classify_document(
                 "Classified '%s' by filename+text_agree: %s (%.2f)",
                 filename, fn_cat, confidence,
             )
-            return (fn_cat, confidence, "filename+text_agree")
+            final_result = (fn_cat, confidence, "filename+text_agree")
+            decision_reason = "filename+text_agree"
         else:
             # Disagreement — text overrides if strong and non-ALTELE
             text_score = _get_text_score(text, txt_cat)
@@ -573,38 +579,63 @@ def classify_document(
                     "Classified '%s' by text_override (score=%d, fn=%s, txt=%s): %s (%.2f)",
                     filename, text_score, fn_cat, txt_cat, txt_cat, confidence,
                 )
-                return (txt_cat, confidence, "text_override")
+                final_result = (txt_cat, confidence, "text_override")
+                decision_reason = "text_override"
             else:
                 confidence = validate_classification(fn_cat, 0.85, text)
                 logger.info(
                     "Classified '%s' by filename_wins (score=%d, fn=%s, txt=%s): %s (%.2f)",
                     filename, text_score, fn_cat, txt_cat, fn_cat, confidence,
                 )
-                return (fn_cat, confidence, "filename_wins")
+                final_result = (fn_cat, confidence, "filename_wins")
+                decision_reason = "filename_wins"
 
-    if fn_only:
+    if final_result is None and fn_only:
         confidence = validate_classification(fn_result[0], fn_result[1], text)
         logger.info(
             "Classified '%s' by filename_regex: %s (%.2f)",
             filename, fn_result[0], confidence,
         )
-        return (fn_result[0], confidence, "filename_regex")
+        final_result = (fn_result[0], confidence, "filename_regex")
+        decision_reason = "filename_regex"
 
-    if txt_only:
+    if final_result is None and txt_only:
         confidence = validate_classification(txt_result[0], txt_result[1], text)
         logger.info(
             "Classified '%s' by text_rules: %s (%.2f)",
             filename, txt_result[0], confidence,
         )
-        return (txt_result[0], confidence, "text_rules")
+        final_result = (txt_result[0], confidence, "text_rules")
+        decision_reason = "text_rules"
 
     # Level 3: AI classification
-    result = classify_by_ai(text, filename=filename)
-    if result is not None:
-        confidence = validate_classification(result[0], result[1], text)
-        logger.info("Classified '%s' by AI: %s (%.2f)", filename, result[0], confidence)
-        return (result[0], confidence, result[2])
+    if final_result is None:
+        ai_result = classify_by_ai(text, filename=filename)
+        if ai_result is not None:
+            confidence = validate_classification(ai_result[0], ai_result[1], text)
+            logger.info("Classified '%s' by AI: %s (%.2f)", filename, ai_result[0], confidence)
+            final_result = (ai_result[0], confidence, ai_result[2])
+            decision_reason = "ai"
 
     # Fallback — AI returned None
-    logger.warning("AI classification returned None for '%s', falling back to ALTELE", filename)
-    return ("ALTELE", 0.3, "fallback")
+    if final_result is None:
+        logger.warning("AI classification returned None for '%s', falling back to ALTELE", filename)
+        final_result = ("ALTELE", 0.3, "fallback")
+        decision_reason = "fallback"
+
+    # Structured cascade logging — single comprehensive entry
+    logger.info("Classification cascade complete", extra={"extra_data": {
+        "step": "classification_cascade",
+        "filename": filename,
+        "level1_filename": {"category": fn_result[0], "confidence": fn_result[1]} if fn_result else None,
+        "level2_text": {"category": txt_result[0], "confidence": txt_result[1]} if txt_result else None,
+        "level3_ai": {"category": ai_result[0], "confidence": ai_result[1]} if ai_result else None,
+        "final": {
+            "category": final_result[0],
+            "confidence": final_result[1],
+            "method": final_result[2],
+        },
+        "decision_reason": decision_reason,
+    }})
+
+    return final_result
