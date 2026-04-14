@@ -1,5 +1,4 @@
 import express, { Express } from 'express';
-import path from 'path';
 import { Pool } from 'pg';
 import { appConfig } from './config/app';
 import { databaseConfig } from './config/database';
