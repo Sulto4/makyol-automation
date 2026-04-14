@@ -73,7 +73,6 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
               <DataField label="Producător" value={extraction.producator} />
               <DataField label="Distribuitor" value={extraction.distribuitor} />
               <DataField label="Adresă producător" value={extraction.adresa_producator} />
-              <DataField label="Adresă distribuitor" value={extraction.adresa_distribuitor} />
               <DataField label="Data expirare">
                 <ExpirationWarning dataExpirare={extraction.data_expirare} />
               </DataField>

@@ -73,7 +73,6 @@ export class DocumentController {
       producator: extraction.producator ?? null,
       distribuitor: extraction.distribuitor ?? null,
       adresa_producator: extraction.adresa_producator ?? null,
-      adresa_distribuitor: extraction.adresa_distribuitor ?? null,
       extraction_model: extraction.extraction_model ?? null,
     };
 
@@ -210,7 +209,7 @@ export class DocumentController {
 
         // Per-document processing summary
         const extraction = pipelineResponse.extraction || {};
-        const extractionFields = ['material', 'data_expirare', 'companie', 'producator', 'distribuitor', 'adresa_producator', 'adresa_distribuitor', 'extraction_model'];
+        const extractionFields = ['material', 'data_expirare', 'companie', 'producator', 'distribuitor', 'adresa_producator', 'extraction_model'];
         const extractedFields = extractionFields.filter(f => extraction[f] != null && extraction[f] !== '');
         const nullFields = extractionFields.filter(f => extraction[f] == null || extraction[f] === '');
         logger.info(`Document processing summary for ${document.id}`, {
@@ -258,7 +257,6 @@ export class DocumentController {
           producator: extraction.producator ?? null,
           distribuitor: extraction.distribuitor ?? null,
           adresa_producator: extraction.adresa_producator ?? null,
-          adresa_distribuitor: extraction.adresa_distribuitor ?? null,
           extraction_model: extraction.extraction_model ?? null,
         };
 
@@ -571,8 +569,7 @@ export class DocumentController {
           COUNT(data_expirare)::int AS has_data_expirare,
           COUNT(producator)::int AS has_producator,
           COUNT(distribuitor)::int AS has_distribuitor,
-          COUNT(adresa_producator)::int AS has_adresa_producator,
-          COUNT(adresa_distribuitor)::int AS has_adresa_distribuitor
+          COUNT(adresa_producator)::int AS has_adresa_producator
         FROM extraction_results
       `;
 
@@ -610,7 +607,6 @@ export class DocumentController {
           has_producator: extrRow.has_producator,
           has_distribuitor: extrRow.has_distribuitor,
           has_adresa_producator: extrRow.has_adresa_producator,
-          has_adresa_distribuitor: extrRow.has_adresa_distribuitor,
         },
       });
 

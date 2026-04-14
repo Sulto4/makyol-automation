@@ -32,66 +32,66 @@ logger = logging.getLogger(__name__)
 
 EXTRACTION_SCHEMA = {
     "AUTORIZATIE_DISTRIBUTIE": {
-        "fields": ["distribuitor", "producator", "data_emitere", "valabilitate", "data_expirare", "material", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["distribuitor", "producator", "data_emitere", "valabilitate", "data_expirare", "material", "adresa_producator"],
         "instructions": "Extract: distributor company, producer company, issue date, validity period, expiration date, material/product, producer address. The material is the product authorized for distribution (e.g., 'tevi si fitinguri PEID', 'vane industriale'). If the authorization is generic ('produsele achizitionate'), write 'Produse diverse (autorizatie generala)'. If no explicit expiration date but has validity period, CALCULATE it. If validity = 'pe durata contractului', write 'Pe durata contractului'.",
     },
     "AGREMENT": {
-        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator"],
         "instructions": "Extract: producer name, expiration date, material/product name, company that holds the agrement, producer address. Look for 'valabil pana la', 'valabilitate' for the expiration date.",
     },
     "AVIZ_TEHNIC_SI_AGREMENT": {
-        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator"],
         "instructions": "Extract: producer name, expiration date, material/product, company name, producer address. For 'nume_document', this should be 'Aviz Tehnic si Agrement Tehnic' (NOT just 'Aviz Tehnic').",
     },
     "AVIZ_TEHNIC": {
-        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator"],
         "instructions": "Extract: producer name, expiration date, material/product, company (the certification body if applicable), producer address.",
     },
     "AVIZ_SANITAR": {
-        "fields": ["companie", "material", "data_expirare", "producator", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["companie", "material", "data_expirare", "producator", "adresa_producator"],
         "instructions": "Extract: company holding the sanitary approval, material/product, expiration date, producer, producer address. Look very carefully for expiration - check for 'valabil', 'expira', 'pana la', and also check if the approval number contains a year-based validity. If no expiration is stated anywhere, use null.",
     },
     "ISO": {
-        "fields": ["companie", "data_expirare", "standard_iso", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["companie", "data_expirare", "standard_iso", "adresa_producator"],
         "instructions": "Extract: certified company name, certificate expiration date, ISO standard number (e.g., 'ISO 9001:2015'), company address. NOTE: Do NOT put the ISO standard in the 'material' field - ISO certifies management systems, not physical materials. For 'nume_document', write 'Certificat ISO [standard]' (e.g., 'Certificat ISO 9001').",
     },
     "DECLARATIE_PERFORMANTA": {
-        "fields": ["material", "producator", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["material", "producator", "adresa_producator"],
         "instructions": "Extract: product/material name (full description with specs), producer name, producer address. Keep material name concise but specific (max 100 chars).",
     },
     "FISA_TEHNICA": {
-        "fields": ["producator", "material", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["producator", "material", "adresa_producator"],
         "instructions": "Extract: producer name, product/material name (full name with type, e.g., 'Tevi PE100 PEHD pentru apa'), producer address.",
     },
     "CERTIFICAT_GARANTIE": {
-        "fields": ["material", "producator", "adresa_producator", "data_expirare", "adresa_distribuitor"],
+        "fields": ["material", "producator", "adresa_producator", "data_expirare"],
         "instructions": "Extract: product/material under warranty (keep CONCISE, max 80 chars - summarize if the list is long, e.g., 'Tevi si fitinguri PVC, PP, PE, PEX'), producer name, producer address, warranty period/expiration. For data_expirare: extract the warranty DURATION (e.g., '2 ani de la receptie', '24 luni'). If multiple warranty periods exist, extract the main/longest one.",
     },
     "DECLARATIE_CONFORMITATE": {
-        "fields": ["material", "producator", "companie", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["material", "producator", "companie", "adresa_producator"],
         "instructions": "Extract: product/material name (the actual product - if generic like 'produse pentru constructii', keep it as is but add any specifics from the document context), producer name, declaring company, producer address.",
     },
     "CE": {
-        "fields": ["producator", "companie", "material", "data_expirare", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["producator", "companie", "material", "data_expirare", "adresa_producator"],
         "instructions": "Extract data from this CE/PED certificate. IMPORTANT distinction: 'producator' = the manufacturer of the product (e.g., Hebei Huayang Steel Pipe). 'companie' = the CERTIFICATION BODY that issued the certificate (e.g., TÜV Rheinland, TÜV SUD, Bureau Veritas, Lloyd's). These are DIFFERENT entities. Also extract material/product, expiration date, producer address. For 'nume_document', write 'Certificat CE PED' or 'Certificat CE'.",
     },
     "CERTIFICAT_CALITATE": {
-        "fields": ["material", "producator", "companie", "adresa_distribuitor"],
+        "fields": ["material", "producator", "companie"],
         "instructions": "Extract: product/material name - the PHYSICAL PRODUCT being certified. Look for pipe type (PEHD, PVC, PE100), dimensions (DN, PN, SDR), and product description. Common materials: 'Teava PEHD PE100', 'Teava PVC multistrat', 'Fitinguri PEID'. If the product field is empty (template document) but a standard reference exists, DEDUCE the material from the standard: EN 12201 = 'Teava PE pentru apa (conform EN 12201)', EN 13476 = 'Teava PVC multistrat (conform EN 13476)', EN 1452 = 'Teava PVC-U presiune (conform EN 1452)', EN 10204 = 'Tevi/produse din otel (conform EN 10204)'. Also extract producer and company.",
     },
     "CUI": {
-        "fields": ["companie", "cui_number", "adresa_producator", "adresa_distribuitor"],
+        "fields": ["companie", "cui_number", "adresa_producator"],
         "instructions": "Extract: company name (EXACTLY as registered - common companies: TERAPLAST, VALROM INDUSTRIE, TEHNO WORLD, ZAKPREST CONSTRUCT), CUI number (just digits), registered address. For 'nume_document', use 'Certificat de Inregistrare'.",
     },
     "ALTELE": {
-        "fields": ["companie", "material", "adresa_distribuitor"],
+        "fields": ["companie", "material"],
         "instructions": "Extract: any company name and material/product mentioned.",
     },
 }
 
 # ---------------------------------------------------------------------------
 # Extraction system prompt — ported from MVP (clasificare_documente_final.py)
-# 14 rules: MVP rules 1-8, new rule 9 (adresa_distribuitor), MVP rules 9-13
+# 13 rules: MVP rules 1-8, rules 9-13
 # ---------------------------------------------------------------------------
 
 _EXTRACTION_SYSTEM_PROMPT = """You are a precise data extraction system for Romanian construction industry documents.
@@ -112,15 +112,14 @@ Extract ONLY the requested fields from the document text. Follow these rules str
 7. For "distribuitor": the company authorized to distribute the product
 8. For "companie": if the company is neither clearly a producer nor distributor, use this field. For ISO certs, this is the certified company.
    - Same OCR correction rules as producator
-9. For "adresa_distribuitor": full address of the distributor company. Fix obvious OCR errors in addresses.
-10. For "adresa_producator": full address of the producer/manufacturer. Fix obvious OCR errors in addresses.
-11. For "cui_number": just the numeric CUI code
-12. For "standard_iso": the ISO standard number (e.g., "ISO 9001:2015", "ISO 14001:2015")
-13. Fix obvious OCR errors in ALL extracted values:
+9. For "adresa_producator": full address of the producer/manufacturer. Fix obvious OCR errors in addresses.
+10. For "cui_number": just the numeric CUI code
+11. For "standard_iso": the ISO standard number (e.g., "ISO 9001:2015", "ISO 14001:2015")
+12. Fix obvious OCR errors in ALL extracted values:
     - "lndustrie" → "Industrie", "ser,;ce" → "Service", "TUV" → "TÜV"
     - "Să'ațel" → "Sărățel", "TERAPIA" → "TERAPLAST" (when context shows Teraplast)
     - Interpret Romanian diacritics: "Ţ" = "Ț", "ş" = "ș", "ã" = "ă"
-14. For "nume_document": extract ONLY the document type/title, MAX 40 characters.
+13. For "nume_document": extract ONLY the document type/title, MAX 40 characters.
     - CORRECT examples: "Agrement Tehnic", "Aviz Sanitar", "Certificat CE PED", "Certificat ISO 9001", "Certificat de Inregistrare", "Fisa Tehnica Produs", "Declaratie de Performanta"
     - Do NOT include document numbers, dates, reference codes, or descriptions
     - Do NOT include newlines
@@ -297,7 +296,6 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
             "producator": None,
             "distribuitor": None,
             "adresa_producator": None,
-            "adresa_distribuitor": None,
             "nume_document": None,
         }
 
@@ -346,7 +344,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
     schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
     all_fields = [
         "companie", "material", "data_expirare", "producator",
-        "distribuitor", "adresa_producator", "adresa_distribuitor",
+        "distribuitor", "adresa_producator",
         "nume_document",
     ]
 
@@ -402,7 +400,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                     if len(value) > 50:
                         value = value[:50]
 
-        elif field in ("adresa_producator", "adresa_distribuitor"):
+        elif field == "adresa_producator":
             # Truncate address
             if len(value) > MAX_ADDRESS_LENGTH:
                 value = value[:MAX_ADDRESS_LENGTH].rsplit(" ", 1)[0]

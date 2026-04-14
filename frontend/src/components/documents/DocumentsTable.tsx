@@ -9,7 +9,6 @@ export type SortField =
   | 'producator'
   | 'companie'
   | 'distribuitor'
-  | 'adresa_distribuitor'
   | 'data_expirare'
   | 'confidence'
   | 'processing_status'
@@ -30,7 +29,6 @@ const COLUMNS: Column[] = [
   { key: 'producator', label: 'Producător' },
   { key: 'companie', label: 'Companie' },
   { key: 'distribuitor', label: 'Distribuitor' },
-  { key: 'adresa_distribuitor', label: 'Adresă distribuitor' },
   { key: 'data_expirare', label: 'Data expirare' },
   { key: 'confidence', label: 'Încredere' },
   { key: 'processing_status', label: 'Status procesare' },
@@ -63,7 +61,7 @@ export default function DocumentsTable({
           <col className="w-[11%]" /> {/* Producător */}
           <col className="w-[10%]" /> {/* Companie */}
           <col className="w-[10%]" /> {/* Distribuitor */}
-          <col className="w-[8%]" />  {/* Data expirare */}
+          <col className="w-[9%]" />  {/* Data expirare */}
           <col className="w-[7%]" />  {/* Încredere */}
           <col className="w-[7%]" />  {/* Status procesare */}
           <col className="w-[6%]" />  {/* Status revizie */}

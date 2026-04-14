@@ -138,8 +138,8 @@ def regex_extract(text: str, category: str) -> Dict[str, Optional[str]]:
 
     Returns:
         Dict with keys: companie, material, data_expirare,
-        producator, distribuitor, adresa_producator, adresa_distribuitor.
-        material, producator, and adresa_distribuitor are always None.
+        producator, distribuitor, adresa_producator.
+        material and producator are always None.
     """
     logger.info("Running regex extraction for category %s", category)
 
@@ -150,10 +150,9 @@ def regex_extract(text: str, category: str) -> Dict[str, Optional[str]]:
         "producator": None,
         "distribuitor": None,
         "adresa_producator": extract_address_regex(text),
-        "adresa_distribuitor": None,
     }
 
     filled = sum(1 for v in result.values() if v is not None)
-    logger.info("Regex extraction found %s/7 fields for %s", filled, category)
+    logger.info("Regex extraction found %s/6 fields for %s", filled, category)
 
     return result

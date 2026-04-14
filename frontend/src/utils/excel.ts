@@ -30,7 +30,6 @@ export async function exportToExcel(
     'Producător',
     'Companie',
     'Distribuitor',
-    'Adresa Distribuitor',
     'Data Expirare',
     'Încărcat La',
   ];
@@ -66,7 +65,6 @@ export async function exportToExcel(
       extraction?.producator ?? '',
       extraction?.companie ?? '',
       extraction?.distribuitor ?? '',
-      extraction?.adresa_distribuitor ?? '',
       dateExpirare === '—' ? '' : dateExpirare,
       dateUploaded === '—' ? '' : dateUploaded,
     ]);

@@ -13,7 +13,6 @@ const FIELD_LABELS: Record<string, string> = {
   producator: 'Producător',
   distribuitor: 'Distribuitor',
   adresa_producator: 'Adresă Producător',
-  adresa_distribuitor: 'Adresă Distribuitor',
 };
 
 const FIELD_COLORS: Record<string, string> = {
@@ -23,7 +22,6 @@ const FIELD_COLORS: Record<string, string> = {
   producator: '#14b8a6',
   distribuitor: '#f97316',
   adresa_producator: '#ec4899',
-  adresa_distribuitor: '#10b981',
 };
 
 const ALL_FIELDS = [
@@ -33,7 +31,6 @@ const ALL_FIELDS = [
   'producator',
   'distribuitor',
   'adresa_producator',
-  'adresa_distribuitor',
 ] as const;
 
 export default function ExtractionFillChart({ stats }: ExtractionFillChartProps) {

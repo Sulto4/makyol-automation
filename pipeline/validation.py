@@ -160,7 +160,7 @@ def _collect_issues(result: Dict[str, Any]) -> List[str]:
             issues.extend(_check_date(value, field))
 
     # Address checks
-    for field in ("adresa_producator", "adresa_distribuitor"):
+    for field in ("adresa_producator",):
         value = result.get(field, "")
         if value:
             issues.extend(_check_address(value, field))

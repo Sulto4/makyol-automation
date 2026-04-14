@@ -130,7 +130,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         }})
 
     # Step 4b: Retry extraction if all values are null
-    _check_fields = ("companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator", "adresa_distribuitor")
+    _check_fields = ("companie", "material", "data_expirare", "producator", "distribuitor", "adresa_producator")
     try:
         all_null = all(extraction.get(f) is None for f in _check_fields)
         if all_null and len(text.strip()) >= 50:
@@ -157,7 +157,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                 normalized, _ = normalize_company_name(raw)
                 extraction[field] = normalized
 
-        for field in ("adresa_producator", "adresa_distribuitor"):
+        for field in ("adresa_producator",):
             raw = extraction.get(field)
             if raw and raw.strip():
                 normalized, _ = normalize_address(raw)

@@ -70,12 +70,6 @@ Analizeaza imaginile atasate dintr-un document PDF clasificat ca "{category}" si
    - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
    - Maxim {max_address} caractere.
 
-7. **adresa_distribuitor** — Adresa distribuitorului (daca este mentionata).
-   - Extrage adresa completa daca este disponibila.
-   - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
-   - Returneaza null daca nu este mentionat un distribuitor sau adresa acestuia.
-   - Maxim {max_address} caractere.
-
 REGULI IMPORTANTE:
 - Raspunde DOAR cu un JSON valid, fara explicatii sau text suplimentar.
 - Foloseste null pentru campurile care nu pot fi determinate din imagini.
@@ -92,8 +86,7 @@ Format raspuns:
     "data_expirare": "DD.MM.YYYY" sau null,
     "producator": "Numele Producatorului" sau null,
     "distribuitor": "Numele Distribuitorului" sau null,
-    "adresa_producator": "Adresa completa" sau null,
-    "adresa_distribuitor": "Adresa distribuitorului" sau null
+    "adresa_producator": "Adresa completa" sau null
 }}"""
 
 
