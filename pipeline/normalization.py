@@ -21,8 +21,6 @@ def _load_knowledge_base() -> dict:
         return json.load(f)
 
 
-logger = logging.getLogger(__name__)
-
 try:
     _KB = _load_knowledge_base()
 except (FileNotFoundError, json.JSONDecodeError) as exc:
@@ -43,6 +41,29 @@ for _key, _company in _KB.get("companies", {}).items():
         for addr_alias in _company.get("address_aliases", []):
             _ADDRESS_ALIASES[addr_alias.upper().strip()] = canonical_addr
 
+# ---------------------------------------------------------------------------
+# Known companies exact-match overrides (ported from MVP)
+# ---------------------------------------------------------------------------
+# These take priority over fuzzy / knowledge_base matching. Applied AFTER
+# SC/S.C. prefix removal and SRL/SA suffix normalization.
+
+KNOWN_COMPANIES: Dict[str, str] = {
+    "TERAPLAST": "TERAPLAST SA",
+    "TERAPLAST SA": "TERAPLAST SA",
+    "TERAPLAST SRL": "TERAPLAST SA",
+    "TERAPIA": "TERAPLAST SA",
+    "VALROM INDUSTRIE": "VALROM INDUSTRIE SRL",
+    "VALROM INDUSTRIE SRL": "VALROM INDUSTRIE SRL",
+    "VALROM": "VALROM INDUSTRIE SRL",
+    "VALROM INDUSTRIE SA": "VALROM INDUSTRIE SRL",
+    "TEHNO WORLD": "TEHNO WORLD SRL",
+    "TEHNO WORLD SRL": "TEHNO WORLD SRL",
+    "TEHNOWORLD": "TEHNO WORLD SRL",
+    "TEHNOWORLD SRL": "TEHNO WORLD SRL",
+    "ZAKPREST CONSTRUCT": "ZAKPREST CONSTRUCT SRL",
+    "ZAKPREST CONSTRUCT SRL": "ZAKPREST CONSTRUCT SRL",
+}
+
 # Fuzzy match threshold (Levenshtein / WRatio)
 MATCH_THRESHOLD = 85
 
@@ -53,6 +74,14 @@ MATCH_THRESHOLD = 85
 _CHINESE_CHARS_RE = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]+")
 _CUI_PATTERN_RE = re.compile(r"\b(RO)?\d{5,10}\b", re.IGNORECASE)
 _WHITESPACE_RE = re.compile(r"\s+")
+
+# SC/S.C. prefix removal (archaic Romanian legal prefix)
+_SC_PREFIX_RE = re.compile(r"^S\.?\s*C\.?\s+", re.IGNORECASE)
+
+# SRL/SA suffix normalization
+_SRL_SUFFIX_RE = re.compile(r"\s+S\.?\s*R\.?\s*L\.?\s*$", re.IGNORECASE)
+_SA_SUFFIX_RE = re.compile(r"\s+S\.?\s*A\.?\s*$", re.IGNORECASE)
+_SA_HYPHENATED_RE = re.compile(r"-S\.?\s*A\.?\s*$", re.IGNORECASE)
 
 
 def strip_chinese_chars(text: str) -> str:
@@ -70,12 +99,35 @@ def _clean_name(name: str) -> str:
     return _WHITESPACE_RE.sub(" ", name).strip()
 
 
+def _remove_sc_prefix(text: str) -> str:
+    """Remove SC / S.C. prefix (archaic Romanian legal prefix)."""
+    return _SC_PREFIX_RE.sub("", text).strip()
+
+
+def _normalize_legal_suffix(text: str) -> str:
+    """Normalize SRL/SA legal suffixes to canonical form.
+
+    Handles: S.R.L. → SRL, S.A. → SA, hyphenated forms like TERAPLAST-SA.
+    """
+    text = _SRL_SUFFIX_RE.sub(" SRL", text)
+    text = _SA_SUFFIX_RE.sub(" SA", text)
+    text = _SA_HYPHENATED_RE.sub(" SA", text)
+    return text.strip()
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 def normalize_company_name(raw_name: str) -> Tuple[str, bool]:
     """Normalize a company name against the knowledge base.
+
+    Pipeline:
+      1. Pre-process (strip Chinese, CUI, whitespace)
+      2. SC prefix removal + SRL/SA suffix normalization
+      3. KNOWN_COMPANIES exact-match override
+      4. Knowledge-base exact match (aliases)
+      5. Knowledge-base fuzzy match
 
     Returns:
         (normalized_name, was_matched) — was_matched is True when the name
@@ -92,12 +144,43 @@ def normalize_company_name(raw_name: str) -> Tuple[str, bool]:
     if not cleaned:
         return (raw_name.strip(), False)
 
-    # 1. Exact match (case-insensitive)
-    upper_cleaned = cleaned.upper()
-    if upper_cleaned in ALIAS_TO_CANONICAL:
-        return (ALIAS_TO_CANONICAL[upper_cleaned], True)
+    # --- SC prefix removal + SRL/SA suffix normalization ---
+    cleaned = _remove_sc_prefix(cleaned)
+    cleaned = _normalize_legal_suffix(cleaned)
+    cleaned = _clean_name(cleaned)
 
-    # 2. Fuzzy match against all aliases
+    # --- KNOWN_COMPANIES exact-match override (priority over KB) ---
+    upper_cleaned = cleaned.upper()
+    if upper_cleaned in KNOWN_COMPANIES:
+        canonical = KNOWN_COMPANIES[upper_cleaned]
+        logger.info(
+            "Known company match: raw='%s' → canonical='%s'",
+            raw_name[:60],
+            canonical,
+            extra={"extra_data": {
+                "original": raw_name[:60],
+                "normalized": canonical,
+                "match_type": "exact_known",
+            }},
+        )
+        return (canonical, True)
+
+    # --- Knowledge-base exact match (case-insensitive) ---
+    if upper_cleaned in ALIAS_TO_CANONICAL:
+        canonical = ALIAS_TO_CANONICAL[upper_cleaned]
+        logger.info(
+            "Exact alias match: raw='%s' → canonical='%s'",
+            raw_name[:60],
+            canonical,
+            extra={"extra_data": {
+                "original": raw_name[:60],
+                "normalized": canonical,
+                "match_type": "exact_known",
+            }},
+        )
+        return (canonical, True)
+
+    # --- Knowledge-base fuzzy match ---
     best_score = 0.0
     best_canonical: Optional[str] = None
 
@@ -108,15 +191,31 @@ def normalize_company_name(raw_name: str) -> Tuple[str, bool]:
             best_canonical = canonical
 
     if best_score >= MATCH_THRESHOLD and best_canonical is not None:
-        logger.debug(
-            "Fuzzy company match: raw='%s' → canonical='%s'",
+        logger.info(
+            "Fuzzy company match: raw='%s' → canonical='%s' (score=%.1f)",
             raw_name[:60],
             best_canonical,
-            extra={"extra_data": {"raw": raw_name[:60], "canonical": best_canonical, "match_score": best_score}},
+            best_score,
+            extra={"extra_data": {
+                "original": raw_name[:60],
+                "normalized": best_canonical,
+                "match_type": "fuzzy",
+                "match_score": best_score,
+            }},
         )
         return (best_canonical, True)
 
-    # No match — return cleaned version
+    # No match — return cleaned version with regex cleanup logged
+    logger.info(
+        "Company not matched: raw='%s' → cleaned='%s'",
+        raw_name[:60],
+        cleaned,
+        extra={"extra_data": {
+            "original": raw_name[:60],
+            "normalized": cleaned,
+            "match_type": "regex_cleanup",
+        }},
+    )
     return (cleaned, False)
 
 
