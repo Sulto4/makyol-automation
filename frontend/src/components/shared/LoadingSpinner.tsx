@@ -16,8 +16,8 @@ function Spinner({ size = 'md', text }: Pick<LoadingSpinnerProps, 'size' | 'text
 
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-8">
-      <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600`} />
-      {text && <p className="text-sm text-gray-500">{text}</p>}
+      <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600 dark:text-blue-400`} />
+      {text && <p className="text-sm text-gray-500 dark:text-gray-400">{text}</p>}
     </div>
   );
 }
@@ -27,10 +27,10 @@ function SkeletonLoader({ rows = 5 }: Pick<LoadingSpinnerProps, 'rows'>) {
     <div className="animate-pulse space-y-3 py-4">
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="flex items-center gap-4">
-          <div className="h-4 w-1/4 rounded bg-gray-200" />
-          <div className="h-4 w-1/3 rounded bg-gray-200" />
-          <div className="h-4 w-1/6 rounded bg-gray-200" />
-          <div className="h-4 w-1/5 rounded bg-gray-200" />
+          <div className="h-4 w-1/4 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-1/6 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-1/5 rounded bg-gray-200 dark:bg-gray-700" />
         </div>
       ))}
     </div>
