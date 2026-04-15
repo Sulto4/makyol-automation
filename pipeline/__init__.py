@@ -179,9 +179,26 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                         continue
 
                 # Garbage check: reject values that look like sentence fragments, not company names
-                # Real company names are short (1-6 words) and don't contain common Romanian words
                 val = raw.strip()
+                val_lower = val.lower()
                 val_words = val.split()
+
+                # Reject certification bodies extracted as "companie" on ISO docs
+                cert_bodies = [
+                    "international management", "management certification",
+                    "bureau veritas", "tuv rheinland", "tuv sud", "lloyd",
+                    "sgs ", "dekra", "dnv", "eurocert", "iqnet", "srac",
+                    "certind", "aeroq", "qualitas", "organism de certificare",
+                ]
+                if field == "companie" and category == "ISO":
+                    if any(cb in val_lower for cb in cert_bodies):
+                        logger.warning(
+                            "Certification body extracted as companie on ISO doc: '%s' — setting to None",
+                            val[:60],
+                        )
+                        extraction[field] = None
+                        continue
+
                 garbage_words = {
                     "pentru", "care", "este", "sunt", "această", "aceasta", "acest",
                     "prin", "dintre", "efectuează", "efectueaza", "importante",
