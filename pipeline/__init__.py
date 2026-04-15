@@ -171,16 +171,26 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         for field in ("adresa_producator",):
             raw = extraction.get(field)
             if raw and raw.strip():
+                # Hallucination check: verify address actually appears in document text
+                raw_lower = raw.strip().lower()
+                # Check first meaningful part (before first comma) in document text
+                first_part = raw_lower.split(",")[0].strip()
+                if len(first_part) > 5 and first_part not in text.lower():
+                    logger.warning(
+                        "Address hallucination detected: '%s' not found in document text — setting to None",
+                        raw.strip()[:60],
+                        extra={"extra_data": {"field": field, "hallucinated_value": raw.strip()[:80]}},
+                    )
+                    extraction[field] = None
+                    continue
+
                 normalized, was_matched = normalize_address(raw)
                 if was_matched and normalized.lower() != raw.strip().lower():
-                    # Knowledge base has a different address — keep the document's
-                    # address (it's what's actually written) and flag for review
                     logger.info(
                         "Address mismatch: document says '%s', KB says '%s' — keeping document value",
                         raw.strip()[:60], normalized[:60],
                         extra={"extra_data": {"field": field, "document_value": raw.strip(), "kb_value": normalized}},
                     )
-                    # Don't overwrite — keep raw from document
                 else:
                     extraction[field] = normalized
     except Exception as e:
