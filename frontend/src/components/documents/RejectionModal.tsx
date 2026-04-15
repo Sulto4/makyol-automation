@@ -89,8 +89,8 @@ export default function RejectionModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Respinge document</h2>
+      <div className="relative z-10 w-full max-w-lg rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Respinge document</h2>
 
         {/* Reason selection */}
         <div className="mb-4 flex gap-3">
@@ -103,8 +103,8 @@ export default function RejectionModal({
             }}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-colors ${
               reason === 'wrong_classification'
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
           >
             <Tag className="h-4 w-4" />
@@ -118,8 +118,8 @@ export default function RejectionModal({
             }}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-colors ${
               reason === 'wrong_extraction'
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
           >
             <FileText className="h-4 w-4" />
@@ -130,7 +130,7 @@ export default function RejectionModal({
         {/* Wrong classification panel */}
         {reason === 'wrong_classification' && (
           <div className="mb-4">
-            <p className="mb-3 text-sm font-medium text-gray-700">Selecteaza categoria corecta:</p>
+            <p className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Selecteaza categoria corecta:</p>
             <div className="grid grid-cols-3 gap-2">
               {(Object.entries(CATEGORY_LABELS) as [DocumentCategory, string][]).map(
                 ([key, label]) => {
@@ -144,10 +144,10 @@ export default function RejectionModal({
                       onClick={() => setSelectedCategory(key)}
                       className={`rounded-md border-2 px-2 py-1.5 text-xs font-medium transition-colors ${
                         isCurrent
-                          ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+                          ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500'
                           : isSelected
-                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-300'
-                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400 dark:ring-blue-500'
+                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                       }`}
                     >
                       {label}
@@ -167,7 +167,7 @@ export default function RejectionModal({
               {EXTRACTION_FIELDS.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                  className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -184,7 +184,7 @@ export default function RejectionModal({
               onChange={(e) => setComment(e.target.value)}
               placeholder="Descrie valorile corecte..."
               rows={3}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 dark:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         )}
@@ -194,7 +194,7 @@ export default function RejectionModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
           >
             Anuleaza
           </button>
