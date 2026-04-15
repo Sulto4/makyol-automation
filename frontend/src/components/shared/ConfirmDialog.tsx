@@ -55,19 +55,19 @@ export default function ConfirmDialog({
         className="fixed inset-0 bg-black/50 transition-opacity"
         onClick={onCancel}
       />
-      <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
         <div className="flex items-start gap-4">
           <Icon className={`h-6 w-6 shrink-0 ${iconColor}`} />
           <div>
-            <h3 className="text-lg font-medium text-gray-900">{title}</h3>
-            <p className="mt-2 text-sm text-gray-500">{message}</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{title}</h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{message}</p>
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
             {cancelLabel}
           </button>
