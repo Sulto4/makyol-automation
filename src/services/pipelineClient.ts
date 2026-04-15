@@ -123,9 +123,9 @@ export class PipelineClientService {
 
   constructor(options?: PipelineClientOptions) {
     this.baseUrl = options?.baseUrl || process.env.PIPELINE_URL || 'http://localhost:8001';
-    this.defaultTimeoutMs = options?.defaultTimeoutMs || 60_000;
-    this.largeFileTimeoutMs = options?.largeFileTimeoutMs || 180_000;
-    this.largeFileSizeBytes = options?.largeFileSizeBytes || 5 * 1024 * 1024; // 5MB
+    this.defaultTimeoutMs = options?.defaultTimeoutMs || 120_000;
+    this.largeFileTimeoutMs = options?.largeFileTimeoutMs || 300_000;
+    this.largeFileSizeBytes = options?.largeFileSizeBytes || 1 * 1024 * 1024; // 1MB — scanned PDFs need OCR time
   }
 
   /**

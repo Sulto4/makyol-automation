@@ -37,15 +37,15 @@ EXTRACTION_SCHEMA = {
     },
     "AGREMENT": {
         "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator"],
-        "instructions": "Extract: producer name, expiration date, material/product name, company that holds the agrement, producer address. Look for 'valabil pana la', 'valabilitate' for the expiration date.",
+        "instructions": "Extract: producer name, expiration date of the AGREMENT TEHNIC (NOT the aviz tehnic), material/product name, company that holds the agrement, producer address. IMPORTANT: These documents contain BOTH an agrement date and an aviz tehnic date. Extract the AGREMENT expiration — look for 'Valabilitate agrement tehnic:' or 'agrementul tehnic este valabil până la data de'. The agrement date is usually LATER (more years) than the aviz tehnic date.",
     },
     "AVIZ_TEHNIC_SI_AGREMENT": {
         "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator"],
-        "instructions": "Extract: producer name, expiration date, material/product, company name, producer address. For 'nume_document', this should be 'Aviz Tehnic si Agrement Tehnic' (NOT just 'Aviz Tehnic').",
+        "instructions": "Extract: producer name, expiration date, material/product, company name, producer address. This is a combined Aviz Tehnic + Agrement document. For data_expirare, extract the LATER date (the agrement date, not the aviz tehnic date). Look for 'Valabilitate agrement tehnic:' — that is the primary expiration.",
     },
     "AVIZ_TEHNIC": {
         "fields": ["producator", "data_expirare", "material", "companie", "adresa_producator"],
-        "instructions": "Extract: producer name, expiration date, material/product, company (the certification body if applicable), producer address.",
+        "instructions": "Extract: producer name, expiration date of the AVIZ TEHNIC (NOT the agrement), material/product, company (the certification body or the producer). IMPORTANT: These documents may also mention an agrement date. Extract ONLY the aviz tehnic expiration — look for 'AVIZ TEHNIC este valabil până la' or 'Valabilitate aviz tehnic:'.",
     },
     "AVIZ_SANITAR": {
         "fields": ["companie", "material", "data_expirare", "producator", "adresa_producator"],
