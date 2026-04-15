@@ -225,10 +225,10 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-4 p-6">
-      <h1 className="text-2xl font-bold text-gray-900">Alerte</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Alerte</h1>
 
       {/* Tab navigation */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-4" aria-label="Tabs">
           {TAB_CONFIGS.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -239,16 +239,16 @@ export default function AlertsPage() {
                 onClick={() => handleTabChange(tab.key)}
                 className={`inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap ${
                   isActive
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 {tab.label}
                 <span
                   className={`inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${
                     isActive
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                   }`}
                 >
                   {count}

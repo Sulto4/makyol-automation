@@ -159,7 +159,7 @@ export default function UploadPage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Încărcare documente</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Încărcare documente</h1>
         <Link
           to="/documents"
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
@@ -170,14 +170,14 @@ export default function UploadPage() {
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-700">
         <button
           type="button"
           onClick={() => setMode('files')}
           className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
             mode === 'files'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+              : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
           }`}
         >
           <File className="h-4 w-4" />
@@ -188,8 +188,8 @@ export default function UploadPage() {
           onClick={() => setMode('folder')}
           className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
             mode === 'folder'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+              : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
           }`}
         >
           <FolderOpen className="h-4 w-4" />

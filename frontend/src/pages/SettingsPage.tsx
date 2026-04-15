@@ -82,12 +82,12 @@ export default function SettingsPage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Settings className="h-6 w-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-900">Setări</h1>
+          <Settings className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Setări</h1>
         </div>
         <Link
           to="/documents"
-          className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
         >
           <FileText className="h-4 w-4" />
           Vezi toate documentele
@@ -95,7 +95,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="mx-auto max-w-2xl">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
