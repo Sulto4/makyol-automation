@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer } from 'recharts';
 import type { ExtractionStats } from '../../types';
+import { useChartTheme } from '../../hooks/useChartTheme';
 
 interface ExtractionFillChartProps {
   stats: ExtractionStats;
@@ -34,6 +35,7 @@ const ALL_FIELDS = [
 ] as const;
 
 export default function ExtractionFillChart({ stats }: ExtractionFillChartProps) {
+  const chartTheme = useChartTheme();
   const data = useMemo(() => {
     if (stats.total === 0) return [];
 
@@ -47,10 +49,17 @@ export default function ExtractionFillChart({ stats }: ExtractionFillChartProps)
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis allowDecimals={false} domain={[0, 100]} unit="%" />
-        <Tooltip formatter={(value: number) => `${value}%`} />
+        <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+        <XAxis dataKey="name" tick={{ fill: chartTheme.axis }} />
+        <YAxis allowDecimals={false} domain={[0, 100]} unit="%" tick={{ fill: chartTheme.axis }} />
+        <Tooltip
+          formatter={(value: number) => `${value}%`}
+          contentStyle={{
+            backgroundColor: chartTheme.tooltipBg,
+            color: chartTheme.tooltipText,
+            border: `1px solid ${chartTheme.tooltipBorder}`,
+          }}
+        />
         <Bar dataKey="percent" name="Completare">
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />

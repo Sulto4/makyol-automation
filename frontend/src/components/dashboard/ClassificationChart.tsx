@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer } from 'recharts';
 import type { Document, ClassificationMethod } from '../../types';
+import { useChartTheme } from '../../hooks/useChartTheme';
 
 interface ClassificationChartProps {
   documents: Document[];
@@ -31,6 +32,7 @@ const ALL_METHODS: ClassificationMethod[] = [
 ];
 
 export default function ClassificationChart({ documents }: ClassificationChartProps) {
+  const chartTheme = useChartTheme();
   const data = useMemo(() => {
     const counts = new Map<ClassificationMethod, number>();
     for (const method of ALL_METHODS) {
@@ -53,10 +55,16 @@ export default function ClassificationChart({ documents }: ClassificationChartPr
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis allowDecimals={false} />
-        <Tooltip />
+        <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid} />
+        <XAxis dataKey="name" tick={{ fill: chartTheme.axis }} />
+        <YAxis allowDecimals={false} tick={{ fill: chartTheme.axis }} />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: chartTheme.tooltipBg,
+            color: chartTheme.tooltipText,
+            border: `1px solid ${chartTheme.tooltipBorder}`,
+          }}
+        />
         <Bar dataKey="count" name="Documente">
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
