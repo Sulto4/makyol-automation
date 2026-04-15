@@ -25,7 +25,7 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
     <div className="flex h-full gap-6">
       {/* Left: PDF Viewer (60%) */}
       <div className="w-[60%] flex-shrink-0">
-        <div className="h-full rounded-lg border border-gray-200 bg-white">
+        <div className="h-full rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <iframe
             src={pdfUrl}
             title={doc.original_filename}
@@ -36,7 +36,7 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
               target.parentElement?.querySelector('.pdf-fallback')?.classList.remove('hidden');
             }}
           />
-          <div className="pdf-fallback hidden flex h-full flex-col items-center justify-center gap-3 text-gray-400">
+          <div className="pdf-fallback hidden flex h-full flex-col items-center justify-center gap-3 text-gray-400 dark:text-gray-500">
             <FileText className="h-16 w-16" />
             <p className="text-lg font-medium">PDF indisponibil</p>
             <p className="text-sm">{doc.original_filename}</p>
@@ -47,8 +47,8 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
       {/* Right: Extracted Data (40%) */}
       <div className="w-[40%] overflow-y-auto space-y-4">
         {/* Document Info Card */}
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 text-lg font-semibold text-gray-900">Informații Document</h3>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Informații Document</h3>
           <dl className="space-y-2 text-sm">
             <DataField label="Nume fișier" value={doc.original_filename} />
             <DataField label="Categorie">
@@ -70,8 +70,8 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
 
         {/* Extracted Data Card */}
         {extraction && (
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h3 className="mb-3 text-lg font-semibold text-gray-900">Date Extrase</h3>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Date Extrase</h3>
             <dl className="space-y-2 text-sm">
               <DataField label="Material" value={extraction.material} />
               <DataField label="Companie" value={extraction.companie} />
@@ -92,12 +92,12 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
 
         {/* AI Metadata Section */}
         {extraction && (
-          <div className="rounded-lg border border-gray-200 bg-white">
+          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <button
               onClick={() => setAiExpanded(!aiExpanded)}
               className="flex w-full items-center justify-between p-4 text-left"
             >
-              <h3 className="text-lg font-semibold text-gray-900">Metadate AI</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Metadate AI</h3>
               {aiExpanded ? (
                 <ChevronDown className="h-5 w-5 text-gray-400" />
               ) : (
@@ -105,27 +105,27 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
               )}
             </button>
             {aiExpanded && (
-              <div className="border-t border-gray-200 p-4 space-y-4">
+              <div className="border-t border-gray-200 p-4 space-y-4 dark:border-gray-700">
                 {extraction.metadata && Object.keys(extraction.metadata).length > 0 && (
                   <div>
-                    <h4 className="mb-2 text-sm font-medium text-gray-700">Metadata</h4>
-                    <pre className="overflow-x-auto rounded bg-gray-50 p-3 text-xs text-gray-700">
+                    <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Metadata</h4>
+                    <pre className="overflow-x-auto rounded bg-gray-50 p-3 text-xs text-gray-700 dark:bg-gray-900/50 dark:text-gray-300">
                       {JSON.stringify(extraction.metadata, null, 2)}
                     </pre>
                   </div>
                 )}
                 {extraction.extracted_text && (
                   <div>
-                    <h4 className="mb-2 text-sm font-medium text-gray-700">Text Extras</h4>
-                    <div className="max-h-64 overflow-y-auto rounded bg-gray-50 p-3 text-xs text-gray-700 whitespace-pre-wrap">
+                    <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Text Extras</h4>
+                    <div className="max-h-64 overflow-y-auto rounded bg-gray-50 p-3 text-xs text-gray-700 whitespace-pre-wrap dark:bg-gray-900/50 dark:text-gray-300">
                       {extraction.extracted_text}
                     </div>
                   </div>
                 )}
                 {extraction.error_details && (
                   <div>
-                    <h4 className="mb-2 text-sm font-medium text-gray-700">Erori</h4>
-                    <pre className="overflow-x-auto rounded bg-red-50 p-3 text-xs text-red-700">
+                    <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Erori</h4>
+                    <pre className="overflow-x-auto rounded bg-red-50 p-3 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
                       {JSON.stringify(extraction.error_details, null, 2)}
                     </pre>
                   </div>
@@ -136,8 +136,8 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
         )}
 
         {/* Review Buttons */}
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <h3 className="mb-3 text-lg font-semibold text-gray-900">Acțiuni</h3>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Acțiuni</h3>
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -204,9 +204,9 @@ function DataField({
 }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <dt className="font-medium text-gray-500">{label}</dt>
-      <dd className="text-right text-gray-900">
-        {children ?? (value || <span className="text-gray-400">N/A</span>)}
+      <dt className="font-medium text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="text-right text-gray-900 dark:text-gray-100">
+        {children ?? (value || <span className="text-gray-400 dark:text-gray-500">N/A</span>)}
       </dd>
     </div>
   );
