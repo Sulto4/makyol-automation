@@ -14,11 +14,14 @@ export function useTheme() {
   // Sync 'dark' class on <html> whenever resolvedTheme changes
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.add('theme-transition');
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
+    const timeout = setTimeout(() => root.classList.remove('theme-transition'), 300);
+    return () => clearTimeout(timeout);
   }, [resolvedTheme]);
 
   // Listen for OS-level prefers-color-scheme changes when mode is 'system'

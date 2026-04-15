@@ -46,6 +46,7 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={toggleTheme}
+          aria-label={isDark ? 'Comută la modul luminos' : 'Comută la modul întunecat'}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
