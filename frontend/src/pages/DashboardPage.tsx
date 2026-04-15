@@ -38,7 +38,7 @@ export default function DashboardPage() {
   if (documents.length === 0) {
     return (
       <div className="p-6">
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">Panou de Control</h1>
+        <h1 className="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">Panou de Control</h1>
         <EmptyState
           message="Nu există documente"
           description="Încărcați primul document pentru a vedea statisticile."
@@ -50,36 +50,36 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold text-gray-900">Panou de Control</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Panou de Control</h1>
 
       <SummaryCards documents={documents} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
             Distribuție pe Categorii
           </h3>
           <CategoryChart documents={documents} />
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
             Status Procesare
           </h3>
           <StatusChart documents={documents} />
         </div>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">
+      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Metodă Clasificare
         </h3>
         <ClassificationChart documents={documents} />
       </div>
 
       {statsData?.extraction && statsData.extraction.total > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
             Rata de Completare Extracție
           </h3>
           <ExtractionFillChart stats={statsData.extraction} />
