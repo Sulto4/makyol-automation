@@ -21,27 +21,27 @@ const statusConfig: Record<FileStatus, { icon: React.ReactNode; label: string; c
   queued: {
     icon: <Clock className="h-4 w-4" />,
     label: 'În așteptare',
-    color: 'text-gray-500',
+    color: 'text-gray-500 dark:text-gray-400',
   },
   uploading: {
     icon: <Loader2 className="h-4 w-4 animate-spin" />,
     label: 'Se încarcă',
-    color: 'text-blue-600',
+    color: 'text-blue-600 dark:text-blue-400',
   },
   processing: {
     icon: <Loader2 className="h-4 w-4 animate-spin" />,
     label: 'Se procesează',
-    color: 'text-amber-600',
+    color: 'text-amber-600 dark:text-amber-400',
   },
   done: {
     icon: <CheckCircle2 className="h-4 w-4" />,
     label: 'Finalizat',
-    color: 'text-green-600',
+    color: 'text-green-600 dark:text-green-400',
   },
   error: {
     icon: <XCircle className="h-4 w-4" />,
     label: 'Eroare',
-    color: 'text-red-600',
+    color: 'text-red-600 dark:text-red-400',
   },
 };
 
@@ -51,12 +51,12 @@ function OverallProgressBar({ done, total }: { done: number; total: number }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-700">
+        <span className="font-medium text-gray-700 dark:text-gray-200">
           Progres: {done} din {total} fișiere procesate
         </span>
-        <span className="text-gray-500">{percent}%</span>
+        <span className="text-gray-500 dark:text-gray-400">{percent}%</span>
       </div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+      <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
         <div
           className="h-full rounded-full bg-blue-500 transition-all duration-300"
           style={{ width: `${percent}%` }}
@@ -68,15 +68,15 @@ function OverallProgressBar({ done, total }: { done: number; total: number }) {
 
 function CompletionSummary({ succeeded, failed }: { succeeded: number; failed: number }) {
   return (
-    <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+    <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center gap-1.5">
-        <CheckCircle2 className="h-4 w-4 text-green-600" />
-        <span className="text-sm font-medium text-green-700">{succeeded} reușite</span>
+        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+        <span className="text-sm font-medium text-green-700 dark:text-green-300">{succeeded} reușite</span>
       </div>
       {failed > 0 && (
         <div className="flex items-center gap-1.5">
-          <XCircle className="h-4 w-4 text-red-600" />
-          <span className="text-sm font-medium text-red-700">{failed} eșuate</span>
+          <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+          <span className="text-sm font-medium text-red-700 dark:text-red-300">{failed} eșuate</span>
         </div>
       )}
     </div>
@@ -107,7 +107,7 @@ export default function FolderUploadProgress({
           <button
             onClick={onDownloadArchive}
             disabled={isDownloading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-green-700 dark:hover:bg-green-600"
           >
             {isDownloading ? (
               <>
@@ -130,10 +130,10 @@ export default function FolderUploadProgress({
       )}
 
       <div className="space-y-1">
-        <h3 className="text-sm font-medium text-gray-700">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">
           Fișiere ({files.length})
         </h3>
-        <div className="max-h-80 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+        <div className="max-h-80 divide-y divide-gray-100 overflow-y-auto rounded-lg border border-gray-200 bg-white dark:divide-gray-700 dark:border-gray-700 dark:bg-gray-800">
           {files.map((entry) => {
             const config = statusConfig[entry.status];
             const percent =
@@ -148,15 +148,15 @@ export default function FolderUploadProgress({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`flex-shrink-0 ${config.color}`}>{config.icon}</span>
-                    <span className="truncate text-sm text-gray-800" title={entry.relativePath}>
+                    <span className="truncate text-sm text-gray-800 dark:text-gray-200" title={entry.relativePath}>
                       {entry.relativePath}
                     </span>
                     <span className={`flex-shrink-0 text-xs ${config.color}`}>{config.label}</span>
                   </div>
-                  <span className="ml-2 text-xs text-gray-500 flex-shrink-0">{percent}%</span>
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">{percent}%</span>
                 </div>
 
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       entry.status === 'error'
@@ -172,7 +172,7 @@ export default function FolderUploadProgress({
                 </div>
 
                 {entry.status === 'error' && entry.error && (
-                  <span className="text-xs text-red-600">{entry.error}</span>
+                  <span className="text-xs text-red-600 dark:text-red-400">{entry.error}</span>
                 )}
               </div>
             );
