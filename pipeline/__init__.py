@@ -16,8 +16,9 @@ from pipeline.vision_fallback import extract_with_vision
 
 logger = logging.getLogger(__name__)
 
-# Minimum text length before triggering vision fallback
-_MIN_TEXT_LENGTH = 20
+# Vision fallback thresholds
+_MIN_TEXT_LENGTH = 20        # Below this: definitely use vision
+_LOW_QUALITY_TEXT_LENGTH = 800  # Below this: check text quality, may use vision
 
 
 def process_document(pdf_path: str, filename: str = "") -> dict:
@@ -75,12 +76,17 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             "engine_used": "multi-engine",
         }})
 
-    # Step 2: Vision fallback if text is too short
+    # Step 2: Vision fallback if text is too short or low quality
     vision_extraction = None
-    if len(text.strip()) < _MIN_TEXT_LENGTH:
-        logger.info("Text too short, trying vision fallback", extra={"extra_data": {
-            "filename": filename, "text_length": len(text.strip()),
-        }})
+    text_len = len(text.strip())
+    use_vision = False
+
+    if text_len < _LOW_QUALITY_TEXT_LENGTH:
+        use_vision = True
+        logger.info("Short text (%d chars < %d), using vision fallback",
+                    text_len, _LOW_QUALITY_TEXT_LENGTH)
+
+    if use_vision:
         result["used_vision"] = True
 
     # Step 3: Classification
@@ -160,23 +166,27 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         result["review_status"] = "NEEDS_CHECK"
 
     # Step 5: Normalize company names and addresses
+    # Skip hallucination checks when vision was used — vision extracts from image,
+    # not from OCR text, so the values won't appear in the (garbage) text.
+    skip_hallucination_checks = result.get("used_vision", False)
     t0 = time.time()
     try:
         for field in ("companie", "producator", "distribuitor"):
             raw = extraction.get(field)
             if raw and raw.strip():
                 # Hallucination check: verify company name appears in document text
-                raw_words = [w for w in raw.strip().lower().split() if len(w) > 3]
-                if raw_words:
-                    found = sum(1 for w in raw_words if w in text.lower())
-                    if found == 0:
-                        logger.warning(
-                            "Company hallucination detected: '%s' (%s) not found in text — setting to None",
-                            raw.strip()[:60], field,
-                            extra={"extra_data": {"field": field, "hallucinated_value": raw.strip()[:80]}},
-                        )
-                        extraction[field] = None
-                        continue
+                if not skip_hallucination_checks:
+                    raw_words = [w for w in raw.strip().lower().split() if len(w) > 3]
+                    if raw_words:
+                        found = sum(1 for w in raw_words if w in text.lower())
+                        if found == 0:
+                            logger.warning(
+                                "Company hallucination detected: '%s' (%s) not found in text — setting to None",
+                                raw.strip()[:60], field,
+                                extra={"extra_data": {"field": field, "hallucinated_value": raw.strip()[:80]}},
+                            )
+                            extraction[field] = None
+                            continue
 
                 # Garbage check: reject values that look like sentence fragments, not company names
                 val = raw.strip()
@@ -222,17 +232,17 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             raw = extraction.get(field)
             if raw and raw.strip():
                 # Hallucination check: verify address actually appears in document text
-                raw_lower = raw.strip().lower()
-                # Check first meaningful part (before first comma) in document text
-                first_part = raw_lower.split(",")[0].strip()
-                if len(first_part) > 5 and first_part not in text.lower():
-                    logger.warning(
-                        "Address hallucination detected: '%s' not found in document text — setting to None",
-                        raw.strip()[:60],
-                        extra={"extra_data": {"field": field, "hallucinated_value": raw.strip()[:80]}},
-                    )
-                    extraction[field] = None
-                    continue
+                if not skip_hallucination_checks:
+                    raw_lower = raw.strip().lower()
+                    first_part = raw_lower.split(",")[0].strip()
+                    if len(first_part) > 5 and first_part not in text.lower():
+                        logger.warning(
+                            "Address hallucination detected: '%s' not found in document text — setting to None",
+                            raw.strip()[:60],
+                            extra={"extra_data": {"field": field, "hallucinated_value": raw.strip()[:80]}},
+                        )
+                        extraction[field] = None
+                        continue
 
                 normalized, was_matched = normalize_address(raw)
                 if was_matched and normalized.lower() != raw.strip().lower():
@@ -245,7 +255,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                     extraction[field] = normalized
         # Date hallucination check: verify extracted date appears in text
         date_val = extraction.get("data_expirare")
-        if date_val and text:
+        if date_val and text and not skip_hallucination_checks:
             import re as _re
             date_str = str(date_val).strip()
             # Skip non-date values like "2 ani de la receptie", "Pe durata contractului"
