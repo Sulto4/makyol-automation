@@ -171,8 +171,18 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         for field in ("adresa_producator",):
             raw = extraction.get(field)
             if raw and raw.strip():
-                normalized, _ = normalize_address(raw)
-                extraction[field] = normalized
+                normalized, was_matched = normalize_address(raw)
+                if was_matched and normalized.lower() != raw.strip().lower():
+                    # Knowledge base has a different address — keep the document's
+                    # address (it's what's actually written) and flag for review
+                    logger.info(
+                        "Address mismatch: document says '%s', KB says '%s' — keeping document value",
+                        raw.strip()[:60], normalized[:60],
+                        extra={"extra_data": {"field": field, "document_value": raw.strip(), "kb_value": normalized}},
+                    )
+                    # Don't overwrite — keep raw from document
+                else:
+                    extraction[field] = normalized
     except Exception as e:
         logger.warning("Normalization error for %s: %s", filename, e,
                        extra={"extra_data": {"filename": filename, "error": str(e)}})
