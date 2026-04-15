@@ -205,6 +205,34 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                     )
                 else:
                     extraction[field] = normalized
+        # Date hallucination check: verify extracted date appears in text
+        date_val = extraction.get("data_expirare")
+        if date_val and text:
+            import re as _re
+            date_str = str(date_val).strip()
+            # Skip non-date values like "2 ani de la receptie", "Pe durata contractului"
+            date_match = _re.match(r"(\d{1,2})\.(\d{1,2})\.(\d{4})", date_str)
+            if date_match:
+                d, mo, y = date_match.groups()
+                _months = {
+                    "01": "ianuarie", "02": "februarie", "03": "martie", "04": "aprilie",
+                    "05": "mai", "06": "iunie", "07": "iulie", "08": "august",
+                    "09": "septembrie", "10": "octombrie", "11": "noiembrie", "12": "decembrie",
+                }
+                variants = [
+                    f"{d}.{mo}.{y}", f"{d}/{mo}/{y}",
+                    f"{int(d)}.{int(mo)}.{y}", f"{d.zfill(2)}.{mo.zfill(2)}.{y}",
+                    f"{int(d)} {_months.get(mo.zfill(2), '')} {y}",
+                ]
+                text_lower = text.lower()
+                if not any(v.lower() in text_lower for v in variants if v):
+                    logger.warning(
+                        "Date hallucination detected: '%s' not found in document text — setting to None",
+                        date_str,
+                        extra={"extra_data": {"hallucinated_date": date_str, "filename": filename}},
+                    )
+                    extraction["data_expirare"] = None
+
     except Exception as e:
         logger.warning("Normalization error for %s: %s", filename, e,
                        extra={"extra_data": {"filename": filename, "error": str(e)}})
