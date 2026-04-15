@@ -264,22 +264,11 @@ def classify_by_text(text: str, page_count: int, has_tables: bool) -> tuple[str,
     if dc_score == 1 and re.search(r'certificat\s+de\s+conformitate', first_500):
         return ("DECLARATIE_CONFORMITATE", 0.85, "text_rules: Title contains 'Certificat de Conformitate'")
 
-    # ---- ISO MANAGEMENT SYSTEM CERTIFICATES ----
-    iso_mgmt_title = re.search(r'iso\s*(9001|14001|45001|50001)', first_500)
-    iso_mgmt_body = re.search(r'iso\s*(9001|14001|45001|50001)', text_lower)
-    iso_mgmt = iso_mgmt_title or iso_mgmt_body
-    if iso_mgmt:
-        cert_context = any(w in first_500 for w in [
-            'certificate', 'certificat', 'certification', 'certified',
-            'scope', 'domeniu', 'validity', 'valabil', 'accredit',
-            'management system', 'sistem de management'
-        ])
-        if cert_context and iso_mgmt_title:
-            return ("ISO", 0.95, f"text_rules: ISO {iso_mgmt.group(1)} certificate in title")
-        if cert_context and not iso_mgmt_title:
-            return ("ISO", 0.78, f"text_rules: ISO {iso_mgmt.group(1)} in body with cert context")
-        if iso_mgmt_title:
-            return ("ISO", 0.80, f"text_rules: ISO {iso_mgmt.group(1)} in title without cert context")
+    # ---- FISA TEHNICA (title — BEFORE ISO because ISO logos appear in FT headers) ----
+    if re.search(r'fi[sș][aă]\s+tehnic[aă]', first_500):
+        return ("FISA_TEHNICA", 0.90, "text_rules: Title: Fisa Tehnica")
+    if re.search(r'technical\s+data\s+sheet', first_500):
+        return ("FISA_TEHNICA", 0.90, "text_rules: Title: Technical Data Sheet")
 
     # ---- AGREMENT TEHNIC ----
     agrement_markers = [
@@ -305,12 +294,6 @@ def classify_by_text(text: str, page_count: int, has_tables: bool) -> tuple[str,
     # ---- CERTIFICAT GARANTIE ----
     if re.search(r'certificat\s+de\s+garan[tț]ie', first_500):
         return ("CERTIFICAT_GARANTIE", 0.90, "text_rules: Title: Certificat de Garantie")
-
-    # ---- FISA TEHNICA (title check - before AUTORIZATIE and CUI) ----
-    if re.search(r'fi[sș][aă]\s+tehnic[aă]', first_500):
-        return ("FISA_TEHNICA", 0.90, "text_rules: Title: Fisa Tehnica")
-    if re.search(r'technical\s+data\s+sheet', first_500):
-        return ("FISA_TEHNICA", 0.90, "text_rules: Title: Technical Data Sheet")
 
     # ---- AUTORIZATIE DISTRIBUTIE (before CUI) ----
     autorizatie_markers = [
@@ -347,6 +330,41 @@ def classify_by_text(text: str, page_count: int, has_tables: bool) -> tuple[str,
     if re.search(r'declara[tț]i[ea]\s+de\s+performan[tț][aă]', text_lower) or \
        re.search(r'regulamentul.*305/2011|regulation.*305/2011', text_lower):
         return ("DECLARATIE_PERFORMANTA", 0.90, "text_rules: Declaration of Performance markers found")
+
+    # ---- ISO MANAGEMENT SYSTEM CERTIFICATES ----
+    # IMPORTANT: Checked AFTER all specific document types because many documents
+    # have ISO certification logos in headers (TÜV, Bureau Veritas, etc.) that
+    # produce false ISO matches. A real ISO certificate's PRIMARY content is the
+    # certification itself — not a product spec, not a declaration, not a data sheet.
+    iso_mgmt_title = re.search(r'iso\s*(9001|14001|45001|50001)', first_500)
+    iso_mgmt_body = re.search(r'iso\s*(9001|14001|45001|50001)', text_lower)
+    iso_mgmt = iso_mgmt_title or iso_mgmt_body
+    if iso_mgmt:
+        # Exclude if document is clearly another type (ISO logo in header)
+        other_doc_types = [
+            r'fi[sș][aă]\s+tehnic[aă]',
+            r'certificat\s+de\s+calitate',
+            r'certificat\s+de\s+garan[tț]ie',
+            r'declara[tț]i[ea]\s+de\s+conformitate',
+            r'declara[tț]i[ea]\s+de\s+performan[tț][aă]',
+            r'aviz\s+sanitar',
+            r'agrement\s+tehnic',
+            r'autorizare|autorizati[ea]',
+        ]
+        is_other_type = any(re.search(p, text_lower) for p in other_doc_types)
+
+        if not is_other_type:
+            cert_context = any(w in first_500 for w in [
+                'certificate', 'certificat', 'certification', 'certified',
+                'scope', 'validity', 'valabil', 'accredit',
+                'management system', 'sistem de management'
+            ])
+            if cert_context and iso_mgmt_title:
+                return ("ISO", 0.95, f"text_rules: ISO {iso_mgmt.group(1)} certificate in title")
+            if cert_context and not iso_mgmt_title:
+                return ("ISO", 0.78, f"text_rules: ISO {iso_mgmt.group(1)} in body with cert context")
+            if iso_mgmt_title:
+                return ("ISO", 0.80, f"text_rules: ISO {iso_mgmt.group(1)} in title without cert context")
 
     # ---- FISA TEHNICA (body: DN/PN/SDR markers + tables) ----
     ft_markers = [
