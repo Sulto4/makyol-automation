@@ -23,27 +23,27 @@ const statusConfig: Record<FileStatus, { icon: React.ReactNode; label: string; c
   queued: {
     icon: <Clock className="h-4 w-4" />,
     label: 'În așteptare',
-    color: 'text-gray-500',
+    color: 'text-gray-500 dark:text-gray-400',
   },
   uploading: {
     icon: <Loader2 className="h-4 w-4 animate-spin" />,
     label: 'Se încarcă',
-    color: 'text-blue-600',
+    color: 'text-blue-600 dark:text-blue-400',
   },
   processing: {
     icon: <Loader2 className="h-4 w-4 animate-spin" />,
     label: 'Se procesează',
-    color: 'text-amber-600',
+    color: 'text-amber-600 dark:text-amber-400',
   },
   done: {
     icon: <CheckCircle2 className="h-4 w-4" />,
     label: 'Finalizat',
-    color: 'text-green-600',
+    color: 'text-green-600 dark:text-green-400',
   },
   error: {
     icon: <XCircle className="h-4 w-4" />,
     label: 'Eroare',
-    color: 'text-red-600',
+    color: 'text-red-600 dark:text-red-400',
   },
 };
 
@@ -58,7 +58,7 @@ function ProgressBar({ percent, status }: { percent: number; status: FileStatus 
           : 'bg-blue-500';
 
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
       <div
         className={`h-full rounded-full transition-all duration-300 ${bgColor}`}
         style={{ width: `${percent}%` }}
@@ -72,10 +72,10 @@ export default function UploadProgress({ files, onRetry }: UploadProgressProps) 
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-gray-700">
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
         Fișiere ({files.length})
       </h3>
-      <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+      <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white dark:divide-gray-700 dark:border-gray-700 dark:bg-gray-800">
         {files.map((entry) => {
           const config = statusConfig[entry.status];
           const percent =
@@ -90,12 +90,12 @@ export default function UploadProgress({ files, onRetry }: UploadProgressProps) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={config.color}>{config.icon}</span>
-                  <span className="truncate text-sm font-medium text-gray-800">
+                  <span className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
                     {entry.file.name}
                   </span>
                   <span className={`text-xs ${config.color}`}>{config.label}</span>
                 </div>
-                <span className="ml-2 text-xs text-gray-500 flex-shrink-0">
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                   {percent}%
                 </span>
               </div>
@@ -115,12 +115,12 @@ export default function UploadProgress({ files, onRetry }: UploadProgressProps) 
 
               {entry.status === 'error' && (
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs text-red-600">
+                  <span className="text-xs text-red-600 dark:text-red-400">
                     {entry.error ?? 'Eroare necunoscută'}
                   </span>
                   <button
                     onClick={() => onRetry(entry.id)}
-                    className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                    className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900"
                   >
                     <RefreshCw className="h-3 w-3" />
                     Reîncearcă
