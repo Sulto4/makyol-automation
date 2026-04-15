@@ -137,7 +137,7 @@ export class PipelineClientService {
    * @throws PipelineTimeoutError if the request times out
    * @throws PipelineProcessingError if the pipeline returns an error
    */
-  async processDocument(filePath: string): Promise<PipelineResponse> {
+  async processDocument(filePath: string, originalFilename?: string): Promise<PipelineResponse> {
     const absolutePath = path.resolve(filePath);
 
     // Verify file exists
@@ -156,7 +156,8 @@ export class PipelineClientService {
 
     // Read file and build multipart form data
     const fileBuffer = await fs.readFile(absolutePath);
-    const fileName = path.basename(absolutePath);
+    // Use original filename for classification (multer sanitizes names with hashes)
+    const fileName = originalFilename || path.basename(absolutePath);
 
     const formData = new FormData();
     formData.append('file', new Blob([fileBuffer]), fileName);

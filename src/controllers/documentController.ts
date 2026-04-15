@@ -36,7 +36,7 @@ export class DocumentController {
    * Updates classification, upserts extraction result, and sets status to COMPLETED
    */
   protected async reprocessSingleDocument(document: Document): Promise<void> {
-    const pipelineResponse = await this.pipelineClient.processDocument(document.file_path);
+    const pipelineResponse = await this.pipelineClient.processDocument(document.file_path, document.original_filename);
     logger.info(`Pipeline reprocessed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
 
     if (pipelineResponse.error) {
@@ -203,7 +203,7 @@ export class DocumentController {
       let extractionResult;
       try {
         const pipelineStartTime = Date.now();
-        const pipelineResponse = await this.pipelineClient.processDocument(filePath);
+        const pipelineResponse = await this.pipelineClient.processDocument(filePath, originalFilename);
         const pipelineResponseTimeMs = Date.now() - pipelineStartTime;
         logger.info(`Pipeline processed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
 
