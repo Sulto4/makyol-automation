@@ -7,7 +7,7 @@ interface CategoryBadgeProps {
 
 export default function CategoryBadge({ category }: CategoryBadgeProps) {
   const label = category ? getCategoryLabel(category) : 'Neclasificat';
-  const classes = category ? getCategoryBadgeClasses(category) : 'bg-gray-100 text-gray-800';
+  const classes = category ? getCategoryBadgeClasses(category) : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
 
   return (
     <span

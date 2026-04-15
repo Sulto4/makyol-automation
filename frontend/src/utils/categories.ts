@@ -25,20 +25,20 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
  * MUST use complete class names — dynamic construction breaks Tailwind purge.
  */
 export const CATEGORY_BADGE_CLASSES: Record<DocumentCategory, string> = {
-  ISO: 'bg-blue-100 text-blue-800',
-  CE: 'bg-red-100 text-red-800',
-  FISA_TEHNICA: 'bg-green-100 text-green-800',
-  AGREMENT: 'bg-violet-100 text-violet-800',
-  AVIZ_TEHNIC: 'bg-indigo-100 text-indigo-800',
-  AVIZ_SANITAR: 'bg-teal-100 text-teal-800',
-  DECLARATIE_CONFORMITATE: 'bg-pink-100 text-pink-800',
-  CERTIFICAT_CALITATE: 'bg-amber-100 text-amber-800',
-  AUTORIZATIE_DISTRIBUTIE: 'bg-orange-100 text-orange-800',
-  CUI: 'bg-gray-100 text-gray-800',
-  CERTIFICAT_GARANTIE: 'bg-emerald-100 text-emerald-800',
-  DECLARATIE_PERFORMANTA: 'bg-purple-100 text-purple-800',
-  AVIZ_TEHNIC_SI_AGREMENT: 'bg-cyan-100 text-cyan-800',
-  ALTELE: 'bg-slate-100 text-slate-800',
+  ISO: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  CE: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  FISA_TEHNICA: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  AGREMENT: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
+  AVIZ_TEHNIC: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+  AVIZ_SANITAR: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+  DECLARATIE_CONFORMITATE: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+  CERTIFICAT_CALITATE: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  AUTORIZATIE_DISTRIBUTIE: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  CUI: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+  CERTIFICAT_GARANTIE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+  DECLARATIE_PERFORMANTA: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  AVIZ_TEHNIC_SI_AGREMENT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+  ALTELE: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
 };
 
 /**
@@ -73,6 +73,6 @@ export function getCategoryLabel(category: string | null): string {
  * Get badge classes for a category, with fallback
  */
 export function getCategoryBadgeClasses(category: string | null): string {
-  if (!category) return 'bg-gray-100 text-gray-800';
-  return CATEGORY_BADGE_CLASSES[category as DocumentCategory] ?? 'bg-gray-100 text-gray-800';
+  if (!category) return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+  return CATEGORY_BADGE_CLASSES[category as DocumentCategory] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
 }
