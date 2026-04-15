@@ -1,0 +1,2685 @@
+{
+  "total_raw": 451,
+  "false_positives": 120,
+  "skipped": 0,
+  "confirmed": 331,
+  "issues": [
+    {
+      "doc_id": 1977,
+      "filename": "1. FT PEHD.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Via Valsir 2, Villanuova sul Clisi, Italy"
+    },
+    {
+      "doc_id": 1982,
+      "filename": "5. AVT.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 1984,
+      "filename": "7. AVS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "28.05.2029"
+    },
+    {
+      "doc_id": 1986,
+      "filename": "9. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava PE pentru apa (conform EN 12201)"
+    },
+    {
+      "doc_id": 1990,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": null,
+      "field": "companie",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 1990,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": null,
+      "field": "material",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 1990,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": null,
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 1990,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": null,
+      "field": "adresa_producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2004,
+      "filename": "7. AVS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2005,
+      "filename": "8.1 AVT.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2009,
+      "filename": "DOC001.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Produse diverse (autorizatie generala)"
+    },
+    {
+      "doc_id": 2009,
+      "filename": "DOC001.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "Pe durata contractului"
+    },
+    {
+      "doc_id": 2010,
+      "filename": "11. ISO 9001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2011,
+      "filename": "12. ISO 14001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2012,
+      "filename": "13. ISO 45001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2013,
+      "filename": "14. ISO 50001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2015,
+      "filename": "Agrement tehnic  003 05 1279 2025 Saint Gobain.pdf",
+      "category": null,
+      "field": "companie",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2015,
+      "filename": "Agrement tehnic  003 05 1279 2025 Saint Gobain.pdf",
+      "category": null,
+      "field": "material",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2015,
+      "filename": "Agrement tehnic  003 05 1279 2025 Saint Gobain.pdf",
+      "category": null,
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2015,
+      "filename": "Agrement tehnic  003 05 1279 2025 Saint Gobain.pdf",
+      "category": null,
+      "field": "adresa_producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2016,
+      "filename": "Autorizatie de distributie - furnizor Petrouzinex - producator Saint Gobain - semnat.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2017,
+      "filename": "Aviz sanitar fitinguri si armaturi.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2018,
+      "filename": "Aviz sanitar teava fonta.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2019,
+      "filename": "Aviz tehnic Saint Gobain 003 05 1279 2025.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "SAINT-GOBAIN PAM Canalisation"
+    },
+    {
+      "doc_id": 2024,
+      "filename": "ISO 14001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2025,
+      "filename": "ISO 14001 Saint Gobain - semnat.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "28.03.2027"
+    },
+    {
+      "doc_id": 2026,
+      "filename": "ISO 45001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2027,
+      "filename": "ISO 9001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2028,
+      "filename": "MODEL - declaratie de conformitate si certificat de garantie   - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2028,
+      "filename": "MODEL - declaratie de conformitate si certificat de garantie   - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2031,
+      "filename": "Certificat CE PED 2014-68-EU teava fara sudura producator LUZHENG - semnat.pdf",
+      "category": "CE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2031,
+      "filename": "Certificat CE PED 2014-68-EU teava fara sudura producator LUZHENG - semnat.pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2032,
+      "filename": "ISO 14001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2033,
+      "filename": "ISO 45001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2034,
+      "filename": "ISO 9001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2036,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2036,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2037,
+      "filename": "Model certificat 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2038,
+      "filename": "2. Licenta.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "TERAPLAST SA"
+    },
+    {
+      "doc_id": 2039,
+      "filename": "3. Declaratie de conformitate.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2040,
+      "filename": "4. Certificat de garantie.pdf",
+      "category": "CERTIFICAT_GARANTIE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2040,
+      "filename": "4. Certificat de garantie.pdf",
+      "category": "CERTIFICAT_GARANTIE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2041,
+      "filename": "5. Instructiuni de manipulare si montaj.pdf",
+      "category": "ALTELE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2042,
+      "filename": "CERTIFICAT DE CONFORMITATE tuburi,camine circulare si rectangulare 2028.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2042,
+      "filename": "CERTIFICAT DE CONFORMITATE tuburi,camine circulare si rectangulare 2028.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "TUBURI Si ACCESORI DIN BETON SIMPLU, BETON SLAB ARMAT, BETON ARMAT- TUBURI 2 500, @ 600, @ 800, 3 1000, @ 1250, B 1500, "
+    },
+    {
+      "doc_id": 2042,
+      "filename": "CERTIFICAT DE CONFORMITATE tuburi,camine circulare si rectangulare 2028.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2043,
+      "filename": "Certificate SIM 2028.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2044,
+      "filename": "CERTIFICATE IRD BOMA DE SISTEM VIZA 2025.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2045,
+      "filename": "CERTIFICATE IRD Bomade PRODUS  viza 2025.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "PRODUSE PREFABRICATE DIN BETON. CAMINE DE VANE\nBAZINE CILINDRICE PENTW STATII DE POMPARE"
+    },
+    {
+      "doc_id": 2045,
+      "filename": "CERTIFICATE IRD Bomade PRODUS  viza 2025.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2046,
+      "filename": "fisa tehnica Elemente pentru camine 1000 mm-INELE.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2048,
+      "filename": "CERT BOMA SISTEM RC 2025.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2049,
+      "filename": "DC-Placa+capac.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "ELEMENTE PENTRU CAMINE DIN BETON, placi de acoperire din beton armat: rama rectangulara cu capac de fonta inglobat total"
+    },
+    {
+      "doc_id": 2049,
+      "filename": "DC-Placa+capac.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2050,
+      "filename": "DP - Inel D1000x1000.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "ELEMENTE PENTRU CĂMINE DIN BETON SIMPLU, inel pentru cămin, Diametru interior / Ȋnălțime / Grosime 1000 / 1000 / 120"
+    },
+    {
+      "doc_id": 2050,
+      "filename": "DP - Inel D1000x1000.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2051,
+      "filename": "DP-Inel D1000x250.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "ELEMENTE PENTRU CĂMINE DIN BETON SIMPLU, inel pentru cămin D1000x250"
+    },
+    {
+      "doc_id": 2051,
+      "filename": "DP-Inel D1000x250.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2052,
+      "filename": "DP-Inel D1000x500.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Elemente pentru cămine din beton simplu, inel pentru cămin D1000x500"
+    },
+    {
+      "doc_id": 2052,
+      "filename": "DP-Inel D1000x500.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2053,
+      "filename": "DP-Inel D1000x750.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Inel pentru cămin D1000x750"
+    },
+    {
+      "doc_id": 2053,
+      "filename": "DP-Inel D1000x750.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2054,
+      "filename": "Fise tehnice si declaratii de performanta _Boma.pdf",
+      "category": null,
+      "field": "companie",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2054,
+      "filename": "Fise tehnice si declaratii de performanta _Boma.pdf",
+      "category": null,
+      "field": "material",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2054,
+      "filename": "Fise tehnice si declaratii de performanta _Boma.pdf",
+      "category": null,
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2054,
+      "filename": "Fise tehnice si declaratii de performanta _Boma.pdf",
+      "category": null,
+      "field": "adresa_producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2055,
+      "filename": "FT-Inel D1000x1000.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2056,
+      "filename": "FT-Inel D1000x250.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2057,
+      "filename": "FT-Inel D1000x500.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2058,
+      "filename": "FT-Inel D1000x750.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2059,
+      "filename": "FT-Placa+capac.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2063,
+      "filename": "4. I.SO_4pipes_GB_9001.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "14.09.2024"
+    },
+    {
+      "doc_id": 2064,
+      "filename": "5.ISO_4pipes_GB_14001.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "14.09.2024"
+    },
+    {
+      "doc_id": 2065,
+      "filename": "AGT.pdf",
+      "category": "AGREMENT",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2066,
+      "filename": "AVT.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "TERAPLAST SA"
+    },
+    {
+      "doc_id": 2068,
+      "filename": "FISA TEHNICA LINK SEAL.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "LINK SEAL"
+    },
+    {
+      "doc_id": 2068,
+      "filename": "FISA TEHNICA LINK SEAL.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Via Valsir 2, Villanuova sul Clisi, Italy"
+    },
+    {
+      "doc_id": 2070,
+      "filename": "ISO 9001 - 14001.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2071,
+      "filename": "ISO-9001.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "21.07.2028"
+    },
+    {
+      "doc_id": 2072,
+      "filename": "proextop-catalog-burdufuri-etansare-conducte.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Burduf de Etanșare MULTIDIMENSIONAL tip KT"
+    },
+    {
+      "doc_id": 2072,
+      "filename": "proextop-catalog-burdufuri-etansare-conducte.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Via Valsir 2, Villanuova sul Clisi, Italy"
+    },
+    {
+      "doc_id": 2073,
+      "filename": "proextop-catalog-distantieri-izolatori-plastic.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "TERAPLAST SA"
+    },
+    {
+      "doc_id": 2073,
+      "filename": "proextop-catalog-distantieri-izolatori-plastic.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Izolatori/Distanțiere din Plastic PSI"
+    },
+    {
+      "doc_id": 2074,
+      "filename": "proextop-catalog-piese-etansare-compact.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Via Valsir 2, Villanuova sul Clisi, Italy"
+    },
+    {
+      "doc_id": 2076,
+      "filename": "1.1 FT.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "ROBINET SERTAR CAUCIUCAT CU TIJA NEASCENDENTA DN40--ON600 DIN 5352"
+    },
+    {
+      "doc_id": 2077,
+      "filename": "10. ISO14001 & ISO45001 Tianjin.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2077,
+      "filename": "10. ISO14001 & ISO45001 Tianjin.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2080,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2080,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2080,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2081,
+      "filename": "5. C 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2081,
+      "filename": "5. C 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2082,
+      "filename": "6. AS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2082,
+      "filename": "6. AS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Robineti cu sertar, reținere, aerisire/dezaerisire, închidere, clapă fluture și bilă"
+    },
+    {
+      "doc_id": 2083,
+      "filename": "7. AUTORIZATIE.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2084,
+      "filename": "8. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2084,
+      "filename": "8. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2085,
+      "filename": "9. ISO 9001 Tianjin.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2085,
+      "filename": "9. ISO 9001 Tianjin.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2088,
+      "filename": "1.1 FT.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "ROBINET SERTAR CAUCIUCAT CU TIJA NEASCENDENTA DN40--ON600 DIN 5352"
+    },
+    {
+      "doc_id": 2089,
+      "filename": "11. ISO 9001 PETROUZINEX.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2090,
+      "filename": "12. ISO 14001 PETROUZINEX.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2091,
+      "filename": "13. ISO 45001 PETROUZINEX.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2092,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2092,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2093,
+      "filename": "6. AS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2093,
+      "filename": "6. AS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Robineti cu sertar, reținere, aerisire/dezaerisire, închidere, clapă fluture și bilă"
+    },
+    {
+      "doc_id": 2094,
+      "filename": "Agrement+ Aviz Tehnic Vane Stavilar Petrouzinex - semnat.pdf",
+      "category": "AGREMENT",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2094,
+      "filename": "Agrement+ Aviz Tehnic Vane Stavilar Petrouzinex - semnat.pdf",
+      "category": "AGREMENT",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2094,
+      "filename": "Agrement+ Aviz Tehnic Vane Stavilar Petrouzinex - semnat.pdf",
+      "category": "AGREMENT",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2095,
+      "filename": "Innotech Valves 14001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2096,
+      "filename": "Innotech Valves 9001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2097,
+      "filename": "CE BBK  Valve Group - traducere .pdf",
+      "category": "CE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2098,
+      "filename": "CE-BBK Valve Group .pdf",
+      "category": "CE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2099,
+      "filename": "FISA TEHNICA RSP CPC EN.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Resilient Seated Gate Valves DN50/300 PN10/16 TYPE F4/F5 (EN558 S14/S15)"
+    },
+    {
+      "doc_id": 2100,
+      "filename": "ISO 9001 traducere BBK.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "04.05.2025"
+    },
+    {
+      "doc_id": 2100,
+      "filename": "ISO 9001 traducere BBK.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2101,
+      "filename": "ISO 9001-de revizuit.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "04.05.2025"
+    },
+    {
+      "doc_id": 2101,
+      "filename": "ISO 9001-de revizuit.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2102,
+      "filename": "ISOÂ 9001Â EN.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "12.11.2028"
+    },
+    {
+      "doc_id": 2102,
+      "filename": "ISOÂ 9001Â EN.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2103,
+      "filename": "1.1 FT.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tirant delimitare Otel carbon"
+    },
+    {
+      "doc_id": 2105,
+      "filename": "10. ISO14001 & ISO45001 Tianjin.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2105,
+      "filename": "10. ISO14001 & ISO45001 Tianjin.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2106,
+      "filename": "2. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2106,
+      "filename": "2. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2108,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2108,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2109,
+      "filename": "5. C 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2111,
+      "filename": "7. AS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2112,
+      "filename": "8. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2112,
+      "filename": "8. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2113,
+      "filename": "9. ISO 9001Tianjin.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2113,
+      "filename": "9. ISO 9001Tianjin.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2115,
+      "filename": "11. ISO 9001 PETROUZINEX.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2116,
+      "filename": "12. ISO 14001 PETROUZINEX.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2117,
+      "filename": "13. ISO 45001 PETROUZINEX.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2119,
+      "filename": "1.FT.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Double flanged Dismantling Joints"
+    },
+    {
+      "doc_id": 2120,
+      "filename": "2. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2120,
+      "filename": "2. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2120,
+      "filename": "2. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2122,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2122,
+      "filename": "4. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2123,
+      "filename": "5. C 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2125,
+      "filename": "7. AS.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2126,
+      "filename": "8. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2126,
+      "filename": "8. CC.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2128,
+      "filename": "Agrement tehnic_Armaturi de inchidere_003-0151013-2023 expira la 27.02.2026_AVK.pdf",
+      "category": "AGREMENT",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Armături de închidere pentru instalații de apă"
+    },
+    {
+      "doc_id": 2128,
+      "filename": "Agrement tehnic_Armaturi de inchidere_003-0151013-2023 expira la 27.02.2026_AVK.pdf",
+      "category": "AGREMENT",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2129,
+      "filename": "AT-003-05_1222-2025 compensatori montaj.pdf",
+      "category": null,
+      "field": "companie",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2129,
+      "filename": "AT-003-05_1222-2025 compensatori montaj.pdf",
+      "category": null,
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2129,
+      "filename": "AT-003-05_1222-2025 compensatori montaj.pdf",
+      "category": null,
+      "field": "adresa_producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2132,
+      "filename": "Cuplaje_coliere_compensatori_fittinguri_AVK_aviz_sanitar.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2132,
+      "filename": "Cuplaje_coliere_compensatori_fittinguri_AVK_aviz_sanitar.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Cuplaje, adaptoare cu flanșă, coliere de reparație, compensatori de montaj AVK seriile: 05, 10, 100, 258, 259, 260, 265,"
+    },
+    {
+      "doc_id": 2132,
+      "filename": "Cuplaje_coliere_compensatori_fittinguri_AVK_aviz_sanitar.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2134,
+      "filename": "RO_ISO-14001-05980-2003-AE-DEN-DANAK-7-en-US-20240326-20240327100844.pdf.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2135,
+      "filename": "RO_ISO-9001-05030-1998-AQ-DEN-DANAK-6-en-US-20240326-20240327100843.pdf.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2136,
+      "filename": "Vane_sertar_AVK_aviz_sanitar.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2136,
+      "filename": "Vane_sertar_AVK_aviz_sanitar.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "VANE SERTAR AVK seriile OL, O2, 06, L2, L45, L5, L8,20,2L,26,32,33,36, 38, 45, 50, 54, 55, 636, 538"
+    },
+    {
+      "doc_id": 2136,
+      "filename": "Vane_sertar_AVK_aviz_sanitar.pdf",
+      "category": "AVIZ_SANITAR",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "17.03.2030"
+    },
+    {
+      "doc_id": 2137,
+      "filename": "Documente FAM.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Robinete și vanele cu sertar pentru instalatii de apă"
+    },
+    {
+      "doc_id": 2137,
+      "filename": "Documente FAM.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "HENKEL AG"
+    },
+    {
+      "doc_id": 2137,
+      "filename": "Documente FAM.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2139,
+      "filename": "24469 MTC-LSAW.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2140,
+      "filename": "3LPE TDS.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2141,
+      "filename": "Authorization Leter.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "30.12.2026"
+    },
+    {
+      "doc_id": 2141,
+      "filename": "Authorization Leter.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2142,
+      "filename": "ISO14001.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2142,
+      "filename": "ISO14001.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "23.10.2028"
+    },
+    {
+      "doc_id": 2143,
+      "filename": "ISO45001.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2143,
+      "filename": "ISO45001.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "23.10.2028"
+    },
+    {
+      "doc_id": 2144,
+      "filename": "ISO9001.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2144,
+      "filename": "ISO9001.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "23.10.2028"
+    },
+    {
+      "doc_id": 2149,
+      "filename": "ä½°ä»è¾¾ CE 2030.11.4.pdf",
+      "category": "CE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "04.11.2030"
+    },
+    {
+      "doc_id": 2149,
+      "filename": "ä½°ä»è¾¾ CE 2030.11.4.pdf",
+      "category": "CE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2149,
+      "filename": "ä½°ä»è¾¾ CE 2030.11.4.pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2151,
+      "filename": "Certificat CE PED 2014-68-EU teava fara sudura producator LUZHENG - semnat.pdf",
+      "category": "CE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2151,
+      "filename": "Certificat CE PED 2014-68-EU teava fara sudura producator LUZHENG - semnat.pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2152,
+      "filename": "ISO 14001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2153,
+      "filename": "ISO 45001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2154,
+      "filename": "ISO 9001 PETROUZINEX - comert + productie - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2156,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2156,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2157,
+      "filename": "Model certificat 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2159,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2159,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "țevi sudate din oțel P235TR1 ,P265TR1 ,P235TR2, P265TR2 EN10217-1:2019, teava sudata P235GH,P265GH EN10217-2:2019, teava"
+    },
+    {
+      "doc_id": 2159,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2159,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2160,
+      "filename": "Certificat de testare 3.1 MTC 508x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava de oțel LSAW"
+    },
+    {
+      "doc_id": 2160,
+      "filename": "Certificat de testare 3.1 MTC 508x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2161,
+      "filename": "Certificat de testare 3.1 MTC 711x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2162,
+      "filename": "Certificat de testare 3.1 MTC 813x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2162,
+      "filename": "Certificat de testare 3.1 MTC 813x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teavă de oțel LSAW ISO 3183 PSL2"
+    },
+    {
+      "doc_id": 2162,
+      "filename": "Certificat de testare 3.1 MTC 813x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2163,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2163,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Țevi izolate"
+    },
+    {
+      "doc_id": 2163,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2163,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2164,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2164,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Țevi pentru gaz natural cu conținut de hidrogen de 20%"
+    },
+    {
+      "doc_id": 2164,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2164,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2165,
+      "filename": "ISO 14001 Huayang - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2166,
+      "filename": "ISO 14001+45001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2166,
+      "filename": "ISO 14001+45001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2167,
+      "filename": "ISO 45001 Huayang - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2168,
+      "filename": "ISO 9001 Huayang - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2169,
+      "filename": "ISO 9001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2169,
+      "filename": "ISO 9001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2171,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2171,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2171,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Piatra-Neamț, Str.Bulevardul General Nicolae Dăscălescu , Nr.261 Județul: Neamț"
+    },
+    {
+      "doc_id": 2173,
+      "filename": "Plan de inspectie si testare a productiei pentru acoperirea exterioara 3LPE producator HUAYANG - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Acoperire Exterioară 3LPE"
+    },
+    {
+      "doc_id": 2174,
+      "filename": "Plan insepectie si testare acoperire externa 3LPE A0516 producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2175,
+      "filename": "Plan inspectie si testare teava sudata longitudinal ITP LSAW producator Huayang - semnat.pdf",
+      "category": "ALTELE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2176,
+      "filename": "Procedura de pregatire si fabricatie acoperire interna producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "acoperire interna"
+    },
+    {
+      "doc_id": 2176,
+      "filename": "Procedura de pregatire si fabricatie acoperire interna producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2177,
+      "filename": "Specificatii procedurii de fabricatie teava sudata longitudinal SAWL producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava sudata longitudinal SAWL"
+    },
+    {
+      "doc_id": 2177,
+      "filename": "Specificatii procedurii de fabricatie teava sudata longitudinal SAWL producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2178,
+      "filename": "1cert_NIMFA_EN_RO.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "24.12.2026"
+    },
+    {
+      "doc_id": 2179,
+      "filename": "2cert_NIMFA_EN_RO.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "24.12.2026"
+    },
+    {
+      "doc_id": 2180,
+      "filename": "3cert_NIMFA_EN_RO.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "29.12.2026"
+    },
+    {
+      "doc_id": 2182,
+      "filename": "EN 10217-1_RO_260219_153142.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2183,
+      "filename": "EN 10289_RO.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2186,
+      "filename": "EPOXY 1852113010L KANAT KANEPOX_RO.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "TERAPLAST SA"
+    },
+    {
+      "doc_id": 2188,
+      "filename": "ISO 14001 Akmermer tradus.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "24.12.2026"
+    },
+    {
+      "doc_id": 2189,
+      "filename": "ISO 45001 Akmermer tradus.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "29.12.2026"
+    },
+    {
+      "doc_id": 2190,
+      "filename": "ISO 9001 Akmermer tradus.pdf",
+      "category": "ISO",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "24.12.2026"
+    },
+    {
+      "doc_id": 2191,
+      "filename": "ISO_9001-2012_2028.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2191,
+      "filename": "ISO_9001-2012_2028.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2192,
+      "filename": "SAMPLE CE DECLARATION_RO.pdf",
+      "category": "CE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Profile tubulare sudate pentru structuri, inclusiv țevi pentru piloni utilizate la docuri, fundații și pilonări. EN 1002"
+    },
+    {
+      "doc_id": 2194,
+      "filename": "AWWA C210.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "AKMERMER DEMİR ÇELİK TİC. VE SAN. LTD. ȘTI."
+    },
+    {
+      "doc_id": 2194,
+      "filename": "AWWA C210.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "AKMERMER DEMİR ÇELİK TİC. VE SAN. LTD. ȘTI."
+    },
+    {
+      "doc_id": 2195,
+      "filename": "CC- Akmermer.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "AKMERMER DEMİR ÇELİK TİC. VE SAN. LTD. ȘTI."
+    },
+    {
+      "doc_id": 2196,
+      "filename": "CPR- eng- Akmermer.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "AKMERMER DEMİR ÇELİK TİC. VE SAN. LT D. ȘTİ."
+    },
+    {
+      "doc_id": 2196,
+      "filename": "CPR- eng- Akmermer.pdf",
+      "category": "DECLARATIE_PERFORMANTA",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Malıköy Bașkent OSB. Mah. Recep Tayyip Erdoğan Bulv. No:13 Malıköy/Ankara/Türkiye"
+    },
+    {
+      "doc_id": 2197,
+      "filename": "EN 10217-1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "AKMERMER DEMIR GELIK TIC. VE SAN. LTD. ȘTI."
+    },
+    {
+      "doc_id": 2201,
+      "filename": "EPOXY [1852113010L][KANAT - KANEPOX LINING FREE C 3010 O.KIRMIZI - 1852113010L][3][en].pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Kemalpașa O.S.B. Mah. İzmir Ankara Yolu No.321 KEMALPAȘA 35730 İZMİR - TURKEY"
+    },
+    {
+      "doc_id": 2202,
+      "filename": "SAMPLE CE DECLARATION OF CONFORMITY (System).pdf",
+      "category": "CE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Akmermer Demir Çelik Tic. ve San. Ltd. Ști."
+    },
+    {
+      "doc_id": 2202,
+      "filename": "SAMPLE CE DECLARATION OF CONFORMITY (System).pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Bașkent OSB Mah. Recep Tayyip Erdoğan Bulv. No:13 Malıköy/Ankara 06909"
+    },
+    {
+      "doc_id": 2203,
+      "filename": "SAMPLE NIMFA COM SRL MTC 25-153 Ã609,6 x 8,00 mm.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2204,
+      "filename": "Autorizatie Metal Trade-HALLS.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "14.05.2024"
+    },
+    {
+      "doc_id": 2204,
+      "filename": "Autorizatie Metal Trade-HALLS.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2204,
+      "filename": "Autorizatie Metal Trade-HALLS.pdf",
+      "category": "AUTORIZATIE_DISTRIBUTIE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2205,
+      "filename": "DOC TUB PROTECTIE.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2205,
+      "filename": "DOC TUB PROTECTIE.pdf",
+      "category": "ISO",
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2206,
+      "filename": "FT.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "companie",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2206,
+      "filename": "FT.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2207,
+      "filename": "ISO 45001 Metal Trade.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2207,
+      "filename": "ISO 45001 Metal Trade.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Galați, strada Portului, nr. 56, biroul 17, et. I, județul Galați"
+    },
+    {
+      "doc_id": 2208,
+      "filename": "ISO 9001 HALLS T..pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2209,
+      "filename": "ISO 9001 Metal Trade.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2209,
+      "filename": "ISO 9001 Metal Trade.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2210,
+      "filename": "ISO`14001 Metal Trade.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2210,
+      "filename": "ISO`14001 Metal Trade.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2211,
+      "filename": "Model 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2211,
+      "filename": "Model 3.1.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2212,
+      "filename": "Model D.C..pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2212,
+      "filename": "Model D.C..pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava sudata elicoidal Φ 1016x 10.3\nTeava sudata elicoidal Φ406.4X8"
+    },
+    {
+      "doc_id": 2212,
+      "filename": "Model D.C..pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "REHAU POLYMER SRL"
+    },
+    {
+      "doc_id": 2212,
+      "filename": "Model D.C..pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2214,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2214,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "10.08.2026"
+    },
+    {
+      "doc_id": 2214,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2214,
+      "filename": "Certificat CE PED producator Huayang - semnat.pdf",
+      "category": "CE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2215,
+      "filename": "Certificat de testare 3.1 MTC 508x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava de oțel LSAW"
+    },
+    {
+      "doc_id": 2215,
+      "filename": "Certificat de testare 3.1 MTC 508x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2216,
+      "filename": "Certificat de testare 3.1 MTC 711x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava de otel LSAW"
+    },
+    {
+      "doc_id": 2216,
+      "filename": "Certificat de testare 3.1 MTC 711x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2217,
+      "filename": "Certificat de testare 3.1 MTC 813x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2217,
+      "filename": "Certificat de testare 3.1 MTC 813x8 HUAYANG (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2218,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2218,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi izolate"
+    },
+    {
+      "doc_id": 2218,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2218,
+      "filename": "Declaratie grosime si rugozitate izolatie interioara producator Huayang (MODEL) - semnat.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2219,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2219,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Țevi pentru gaz natural cu conținut de hidrogen de 20%"
+    },
+    {
+      "doc_id": 2219,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2219,
+      "filename": "Declaratie uzilizare gaz natural cu continut de hidrogen producator Huayang (MODEL) - semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Yongjia County, Wenzhou City, Zhejiang Province, China"
+    },
+    {
+      "doc_id": 2220,
+      "filename": "ISO 14001 Huayang - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2221,
+      "filename": "ISO 14001+45001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2221,
+      "filename": "ISO 14001+45001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2222,
+      "filename": "ISO 45001 Huayang - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2223,
+      "filename": "ISO 9001 Huayang - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2224,
+      "filename": "ISO 9001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2224,
+      "filename": "ISO 9001 PETROUZINEX - semnat.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2226,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2226,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2226,
+      "filename": "MODEL - Declaratie de Conformitate si Certificat de Garantie semnat.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Piatra-Neamt, Str.Bulevardul General Nicolae Dascalescu , Nr.261 Judetul: Neamt"
+    },
+    {
+      "doc_id": 2228,
+      "filename": "Plan de inspectie si testare a productiei pentru acoperirea exterioara 3LPE producator HUAYANG - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Acoperire Exterioară 3LPE"
+    },
+    {
+      "doc_id": 2229,
+      "filename": "Plan insepectie si testare acoperire externa 3LPE A0516 producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2230,
+      "filename": "Plan inspectie si testare teava sudata longitudinal ITP LSAW producator Huayang - semnat.pdf",
+      "category": "ALTELE",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2231,
+      "filename": "Procedura de pregatire si fabricatie acoperire interna producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "acoperire interna"
+    },
+    {
+      "doc_id": 2231,
+      "filename": "Procedura de pregatire si fabricatie acoperire interna producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2232,
+      "filename": "Specificatii procedurii de fabricatie teava sudata longitudinal SAWL producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava sudata longitudinal cu arc electric sub strat de flux"
+    },
+    {
+      "doc_id": 2232,
+      "filename": "Specificatii procedurii de fabricatie teava sudata longitudinal SAWL producator Huayang - semnat.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "ZHEJIANG HUAYANG PIPELINE INDUSTRY CO LTD"
+    },
+    {
+      "doc_id": 2239,
+      "filename": "Certificate de conformitate2025_2028.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi din PVC-U VALPLast by VALROM pentru evacuare, canalizare și drenaj, fară presiune, subterane cu suprafata interioar"
+    },
+    {
+      "doc_id": 2244,
+      "filename": "10. CUI.pdf",
+      "category": "CUI",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2244,
+      "filename": "10. CUI.pdf",
+      "category": "CUI",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2245,
+      "filename": "AT 021-05-257-2025 TERAPLAST - Tevi din PEID pt. gaz.pdf",
+      "category": "AGREMENT",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "04.06.2028"
+    },
+    {
+      "doc_id": 2245,
+      "filename": "AT 021-05-257-2025 TERAPLAST - Tevi din PEID pt. gaz.pdf",
+      "category": "AGREMENT",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2246,
+      "filename": "Aviz Teh. 021-05-257-2025 TERAPLAST - Tevi din PEID pt. gaz.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2246,
+      "filename": "Aviz Teh. 021-05-257-2025 TERAPLAST - Tevi din PEID pt. gaz.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2252,
+      "filename": "Garantie TRP.pdf",
+      "category": "CERTIFICAT_GARANTIE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi si Fitinguri PVC, PP, PEX, Tevi corugate PP si PE, Camine si accesorii PE, Rezervoare PE"
+    },
+    {
+      "doc_id": 2252,
+      "filename": "Garantie TRP.pdf",
+      "category": "CERTIFICAT_GARANTIE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "2 ani de la receptie"
+    },
+    {
+      "doc_id": 2253,
+      "filename": "Instructiuni de montaj LUCRÄRI  DE  TERASAMENT  ÅI  POZARE  pentru  reÅ£ele  PE 2021.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Țevi și fitinguri PE"
+    },
+    {
+      "doc_id": 2254,
+      "filename": "MODEL decl Tevi si fitinguri PE apa si gaz   Certificate 2023.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2255,
+      "filename": "1. FT ro.pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi HDPE PE100, MRS= 10Mpa si PE80, MRS= 8MPa, pentru distributia si transportul gazelor naturale, conform normelor SR "
+    },
+    {
+      "doc_id": 2258,
+      "filename": "3. CC 8 SABLON CC TEAVA GAZ PE100_draft.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava PE100 (conform SR EN 1555-1-2)"
+    },
+    {
+      "doc_id": 2259,
+      "filename": "4. AVT.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2265,
+      "filename": "CC 8 SABLON CC TEAVA GAZ PE100_draft.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Teava PE (conform EN 1555-1-2)"
+    },
+    {
+      "doc_id": 2268,
+      "filename": "QC8-GAS PIPE EN.pdf",
+      "category": "CERTIFICAT_CALITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Gas pipe PE100 D. SDR (conform EN 1555-1-2)"
+    },
+    {
+      "doc_id": 2273,
+      "filename": "5. AVT.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2276,
+      "filename": "Aviz Tehnic PVC multistrat  021-05-072-2024.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2276,
+      "filename": "Aviz Tehnic PVC multistrat  021-05-072-2024.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2283,
+      "filename": "FISA TEHNICA PVC  multistrat .pdf",
+      "category": "FISA_TEHNICA",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi din PVC neplastifiat, de culoare brun roscata RAL 8023, SR EN 13476-1 :2018, SR EN 13476-3+A1 :2020, SR EN 1401 :20"
+    },
+    {
+      "doc_id": 2285,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "companie",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2285,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "material",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2285,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "data_expirare",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2285,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2285,
+      "filename": "Aviz si AT 017-05-4295-2025.pdf",
+      "category": "AVIZ_TEHNIC_SI_AGREMENT",
+      "field": "adresa_producator",
+      "issue": "MISSED",
+      "extracted": "NULL"
+    },
+    {
+      "doc_id": 2289,
+      "filename": "Certificate de conformitate2025_2028.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi din PVC-U VALPlast by VALROM pentru evacuare, canalizare și drenaj, fără presiune, subterane cu suprafata interioar"
+    },
+    {
+      "doc_id": 2292,
+      "filename": "11. ISO 9001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2293,
+      "filename": "12. ISO 14001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2294,
+      "filename": "13. ISO 45001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2295,
+      "filename": "14. ISO 50001.pdf",
+      "category": "ISO",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Industriei nr. 3, Bistrita, Bistrita-Nasaud"
+    },
+    {
+      "doc_id": 2296,
+      "filename": "15. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "produse pentru constructii"
+    },
+    {
+      "doc_id": 2300,
+      "filename": "5. AVT.pdf",
+      "category": "AVIZ_TEHNIC",
+      "field": "companie",
+      "issue": "WRONG_VALUE",
+      "extracted": "VALROM INDUSTRIE SRL"
+    },
+    {
+      "doc_id": 2302,
+      "filename": "7. DC.pdf",
+      "category": "DECLARATIE_CONFORMITATE",
+      "field": "adresa_producator",
+      "issue": "WRONG_VALUE",
+      "extracted": "Str. Uzinei nr. 1, Valcea"
+    },
+    {
+      "doc_id": 2303,
+      "filename": "8. CG.pdf",
+      "category": "CERTIFICAT_GARANTIE",
+      "field": "material",
+      "issue": "WRONG_VALUE",
+      "extracted": "Tevi si Fitinguri PVC, PP, PE, PEX, microtuburi fibra optica, Camine si accesorii PE, Rezervoare PE, Tuburi PVC si PE pr"
+    },
+    {
+      "doc_id": 2303,
+      "filename": "8. CG.pdf",
+      "category": "CERTIFICAT_GARANTIE",
+      "field": "data_expirare",
+      "issue": "WRONG_VALUE",
+      "extracted": "2 ani de la receptie"
+    }
+  ],
+  "by_field": {
+    "adresa_producator:WRONG_VALUE": 75,
+    "companie:WRONG_VALUE": 102,
+    "data_expirare:WRONG_VALUE": 26,
+    "material:WRONG_VALUE": 51,
+    "companie:MISSED": 6,
+    "material:MISSED": 5,
+    "producator:MISSED": 10,
+    "adresa_producator:MISSED": 5,
+    "producator:WRONG_VALUE": 50,
+    "data_expirare:MISSED": 1
+  },
+  "by_category": {
+    "FISA_TEHNICA": 37,
+    "AVIZ_TEHNIC": 9,
+    "AVIZ_SANITAR": 16,
+    "CERTIFICAT_CALITATE": 49,
+    "null": 15,
+    "AUTORIZATIE_DISTRIBUTIE": 9,
+    "ISO": 86,
+    "DECLARATIE_CONFORMITATE": 51,
+    "CE": 21,
+    "CERTIFICAT_GARANTIE": 6,
+    "ALTELE": 3,
+    "DECLARATIE_PERFORMANTA": 12,
+    "AGREMENT": 8,
+    "CUI": 2,
+    "AVIZ_TEHNIC_SI_AGREMENT": 7
+  }
+}

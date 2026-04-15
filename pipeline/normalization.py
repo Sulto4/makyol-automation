@@ -181,16 +181,25 @@ def normalize_company_name(raw_name: str) -> Tuple[str, bool]:
         return (canonical, True)
 
     # --- Knowledge-base fuzzy match ---
+    # Use high threshold (92) to avoid false matches like PETROUZINEX → VALROM.
+    # Also require that the first significant word (>3 chars) overlaps.
     best_score = 0.0
     best_canonical: Optional[str] = None
+
+    # Extract first significant word from input for overlap check
+    input_words = [w for w in upper_cleaned.split() if len(w) > 3 and w not in ("SRL", "S.R.L.", "S.A.", "SA")]
+    first_word = input_words[0] if input_words else ""
 
     for alias_upper, canonical in ALIAS_TO_CANONICAL.items():
         score = fuzz.WRatio(upper_cleaned, alias_upper)
         if score > best_score:
+            # Overlap check: first significant word must appear in alias or canonical
+            if first_word and first_word not in alias_upper and first_word not in canonical.upper():
+                continue
             best_score = score
             best_canonical = canonical
 
-    if best_score >= MATCH_THRESHOLD and best_canonical is not None:
+    if best_score >= 92 and best_canonical is not None:
         logger.info(
             "Fuzzy company match: raw='%s' → canonical='%s' (score=%.1f)",
             raw_name[:60],
