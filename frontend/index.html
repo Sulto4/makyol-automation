@@ -10,8 +10,24 @@
       rel="stylesheet"
     />
     <title>Makyol - Dashboard Documente</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('makyol-theme');
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            var mode = parsed && parsed.state && parsed.state.mode;
+            if (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              document.documentElement.classList.add('dark');
+            }
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="font-sans antialiased bg-gray-50 text-gray-900">
+  <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

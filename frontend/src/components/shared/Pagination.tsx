@@ -40,8 +40,8 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-      <div className="flex items-center gap-2 text-sm text-gray-700">
+    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 sm:px-6">
+      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <span>Afișează</span>
         <select
           value={perPage}
@@ -49,7 +49,7 @@ export default function Pagination({
             onPerPageChange(Number(e.target.value));
             onPageChange(1);
           }}
-          className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
         >
           {PER_PAGE_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
@@ -66,7 +66,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(safeCurrentPage - 1)}
           disabled={safeCurrentPage <= 1}
-          className="inline-flex items-center rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           <ChevronLeft className="h-4 w-4" />
           <span>Anterior</span>
@@ -74,7 +74,7 @@ export default function Pagination({
 
         {getPageNumbers().map((page, idx) =>
           page === '...' ? (
-            <span key={`ellipsis-${idx}`} className="px-2 py-1 text-sm text-gray-500">
+            <span key={`ellipsis-${idx}`} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400">
               …
             </span>
           ) : (
@@ -83,8 +83,8 @@ export default function Pagination({
               onClick={() => onPageChange(page)}
               className={`inline-flex items-center rounded-md px-3 py-1 text-sm font-medium ${
                 page === safeCurrentPage
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? 'bg-blue-600 text-white dark:bg-blue-500'
+                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
               }`}
             >
               {page}
@@ -95,7 +95,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(safeCurrentPage + 1)}
           disabled={safeCurrentPage >= totalPages}
-          className="inline-flex items-center rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           <span>Următor</span>
           <ChevronRight className="h-4 w-4" />

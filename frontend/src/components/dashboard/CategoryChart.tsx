@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { Document, DocumentCategory } from '../../types';
 import { CATEGORY_LABELS, CATEGORY_CHART_COLORS } from '../../utils/categories';
+import { useChartTheme } from '../../hooks/useChartTheme';
 
 interface CategoryChartProps {
   documents: Document[];
@@ -14,6 +15,7 @@ interface CategoryDatum {
 }
 
 export default function CategoryChart({ documents }: CategoryChartProps) {
+  const chartTheme = useChartTheme();
   const data = useMemo<CategoryDatum[]>(() => {
     const counts = new Map<string, number>();
     for (const doc of documents) {
@@ -51,14 +53,21 @@ export default function CategoryChart({ documents }: CategoryChartProps) {
           label={({ name, percent }) =>
             `${name} (${(percent * 100).toFixed(0)}%)`
           }
-          labelLine
+          labelLine={{ stroke: chartTheme.axis }}
+          stroke={chartTheme.tooltipBg}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip />
-        <Legend />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: chartTheme.tooltipBg,
+            color: chartTheme.tooltipText,
+            border: `1px solid ${chartTheme.tooltipBorder}`,
+          }}
+        />
+        <Legend wrapperStyle={{ color: chartTheme.label }} />
       </PieChart>
     </ResponsiveContainer>
   );

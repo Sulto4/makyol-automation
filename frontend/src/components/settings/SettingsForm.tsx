@@ -40,7 +40,7 @@ export default function SettingsForm({
     <div className="space-y-6">
       {/* OpenRouter API Key */}
       <div>
-        <label htmlFor="openrouter-api-key" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="openrouter-api-key" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
           OpenRouter API Key *
         </label>
         <div className="relative">
@@ -51,18 +51,18 @@ export default function SettingsForm({
             onChange={(e) => onOpenRouterApiKeyChange(e.target.value)}
             disabled={disabled}
             placeholder="sk-or-v1-..."
-            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
           />
           <button
             type="button"
             onClick={() => setShowApiKey(!showApiKey)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
             disabled={disabled}
           >
             {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500">
+        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <p>API key pentru serviciul OpenRouter (AI classification)</p>
         </div>
@@ -70,7 +70,7 @@ export default function SettingsForm({
 
       {/* AI Model */}
       <div>
-        <label htmlFor="ai-model" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="ai-model" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Model AI *
         </label>
         <select
@@ -78,7 +78,7 @@ export default function SettingsForm({
           value={aiModel}
           onChange={(e) => onAiModelChange(e.target.value)}
           disabled={disabled}
-          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
         >
           {AI_MODEL_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -86,7 +86,7 @@ export default function SettingsForm({
             </option>
           ))}
         </select>
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500">
+        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <p>Modelul AI folosit pentru clasificare</p>
         </div>
@@ -94,7 +94,7 @@ export default function SettingsForm({
 
       {/* AI Temperature */}
       <div>
-        <label htmlFor="ai-temperature" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="ai-temperature" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Temperatură AI *
         </label>
         <div className="flex items-center gap-3">
@@ -117,10 +117,10 @@ export default function SettingsForm({
             value={aiTemperature}
             onChange={(e) => onAiTemperatureChange(parseFloat(e.target.value))}
             disabled={disabled}
-            className="w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-center focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-20 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-center focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
           />
         </div>
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500">
+        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <p>Temperatura pentru generarea răspunsurilor AI (0 = deterministic, 1 = creativ)</p>
         </div>
@@ -128,7 +128,7 @@ export default function SettingsForm({
 
       {/* Tesseract Path */}
       <div>
-        <label htmlFor="tesseract-path" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="tesseract-path" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Calea către Tesseract
         </label>
         <input
@@ -138,9 +138,9 @@ export default function SettingsForm({
           onChange={(e) => onTesseractPathChange(e.target.value)}
           disabled={disabled}
           placeholder="D:\Tesseract-OCR\tesseract.exe"
-          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:placeholder-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
         />
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500">
+        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <p>Calea completă către executabilul Tesseract OCR</p>
         </div>
@@ -148,7 +148,7 @@ export default function SettingsForm({
 
       {/* Vision Max Pages */}
       <div>
-        <label htmlFor="vision-max-pages" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="vision-max-pages" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
           Pagini maxime pentru Vision AI *
         </label>
         <input
@@ -159,9 +159,9 @@ export default function SettingsForm({
           value={visionMaxPages}
           onChange={(e) => onVisionMaxPagesChange(parseInt(e.target.value, 10))}
           disabled={disabled}
-          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
         />
-        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500">
+        <div className="mt-1 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
           <p>Numărul maxim de pagini procesate cu Vision AI (fallback pentru OCR)</p>
         </div>

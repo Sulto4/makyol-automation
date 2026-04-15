@@ -57,7 +57,7 @@ export function useFolderUpload() {
 
     const documents = data.results
       .filter((r) => r.success && r.document)
-      .map((r) => ({ id: r.document.id, relativePath: r.relativePath }));
+      .map((r) => ({ id: r.document!.id, relativePath: r.relativePath ?? '' }));
 
     if (documents.length === 0) return;
 

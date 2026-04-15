@@ -7,7 +7,6 @@ import ConfirmDialog from '../components/shared/ConfirmDialog';
 import DocumentFilters from '../components/documents/DocumentFilters';
 import DocumentsTable, {
   type SortField,
-  type SortDirection,
 } from '../components/documents/DocumentsTable';
 import Pagination from '../components/shared/Pagination';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
@@ -146,7 +145,7 @@ export default function DocumentsPage() {
       if (field === sortField) {
         setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
-        setSortField(field);
+        setSortField(field as Parameters<typeof setSortField>[0]);
         setSortDirection('asc');
       }
     },
@@ -232,7 +231,7 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Documente</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Documente</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportExcel}

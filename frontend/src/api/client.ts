@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiErrorResponse } from '../types';
+
 
 /**
  * Axios instance configured for the backend API.
