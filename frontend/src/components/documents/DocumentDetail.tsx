@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DocumentWithExtraction } from '../../types';
 import CategoryBadge from './CategoryBadge';
 import StatusBadge from './StatusBadge';
@@ -8,6 +9,7 @@ import ConfidenceBar from './ConfidenceBar';
 import ExpirationWarning from '../shared/ExpirationWarning';
 import RejectionModal from './RejectionModal';
 import { useReviewDocument } from '../../hooks/useDocuments';
+import { reprocessDocument } from '../../api/documents';
 
 interface DocumentDetailProps {
   data: DocumentWithExtraction;
@@ -18,6 +20,16 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
   const [aiExpanded, setAiExpanded] = useState(false);
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const reviewMutation = useReviewDocument();
+  const queryClient = useQueryClient();
+  const reprocessMutation = useMutation({
+    mutationFn: () => reprocessDocument(doc.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', doc.id] });
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      toast.success('Document reprocesare reușită');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const pdfUrl = `/uploads/${doc.filename}`;
 
@@ -139,6 +151,16 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
           <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Acțiuni</h3>
           <div className="flex gap-3">
+            <button
+              onClick={() => reprocessMutation.mutate()}
+              disabled={reprocessMutation.isPending}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              <span className="flex items-center gap-2">
+                <RefreshCw className={`h-4 w-4 ${reprocessMutation.isPending ? 'animate-spin' : ''}`} />
+                {reprocessMutation.isPending ? 'Se reprocesează...' : 'Reprocesează'}
+              </span>
+            </button>
             <button
               onClick={() => {
                 reviewMutation.mutate(
