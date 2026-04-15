@@ -32,29 +32,29 @@ export default function SummaryCards({ documents, expiredCount = 0 }: SummaryCar
         label: 'Total Documente',
         icon: <FileText className="h-6 w-6" />,
         count: totalDocuments,
-        bgColor: 'bg-blue-50',
-        iconColor: 'text-blue-600',
+        bgColor: 'bg-blue-50 dark:bg-blue-900/30',
+        iconColor: 'text-blue-600 dark:text-blue-400',
       },
       {
         label: 'Documente Eșuate',
         icon: <AlertTriangle className="h-6 w-6" />,
         count: failedDocuments,
-        bgColor: 'bg-red-50',
-        iconColor: 'text-red-600',
+        bgColor: 'bg-red-50 dark:bg-red-900/30',
+        iconColor: 'text-red-600 dark:text-red-400',
       },
       {
         label: 'Documente Expirate',
         icon: <Clock className="h-6 w-6" />,
         count: expiredCount,
-        bgColor: 'bg-amber-50',
-        iconColor: 'text-amber-600',
+        bgColor: 'bg-amber-50 dark:bg-amber-900/30',
+        iconColor: 'text-amber-600 dark:text-amber-400',
       },
       {
         label: 'Necesită Revizuire',
         icon: <Search className="h-6 w-6" />,
         count: needsReviewDocuments,
-        bgColor: 'bg-purple-50',
-        iconColor: 'text-purple-600',
+        bgColor: 'bg-purple-50 dark:bg-purple-900/30',
+        iconColor: 'text-purple-600 dark:text-purple-400',
       },
     ];
   }, [documents, expiredCount]);
@@ -68,8 +68,8 @@ export default function SummaryCards({ documents, expiredCount = 0 }: SummaryCar
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">{card.label}</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{card.label}</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {card.count}
               </p>
             </div>
