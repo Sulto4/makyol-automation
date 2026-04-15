@@ -21,7 +21,18 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <App />
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            className: 'dark:bg-gray-800 dark:text-gray-100',
+            success: {
+              className: 'dark:bg-gray-800 dark:text-gray-100',
+            },
+            error: {
+              className: 'dark:bg-gray-800 dark:text-gray-100',
+            },
+          }}
+        />
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,
