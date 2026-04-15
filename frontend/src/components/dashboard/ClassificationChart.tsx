@@ -13,6 +13,9 @@ const METHOD_LABELS: Record<ClassificationMethod, string> = {
   ai: 'AI',
   text_override: 'Text Override',
   vision: 'Vision',
+  'filename+text_agree': 'Filename+Text Agree',
+  filename_wins: 'Filename Wins',
+  fallback: 'Fallback',
 };
 
 const METHOD_COLORS: Record<ClassificationMethod, string> = {
@@ -21,6 +24,9 @@ const METHOD_COLORS: Record<ClassificationMethod, string> = {
   ai: '#8b5cf6',
   text_override: '#14b8a6',
   vision: '#f97316',
+  'filename+text_agree': '#10b981',
+  filename_wins: '#f59e0b',
+  fallback: '#6b7280',
 };
 
 const ALL_METHODS: ClassificationMethod[] = [

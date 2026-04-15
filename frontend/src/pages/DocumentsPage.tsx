@@ -7,7 +7,6 @@ import ConfirmDialog from '../components/shared/ConfirmDialog';
 import DocumentFilters from '../components/documents/DocumentFilters';
 import DocumentsTable, {
   type SortField,
-  type SortDirection,
 } from '../components/documents/DocumentsTable';
 import Pagination from '../components/shared/Pagination';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
@@ -146,7 +145,7 @@ export default function DocumentsPage() {
       if (field === sortField) {
         setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
       } else {
-        setSortField(field);
+        setSortField(field as Parameters<typeof setSortField>[0]);
         setSortDirection('asc');
       }
     },
