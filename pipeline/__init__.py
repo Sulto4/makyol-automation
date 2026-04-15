@@ -128,6 +128,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
 
         if vision_extraction is not None:
             extraction = vision_extraction
+            extraction["extraction_model"] = "vision:" + (extraction.get("extraction_model") or "gemini-2.0-flash")
         else:
             extraction = extract_document_data(text, category, filename=filename)
     except Exception as e:
