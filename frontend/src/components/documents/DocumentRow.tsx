@@ -15,12 +15,12 @@ export default function DocumentRow({ document, extraction }: DocumentRowProps) 
   const formattedDate = format(new Date(document.uploaded_at), 'dd.MM.yyyy HH:mm');
 
   return (
-    <tr className="border-b border-gray-200 hover:bg-gray-50">
+    <tr className="border-b border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
       <td className="px-4 py-3 text-sm">
         <div className="truncate" title={document.original_filename}>
           <Link
             to={`/documents/${document.id}`}
-            className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
           >
             {document.original_filename}
           </Link>
@@ -29,22 +29,22 @@ export default function DocumentRow({ document, extraction }: DocumentRowProps) 
       <td className="whitespace-nowrap px-4 py-3 text-sm">
         <CategoryBadge category={document.categorie} />
       </td>
-      <td className="px-4 py-3 text-sm text-gray-700">
+      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
         <div className="truncate" title={extraction?.material || ''}>
           {extraction?.material || '—'}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-700">
+      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
         <div className="truncate" title={extraction?.producator || ''}>
           {extraction?.producator || '—'}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-700">
+      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
         <div className="truncate" title={extraction?.companie || ''}>
           {extraction?.companie || '—'}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-700">
+      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
         <div className="truncate" title={extraction?.distribuitor || ''}>
           {extraction?.distribuitor || '—'}
         </div>
@@ -61,7 +61,7 @@ export default function DocumentRow({ document, extraction }: DocumentRowProps) 
       <td className="whitespace-nowrap px-4 py-3 text-sm">
         <StatusBadge status={document.review_status} variant="review" />
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
         {formattedDate}
       </td>
     </tr>

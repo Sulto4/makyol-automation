@@ -52,8 +52,8 @@ export default function DocumentsTable({
   onSort,
 }: DocumentsTableProps) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-      <table className="min-w-full table-fixed divide-y divide-gray-200">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
         <colgroup>
           <col className="w-[15%]" /> {/* Fișier */}
           <col className="w-[9%]" />  {/* Categorie */}
@@ -67,12 +67,12 @@ export default function DocumentsTable({
           <col className="w-[6%]" />  {/* Status revizie */}
           <col className="w-[5%]" />  {/* Data încărcare */}
         </colgroup>
-        <thead className="bg-gray-50">
+        <thead className="bg-gray-50 dark:bg-gray-900">
           <tr>
             {COLUMNS.map((col) => (
               <th
                 key={col.key}
-                className="cursor-pointer select-none px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700"
+                className="cursor-pointer select-none px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 onClick={() => onSort(col.key)}
               >
                 <div className="flex items-center gap-1">
@@ -91,7 +91,7 @@ export default function DocumentsTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
           {documents.map((doc) => (
             <DocumentRow
               key={doc.id}
