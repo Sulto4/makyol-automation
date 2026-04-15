@@ -177,6 +177,27 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                         )
                         extraction[field] = None
                         continue
+
+                # Garbage check: reject values that look like sentence fragments, not company names
+                # Real company names are short (1-6 words) and don't contain common Romanian words
+                val = raw.strip()
+                val_words = val.split()
+                garbage_words = {
+                    "pentru", "care", "este", "sunt", "această", "aceasta", "acest",
+                    "prin", "dintre", "efectuează", "efectueaza", "importante",
+                    "suplimentar", "obligatoriu", "conform", "privind", "referitoare",
+                    "persoanele", "persoane", "drumuri", "șosele", "sosele",
+                }
+                garbage_count = sum(1 for w in val_words if w.lower() in garbage_words)
+                if len(val_words) > 6 or garbage_count >= 1:
+                    logger.warning(
+                        "Garbage company name detected: '%s' (%s) — looks like sentence fragment",
+                        val[:60], field,
+                        extra={"extra_data": {"field": field, "garbage_value": val[:80]}},
+                    )
+                    extraction[field] = None
+                    continue
+
                 normalized, _ = normalize_company_name(raw)
                 extraction[field] = normalized
 
