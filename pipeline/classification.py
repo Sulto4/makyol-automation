@@ -1,10 +1,10 @@
 """Document classification using 3-level cascade.
 
-Level 1: Filename regex matching (71% of documents, confidence=0.95)
-Level 2: Text content multi-marker scoring (13%, confidence=0.85)
-Level 3: AI classification via OpenRouter (16%, confidence varies)
+Level 1: Filename regex matching with variable confidence (0.70-0.95)
+Level 2: Text content priority-ordered rule checks (from MVP)
+Level 3: AI classification via OpenRouter (confidence varies)
 
-Moved verbatim from clasificare_documente_final.py.
+Ported from clasificare_documente_final.py (MVP) with pipeline improvements.
 FIX: classify_by_ai() temperature changed from 0.1 to 0.0.
 """
 
@@ -46,179 +46,95 @@ VALID_CATEGORIES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Level 1: Filename regex rules (37 patterns)
-# Each entry: (compiled_regex_pattern, category_string)
+# Level 1: Filename regex rules
+# Each entry: (regex_pattern, category_string, confidence)
+# Confidence varies 0.70-0.95 depending on pattern specificity.
 # ---------------------------------------------------------------------------
 
 FILENAME_RULES = [
     # === HIGH PRIORITY: Combined/specific patterns FIRST ===
 
     # Combined aviz + agrement (MUST be before individual aviz/agrement rules)
-    (r"(?i)aviz.*agrement", "AVIZ_TEHNIC_SI_AGREMENT"),
-    (r"(?i)agrement.*aviz", "AVIZ_TEHNIC_SI_AGREMENT"),
-    (r"(?i)aviz.*\bAT\b", "AVIZ_TEHNIC_SI_AGREMENT"),
-    (r"(?i)\bAT\b.*aviz", "AVIZ_TEHNIC_SI_AGREMENT"),
+    (r"(?i)(?:aviz\s*(?:si|și|\+|&)\s*(?:at|agrement)|aviz[- ]agrement|at\s*\+?\s*agt)", "AVIZ_TEHNIC_SI_AGREMENT", 0.95),
 
     # Aviz sanitar (before generic aviz)
-    (r"(?i)(?:\bAVS\b|aviz\s*sanitar)", "AVIZ_SANITAR"),
+    (r"(?i)(?:sanitar|\bAVS\b|(?:^|\b)\d+\.\s*AS\b)", "AVIZ_SANITAR", 0.95),
 
-    # ISO certificates
-    (r"(?i)ISO[\s_]*9001", "ISO"),
-    (r"(?i)ISO[\s_]*14001", "ISO"),
-    (r"(?i)ISO[\s_]*45001", "ISO"),
-    (r"(?i)ISO[\s_]*50001", "ISO"),
-    (r"(?i)ISO[\s_]*22000", "ISO"),
-    (r"(?i)ISO[\s_]*13485", "ISO"),
-    (r"(?i)ISO[\s_]*27001", "ISO"),
-    (r"(?i)\bISO\b", "ISO"),
+    # CUI in filename
+    (r"(?i)\bCUI\b", "CUI", 0.95),
+    (r"(?i)certificat\s*(?:de\s*)?inregistrare", "CUI", 0.90),
+    (r"(?i)certificat\s*constatator", "CUI", 0.90),
+    (r"(?i)\bONRC\b", "CUI", 0.90),
+    (r"(?i)registrul\s*comer[tț]ului", "CUI", 0.90),
+    (r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare\s*fiscal[aă]", "CUI", 0.90),
 
-    # CE / PED certificates
-    (r"(?i)^CE[\s_-]", "CE"),
-    (r"(?i)\bCE\b.*(?:certificat|certificate|PED)", "CE"),
-    (r"(?i)\bPED\b", "CE"),
-    (r"(?i)certificat.*\bCE\b", "CE"),
+    # ISO certificates — [\s_]* handles underscores in filenames
+    (r"(?i)(?:ISO[\s_]*\d{4,5}|\bISO\b)", "ISO", 0.90),
+    (r"(?i)\b(9001|14001|45001|50001)\b", "ISO", 0.80),
+
+    # CE / PED certificates — ^CE[\s_-] for standalone CE prefix
+    (r"(?i)^CE[\s_-]", "CE", 0.90),
+    (r"(?i)(?:(?:^|\b)CE(?:\s|[-_]|$)|marcaj\s*CE|CE\s*PED)", "CE", 0.90),
+    (r"(?i)\bCE\b.*(?:certificat|certificate|PED)", "CE", 0.90),
+    (r"(?i)\bPED\b", "CE", 0.90),
+    (r"(?i)certificat.*\bCE\b", "CE", 0.90),
+    (r"(?i)excludere.*CE", "CE", 0.90),
+
+    # Declaratie de performanta (before DC)
+    (r"(?i)(?:declara[tț]i[ea]\s*(?:de\s*)?performan[tț][aă]|\bDOP\b|^DP[-\s])", "DECLARATIE_PERFORMANTA", 0.95),
 
     # Declaratie de conformitate (before CC/certificat rules)
-    (r"(?i)declarati[ea]\s*de\s*conformitate", "DECLARATIE_CONFORMITATE"),
-    (r"(?i)declara[tț]i[ea]\s*conformitate", "DECLARATIE_CONFORMITATE"),
-    (r"(?i)certificate?\s*de\s*conformitate", "DECLARATIE_CONFORMITATE"),
-    (r"(?i)^CC-\d+", "DECLARATIE_CONFORMITATE"),
-    (r"(?i)\bDC\b(?!\s*-)", "DECLARATIE_CONFORMITATE"),
-
-    # Declaratie de performanta
-    (r"(?i)declara[tț]i[ea]\s*(?:de\s*)?performan[tț][aă]", "DECLARATIE_PERFORMANTA"),
-    (r"(?i)\bDoP\b", "DECLARATIE_PERFORMANTA"),
-    (r"(?i)\bDP\b.*performan", "DECLARATIE_PERFORMANTA"),
-
-    # Fisa tehnica / Technical data sheets
-    (r"(?i)(?:\bFT\b.*\bPEHD\b|\bFT\b.*\bteav|fisa\s*tehnica|\bFT\b.*\bfiting|data\s*sheet)", "FISA_TEHNICA"),
-    (r"(?i)fi[sș][aă]\s*tehnic[aă]", "FISA_TEHNICA"),
-    (r"(?i)technical\s*data\s*sheet", "FISA_TEHNICA"),
-
-    # Agrement tehnic (after combined aviz+agrement)
-    (r"(?i)(?:\bAGT\b|agrement\s*tehnic)", "AGREMENT"),
-    (r"(?i)\bAT\b.*\d{3}", "AGREMENT"),
-
-    # Aviz tehnic (after combined and sanitar)
-    (r"(?i)(?:\bAVT\b|aviz\s*tehnic)", "AVIZ_TEHNIC"),
-
-    # Certificat de calitate
-    (r"(?i)certificat\s*de\s*calitate", "CERTIFICAT_CALITATE"),
-    (r"(?i)certificat.*P1R", "CERTIFICAT_CALITATE"),
-    (r"(?i)certificat.*CERT", "CERTIFICAT_CALITATE"),
+    (r"(?i)declara[tț]i[ea]\s*de?\s*conformitate", "DECLARATIE_CONFORMITATE", 0.95),
+    (r"(?i)^CC-\d+", "DECLARATIE_CONFORMITATE", 0.90),
+    (r"(?i)(?:^|\b)\d+\.\s*DC\b", "DECLARATIE_CONFORMITATE", 0.90),
+    (r"(?i)^DC\s+\d", "DECLARATIE_CONFORMITATE", 0.90),
+    (r"(?i)certificate?\s*de\s*conformitate", "DECLARATIE_CONFORMITATE", 0.90),
+    (r"(?i)\bDC\b(?!\s*-)", "DECLARATIE_CONFORMITATE", 0.85),
 
     # Certificat de garantie
-    (r"(?i)(?:\bCG\b|certificat\s*de\s*garantie|certificat\s*garan[tț]ie)", "CERTIFICAT_GARANTIE"),
+    (r"(?i)(?:certificat\s*de?\s*garan[tț]ie|\bCG\b)", "CERTIFICAT_GARANTIE", 0.90),
 
-    # Autorizatie distributie
-    (r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]", "AUTORIZATIE_DISTRIBUTIE"),
-    (r"(?i)\bAD\b.*autorizati", "AUTORIZATIE_DISTRIBUTIE"),
-
-    # CUI / Company registration
-    (r"(?i)\bCUI\b", "CUI"),
-    (r"(?i)certificat\s*(?:de\s*)?inregistrare", "CUI"),
-    (r"(?i)certificat\s*constatator", "CUI"),
-    (r"(?i)\bONRC\b", "CUI"),
-    (r"(?i)registrul\s*comer[tț]ului", "CUI"),
-    (r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare\s*fiscal[aă]", "CUI"),
+    # Certificat de calitate / Certificate 3.1 (EN 10204)
+    (r"(?i)certificat\s*de?\s*calitate", "CERTIFICAT_CALITATE", 0.90),
+    (r"(?i)(?:^|\b)\d+\.\s*CC\b", "CERTIFICAT_CALITATE", 0.85),
+    (r"(?i)^CC\s+\d", "CERTIFICAT_CALITATE", 0.85),
+    (r"(?i)(?:^|\b)\d+\.\s*C\s*3\.1\b", "CERTIFICAT_CALITATE", 0.93),
+    (r"(?i)(?:\bMTC\b|mill\s*test\s*cert)", "CERTIFICAT_CALITATE", 0.93),
+    (r"(?i)certificat.*P1R", "CERTIFICAT_CALITATE", 0.90),
+    (r"(?i)certificat.*CERT", "CERTIFICAT_CALITATE", 0.90),
 
     # Certificat calitate - lab reports
-    (r"(?i)buletin\s*(?:de\s*)?analiz[aă]", "CERTIFICAT_CALITATE"),
-    (r"(?i)raport\s*(?:de\s*)?[iî]ncerc(?:are|[aă]ri)", "CERTIFICAT_CALITATE"),
-    (r"(?i)test\s*report", "CERTIFICAT_CALITATE"),
-    # Generic approval patterns (fallback to ALTELE)
-    (r"(?i)(?:aprobare.*teav|aprobare.*PEID|aprobare.*produc)", "ALTELE"),
-    (r"(?i)aprobare\s*de\s*tip", "ALTELE"),
-]
+    (r"(?i)buletin\s*(?:de\s*)?analiz[aă]", "CERTIFICAT_CALITATE", 0.90),
+    (r"(?i)raport\s*(?:de\s*)?[iî]ncerc(?:are|[aă]ri)", "CERTIFICAT_CALITATE", 0.90),
+    (r"(?i)test\s*report", "CERTIFICAT_CALITATE", 0.90),
 
-# ---------------------------------------------------------------------------
-# Level 2: Text content markers for multi-marker scoring
-# Each entry: (regex_pattern, category, weight)
-# ---------------------------------------------------------------------------
+    # Agrement tehnic (after combined aviz+agrement)
+    (r"(?i)(?:\bagrement\b|\bAGT\b)", "AGREMENT", 0.90),
+    (r"(?i)\bAT\b.*\d{3}", "AGREMENT", 0.85),
 
-TEXT_MARKERS = [
-    # ISO — standalone ISO standard mentions are low weight (many docs reference standards)
-    # Only high weight when combined with certification context
-    (r"(?i)ISO\s*9001", "ISO", 1),
-    (r"(?i)ISO\s*14001", "ISO", 1),
-    (r"(?i)ISO\s*45001", "ISO", 1),
-    (r"(?i)ISO\s*50001", "ISO", 1),
-    (r"(?i)management\s*system\s*certificate", "ISO", 3),
-    (r"(?i)certificat\s*de\s*management", "ISO", 3),
-    (r"(?i)certificat.*ISO", "ISO", 3),
-    (r"(?i)ISO.*certificat", "ISO", 3),
-    (r"(?i)scope\s*of\s*certification", "ISO", 2),
-    (r"(?i)domeniu\s*de\s*certificare", "ISO", 2),
-    (r"(?i)validity.*certificate", "ISO", 2),
-    (r"(?i)valabilitate.*certificat", "ISO", 2),
-    # CE / PED
-    (r"(?i)declara[tț]i[ea]\s*CE", "CE", 3),
-    (r"(?i)directiva.*echipamente.*presiune", "CE", 3),
-    (r"(?i)pressure\s*equipment\s*directive", "CE", 3),
-    (r"(?i)echipamente\s*sub\s*presiune", "CE", 3),
-    (r"(?i)2014/68/UE|2014/68/EU", "CE", 3),
-    (r"(?i)marcaj\s*CE", "CE", 2),
-    (r"(?i)modul\s*[A-H]\d?", "CE", 2),
-    # Fisa tehnica
-    (r"(?i)fi[sș][aă]\s*tehnic[aă]", "FISA_TEHNICA", 3),
-    (r"(?i)technical\s*data\s*sheet", "FISA_TEHNICA", 3),
-    (r"(?i)data\s*sheet", "FISA_TEHNICA", 2),
-    (r"(?i)caracteristici\s*tehnice", "FISA_TEHNICA", 2),
-    (r"(?i)propriet[aă][tț]i\s*(?:fizice|mecanice)", "FISA_TEHNICA", 2),
-    # Agrement
-    (r"(?i)agrement\s*tehnic", "AGREMENT", 3),
-    (r"(?i)agrementul\s*tehnic", "AGREMENT", 3),
-    (r"(?i)agrement.*european", "AGREMENT", 2),
-    # Aviz tehnic
-    (r"(?i)aviz\s*tehnic", "AVIZ_TEHNIC", 3),
-    (r"(?i)avizul\s*tehnic", "AVIZ_TEHNIC", 2),
-    # Aviz sanitar
-    (r"(?i)aviz\s*sanitar", "AVIZ_SANITAR", 3),
-    (r"(?i)ministerul\s*s[aă]n[aă]t[aă][tț]ii", "AVIZ_SANITAR", 2),
-    (r"(?i)ap[aă]\s*potabil[aă]", "AVIZ_SANITAR", 1),
-    # Declaratie conformitate
-    (r"(?i)declara[tț]i[ea]\s*de\s*conformitate", "DECLARATIE_CONFORMITATE", 3),
-    (r"(?i)declaration\s*of\s*conformity", "DECLARATIE_CONFORMITATE", 3),
-    (r"(?i)conform\s*cu\s*cerin[tț]ele", "DECLARATIE_CONFORMITATE", 1),
-    # Certificat calitate
-    (r"(?i)certificat\s*de\s*calitate", "CERTIFICAT_CALITATE", 3),
-    (r"(?i)certificat\s*de\s*conformitate", "CERTIFICAT_CALITATE", 2),
-    (r"(?i)quality\s*certificate", "CERTIFICAT_CALITATE", 3),
+    # Aviz tehnic (after combined and sanitar)
+    (r"(?i)(?:\baviz\s*tehnic\b|\bAVT\b)", "AVIZ_TEHNIC", 0.90),
+
     # Autorizatie distributie
-    (r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]", "AUTORIZATIE_DISTRIBUTIE", 3),
-    (r"(?i)distribu[tț]ie\s*autorizat[aă]", "AUTORIZATIE_DISTRIBUTIE", 2),
-    # CUI
-    (r"(?i)certificat\s*(?:de\s*)?[iî]nregistrare", "CUI", 3),
-    (r"(?i)certificat\s*constatator", "CUI", 3),
-    (r"(?i)registrul\s*comer[tț]ului", "CUI", 2),
-    # Certificat garantie
-    (r"(?i)certificat\s*de\s*garan[tț]ie", "CERTIFICAT_GARANTIE", 3),
-    (r"(?i)warranty\s*certificate", "CERTIFICAT_GARANTIE", 3),
-    (r"(?i)garan[tț]ie.*ani", "CERTIFICAT_GARANTIE", 1),
-    # Declaratie performanta
-    (r"(?i)declara[tț]i[ea]\s*(?:de\s*)?performan[tț][aă]", "DECLARATIE_PERFORMANTA", 3),
-    (r"(?i)declaration\s*of\s*performance", "DECLARATIE_PERFORMANTA", 3),
-    # Combined aviz + agrement
-    (r"(?i)aviz\s*tehnic.*agrement", "AVIZ_TEHNIC_SI_AGREMENT", 3),
-    (r"(?i)agrement.*aviz\s*tehnic", "AVIZ_TEHNIC_SI_AGREMENT", 3),
-    # ISO - additional markers
-    (r"(?i)\bASRO\b", "ISO", 2),
-    (r"(?i)SR\s*EN\s*\d+", "ISO", 2),
-    (r"(?i)\bIQNet\b", "ISO", 2),
-    (r"(?i)\bCERTIND\b", "ISO", 2),
-    # CE - additional markers
-    (r"(?i)organism\s*notificat", "CE", 2),
-    (r"(?i)regulament\s*UE", "CE", 2),
-    # Agrement - additional markers
-    (r"(?i)ETA-\d+", "AGREMENT", 2),
-    (r"(?i)\bEOTA\b", "AGREMENT", 2),
-    (r"(?i)\bINCERC\b", "AGREMENT", 2),
-    (r"(?i)ministerul\s*dezvolt[aă]rii", "AGREMENT", 2),
-    # CUI - additional markers
-    (r"(?i)punct\s*de\s*lucru", "CUI", 1),
-    (r"(?i)capital\s*social", "CUI", 1),
-    (r"(?i)\badministrator\b", "CUI", 1),
+    (r"(?i)autorizati[ea]\s*(?:de\s*)?distributi[ea]", "AUTORIZATIE_DISTRIBUTIE", 0.95),
+    (r"(?i)\bAD\b.*autorizati", "AUTORIZATIE_DISTRIBUTIE", 0.90),
+    (r"(?i)(?:autorizat|authorization|autorizare)", "AUTORIZATIE_DISTRIBUTIE", 0.90),
+
+    # Fisa tehnica / Technical data sheets
+    (r"(?i)(?:fi[sș][aă]\s*tehnic[aă]|\bFT\b|data\s*sheet|technical\s*data)", "FISA_TEHNICA", 0.90),
+    (r"(?i)\bcatalog\b", "FISA_TEHNICA", 0.85),
+    # Product-specific filenames that are typically FISA_TEHNICA
+    (r"(?i)^(teava|garnitura|cot|teu|reductie|mufa|dop|piesa)\s", "FISA_TEHNICA", 0.70),
+
+    # Generic approval patterns (fallback to ALTELE)
+    (r"(?i)(?:aprobare.*teav|aprobare.*PEID|aprobare.*produc)", "ALTELE", 0.50),
+    (r"(?i)aprobare\s*de\s*tip", "ALTELE", 0.50),
 ]
+
+# ---------------------------------------------------------------------------
+# Level 2: Text content classification uses priority-ordered rule checks
+# (no markers table — logic is in classify_by_text below)
+# ---------------------------------------------------------------------------
 
 # AI classification system prompt
 _AI_CLASSIFICATION_PROMPT = """Esti un expert in clasificarea documentelor din domeniul constructiilor si materialelor de constructii din Romania.
@@ -259,69 +175,211 @@ def classify_by_filename(filename: str) -> tuple[str, float, str] | None:
     Returns:
         Tuple of (category, confidence, method) or None if no match.
     """
-    for pattern, category in FILENAME_RULES:
+    for pattern, category, conf in FILENAME_RULES:
         if re.search(pattern, filename):
             if category == "ALTELE":
                 continue
-            return (category, 0.95, "filename_regex")
+            return (category, conf, "filename_regex")
     return None
 
 
-def classify_by_text(text: str) -> tuple[str, float, str] | None:
-    """Classify document by text content using multi-marker scoring.
+def classify_by_text(text: str, page_count: int, has_tables: bool) -> tuple[str, float, str] | None:
+    """Classify document by text content using priority-ordered rule checks.
 
-    Scores each category by summing weights of matching markers.
-    Returns the highest-scoring category if score >= 3.
+    Ported from MVP's classify_by_text. Uses first_500 chars for title
+    emphasis. Priority-ordered if/elif checks — first confident match wins.
 
     Args:
         text: Extracted text from the PDF.
+        page_count: Number of pages in the PDF.
+        has_tables: Whether the PDF contains tables.
 
     Returns:
         Tuple of (category, confidence, method) or None if no match.
     """
-    if not text or not text.strip():
+    if not text or len(text.strip()) < 20:
         return None
 
-    scores: dict[str, int] = {}
-    for pattern, category, weight in TEXT_MARKERS:
-        if re.search(pattern, text):
-            scores[category] = scores.get(category, 0) + weight
+    text_lower = text.lower()
+    first_500 = text_lower[:500]
 
-    if not scores:
-        return None
+    # ---- AVIZ SANITAR: "aviz sanitar" as document TITLE (not just mentioned) ----
+    if re.search(r'aviz\s+sanitar', first_500):
+        return ("AVIZ_SANITAR", 0.95, "text_rules: Title contains 'Aviz Sanitar'")
 
-    best_category = max(scores, key=scores.get)
-    best_score = scores[best_category]
+    # ---- WRAS APPROVAL (before CE/ISO, because WRAS docs reference ISO/CE in passing) ----
+    if re.search(r'\bwras\b', text_lower) and re.search(r'approv|aproba', text_lower):
+        return ("CERTIFICAT_CALITATE", 0.92, "text_rules: WRAS material approval certificate")
 
-    if best_score < 3:
-        return None
+    # ---- CE MARKING (check BEFORE DC because "EU Certificate of Conformity" for PED = CE) ----
+    ce_markers = [
+        r'directiva\s+\d{4}/\d+',
+        r'directive\s+\d{4}/\d+',
+        r'(?<!/)\bce\s+mark(?!\.)',
+        r'ped\s+certificate',
+        r'pressure\s+equipment\s+directive',
+        r'pressure\s+equipment\b',
+        r'european\s+conformity',
+        r'eu\s+certificate\s+of\s+conformity',
+        r'annex\s+iii.*module\s+h',
+    ]
+    ce_score = sum(1 for p in ce_markers if re.search(p, text_lower))
+    if ce_score >= 2:
+        return ("CE", 0.92, f"text_rules: CE directive/marking references found ({ce_score} markers)")
+    if ce_score == 1 and re.search(r'ce\s+mark|ped\s+certificate|eu\s+certificate|european\s+conformity', text_lower):
+        return ("CE", 0.88, "text_rules: Strong CE marker found")
 
-    # Normalize confidence: score of 3 = 0.85, higher scores cap at 0.95
-    confidence = min(0.85 + (best_score - 3) * 0.02, 0.95)
-    return (best_category, confidence, "text_rules")
+    # ---- DECLARATIE DE PERFORMANTA (before DC, since DC markers are broader) ----
+    dp_markers = [
+        r'declara[tț]i[ea]\s+de\s+performan[tț][aă]',
+        r'declaration\s+of\s+performance',
+        r'\bdop\s+nr',
+        r'regulamentul.*305/2011',
+        r'regulation.*305/2011',
+        r'cod\s+unic\s+de\s+identificare\s+al\s+produsului',
+    ]
+    dp_score = sum(1 for p in dp_markers if re.search(p, text_lower))
+    dp_in_title = sum(1 for p in dp_markers if re.search(p, first_500))
+    if dp_score >= 2 and dp_in_title >= 1:
+        return ("DECLARATIE_PERFORMANTA", 0.92, f"text_rules: Text contains {dp_score} DOP markers ({dp_in_title} in title)")
+    if dp_in_title >= 1 and re.search(r'declara[tț]i[ea]\s+de\s+performan', first_500):
+        return ("DECLARATIE_PERFORMANTA", 0.88, "text_rules: Title contains 'Declaratie de Performanta'")
 
+    # ---- DECLARATIE DE CONFORMITATE ----
+    dc_markers = [
+        r'declara[tț]i[ea]\s+de\s+conformitate',
+        r'certificat\s+de\s+conformitate',
+        r'hg\s*(?:nr\.?)?\s*668',
+        r'hot[aă]r[aâ]rea\s+guvernului',
+        r'asigur[aă]m.*garantăm.*declar[aă]m',
+        r'nu\s+pun\s+[îi]n\s+pericol\s+via[tț]a',
+        r'declara[tț]i[ea]\s+nr\.',
+        r'certificate?\s+of\s+conformity(?!.*pressure)',
+    ]
+    dc_score = sum(1 for p in dc_markers if re.search(p, text_lower))
+    if dc_score >= 2:
+        return ("DECLARATIE_CONFORMITATE", 0.90, f"text_rules: Text contains {dc_score} DC markers")
+    if dc_score == 1 and re.search(r'declara[tț]i[ea]\s+de\s+conformitate', first_500):
+        return ("DECLARATIE_CONFORMITATE", 0.85, "text_rules: Title contains 'Declaratie de Conformitate'")
+    if dc_score == 1 and re.search(r'certificat\s+de\s+conformitate', first_500):
+        return ("DECLARATIE_CONFORMITATE", 0.85, "text_rules: Title contains 'Certificat de Conformitate'")
 
-def _get_text_score(text: str, category: str) -> int:
-    """Sum TEXT_MARKERS weights for a specific category against given text.
+    # ---- ISO MANAGEMENT SYSTEM CERTIFICATES ----
+    iso_mgmt_title = re.search(r'iso\s*(9001|14001|45001|50001)', first_500)
+    iso_mgmt_body = re.search(r'iso\s*(9001|14001|45001|50001)', text_lower)
+    iso_mgmt = iso_mgmt_title or iso_mgmt_body
+    if iso_mgmt:
+        cert_context = any(w in first_500 for w in [
+            'certificate', 'certificat', 'certification', 'certified',
+            'scope', 'domeniu', 'validity', 'valabil', 'accredit',
+            'management system', 'sistem de management'
+        ])
+        if cert_context and iso_mgmt_title:
+            return ("ISO", 0.95, f"text_rules: ISO {iso_mgmt.group(1)} certificate in title")
+        if cert_context and not iso_mgmt_title:
+            return ("ISO", 0.78, f"text_rules: ISO {iso_mgmt.group(1)} in body with cert context")
+        if iso_mgmt_title:
+            return ("ISO", 0.80, f"text_rules: ISO {iso_mgmt.group(1)} in title without cert context")
 
-    Args:
-        text: Extracted text from the PDF.
-        category: Category to score (must be in VALID_CATEGORIES).
+    # ---- AGREMENT TEHNIC ----
+    agrement_markers = [
+        r'agrement\s+tehnic',
+        r'ministerul\s+dezvolt[aă]rii',
+        r'consiliul\s+tehnic\s+permanent',
+        r'grupa\s+specializat[aă]',
+    ]
+    agr_score = sum(1 for p in agrement_markers if re.search(p, text_lower))
+    if agr_score >= 2:
+        if re.search(r'aviz\s+tehnic', first_500):
+            return ("AVIZ_TEHNIC_SI_AGREMENT", 0.90, "text_rules: Both Aviz Tehnic and Agrement in text")
+        return ("AGREMENT", 0.90, f"text_rules: Text contains {agr_score} Agrement markers")
 
-    Returns:
-        Total score (sum of matching marker weights), or 0 if text is empty
-        or category is unknown.
-    """
-    if not text or not text.strip():
-        return 0
-    if category not in VALID_CATEGORIES:
-        return 0
+    # ---- AVIZ TEHNIC ----
+    if re.search(r'aviz\s+tehnic', first_500) and not re.search(r'agrement', first_500):
+        return ("AVIZ_TEHNIC", 0.85, "text_rules: Title contains 'Aviz Tehnic' without Agrement")
 
-    score = 0
-    for pattern, cat, weight in TEXT_MARKERS:
-        if cat == category and re.search(pattern, text):
-            score += weight
-    return score
+    # ---- CERTIFICAT CALITATE ----
+    if re.search(r'certificat\s+de\s+calitate', first_500):
+        return ("CERTIFICAT_CALITATE", 0.90, "text_rules: Title: Certificat de Calitate")
+
+    # ---- CERTIFICAT GARANTIE ----
+    if re.search(r'certificat\s+de\s+garan[tț]ie', first_500):
+        return ("CERTIFICAT_GARANTIE", 0.90, "text_rules: Title: Certificat de Garantie")
+
+    # ---- FISA TEHNICA (title check - before AUTORIZATIE and CUI) ----
+    if re.search(r'fi[sș][aă]\s+tehnic[aă]', first_500):
+        return ("FISA_TEHNICA", 0.90, "text_rules: Title: Fisa Tehnica")
+    if re.search(r'technical\s+data\s+sheet', first_500):
+        return ("FISA_TEHNICA", 0.90, "text_rules: Title: Technical Data Sheet")
+
+    # ---- AUTORIZATIE DISTRIBUTIE (before CUI) ----
+    autorizatie_markers = [
+        r'autoriz[aă]m\s+prin\s+prezenta',
+        r's[aă]\s+distribui[ea]',
+        r'autorizat\s+s[aă]',
+        r'authorization\s+letter',
+        r'pe\s+teritoriul\s+rom[aâ]niei',
+        r'autorizare\s+de\s+comercializare',
+        r'authorized.*distribut',
+    ]
+    aut_score = sum(1 for p in autorizatie_markers if re.search(p, text_lower))
+    if aut_score >= 2:
+        return ("AUTORIZATIE_DISTRIBUTIE", 0.90, f"text_rules: Text contains {aut_score} authorization markers")
+    if aut_score == 1 and re.search(r'autorizare\s+de\s+comercializare', first_500):
+        return ("AUTORIZATIE_DISTRIBUTIE", 0.85, "text_rules: Title contains 'Autorizare de Comercializare'")
+
+    # ---- CUI ----
+    cui_indicators = [
+        re.search(r'certificat\s+de\s+[îi]nregistrare', text_lower),
+        re.search(r'cod\s+unic\s+de\s+[îi]nregistrare', text_lower),
+        re.search(r'registrul\s+comer[tț]ului', text_lower),
+        re.search(r'oficiul\s+registrului', text_lower),
+    ]
+    if sum(1 for x in cui_indicators if x) >= 2:
+        if not re.search(r'declara[tț]i[ea]\s+de\s+performan', text_lower) and \
+           not re.search(r'fi[sș][aă]\s+tehnic[aă]|domeniu\s+de\s+utilizare|specifica[tț]i', text_lower):
+            return ("CUI", 0.90, "text_rules: Company registration document (2+ indicators)")
+    if sum(1 for x in cui_indicators if x) >= 1:
+        if re.search(r'certificat\s+de\s+[îi]nregistrare', first_500):
+            return ("CUI", 0.88, "text_rules: Title: Certificat de Inregistrare")
+
+    # ---- DECLARATIE PERFORMANTA (second chance) ----
+    if re.search(r'declara[tț]i[ea]\s+de\s+performan[tț][aă]', text_lower) or \
+       re.search(r'regulamentul.*305/2011|regulation.*305/2011', text_lower):
+        return ("DECLARATIE_PERFORMANTA", 0.90, "text_rules: Declaration of Performance markers found")
+
+    # ---- FISA TEHNICA (body: DN/PN/SDR markers + tables) ----
+    ft_markers = [
+        r'fi[sș][aă]\s+tehnic[aă]',
+        r'technical\s+data\s+sheet',
+        r'domeniu\s+de\s+utilizare',
+        r'norma\s+de\s+produs',
+        r'specifica[tț]i[ei]\s+tehnic[ei]',
+    ]
+    ft_score = sum(1 for p in ft_markers if re.search(p, text_lower))
+
+    product_spec_markers = [
+        r'\bDN\s*\d+',
+        r'\bPN\s*\d+',
+        r'\bSDR\s*\d+',
+        r'\bDE\s*\d+',
+        r'dimensiun[ie]',
+        r'greutate',
+        r'material[:\s]',
+        r'diametr',
+        r'grosime.*pere[tț]',
+        r'\bmm\b.*\bmm\b',
+    ]
+    spec_score = sum(1 for p in product_spec_markers if re.search(p, text_lower))
+
+    if ft_score >= 1:
+        return ("FISA_TEHNICA", 0.90, f"text_rules: Technical data sheet markers ({ft_score})")
+    if spec_score >= 3 and page_count >= 1:
+        return ("FISA_TEHNICA", 0.80, f"text_rules: Product specification with {spec_score} technical markers")
+    if spec_score >= 2 and has_tables:
+        return ("FISA_TEHNICA", 0.75, f"text_rules: Has tables + {spec_score} technical spec markers")
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -558,25 +616,27 @@ def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | No
 
 
 def classify_document(
-    filename: str, text: str
+    filename: str, text: str, page_count: int = 0, has_tables: bool = False
 ) -> tuple[str, float, str]:
     """Classify document using 3-level cascade.
 
-    Level 1: Filename regex (confidence=0.95)
-    Level 2: Text content multi-marker scoring (confidence=0.85)
+    Level 1: Filename regex (confidence=0.70-0.95, variable)
+    Level 2: Text content priority-ordered rule checks (confidence varies)
     Level 3: AI classification via OpenRouter (confidence varies)
     Fallback: ALTELE (confidence=0.3)
 
     Args:
         filename: The PDF filename.
         text: Extracted text from the PDF.
+        page_count: Number of pages in the PDF.
+        has_tables: Whether the PDF contains tables.
 
     Returns:
         Tuple of (category, confidence, method).
     """
     # Always run both Level 1 and Level 2 upfront
     fn_result = classify_by_filename(filename)
-    txt_result = classify_by_text(text)
+    txt_result = classify_by_text(text, page_count, has_tables)
 
     both_match = fn_result is not None and txt_result is not None
     fn_only = fn_result is not None and txt_result is None

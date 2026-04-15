@@ -5,6 +5,8 @@ import os
 import time
 from pathlib import Path
 
+import fitz  # PyMuPDF — used to get page_count for classification
+
 from pipeline.text_extraction import extract_text_from_pdf
 from pipeline.classification import classify_document
 from pipeline.extraction import extract_document_data
@@ -84,7 +86,16 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
     # Step 3: Classification
     t0 = time.time()
     try:
-        category, confidence, method = classify_document(filename, text)
+        # Extract page_count for text-based classification heuristics
+        try:
+            doc = fitz.open(pdf_path)
+            page_count = len(doc)
+            doc.close()
+        except Exception:
+            page_count = 0
+        has_tables = False  # Table detection not in pipeline text extractor
+
+        category, confidence, method = classify_document(filename, text, page_count, has_tables)
         result["classification"] = category
         result["confidence"] = confidence
         result["method"] = method
