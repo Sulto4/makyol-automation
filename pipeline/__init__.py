@@ -165,6 +165,18 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         for field in ("companie", "producator", "distribuitor"):
             raw = extraction.get(field)
             if raw and raw.strip():
+                # Hallucination check: verify company name appears in document text
+                raw_words = [w for w in raw.strip().lower().split() if len(w) > 3]
+                if raw_words:
+                    found = sum(1 for w in raw_words if w in text.lower())
+                    if found == 0:
+                        logger.warning(
+                            "Company hallucination detected: '%s' (%s) not found in text — setting to None",
+                            raw.strip()[:60], field,
+                            extra={"extra_data": {"field": field, "hallucinated_value": raw.strip()[:80]}},
+                        )
+                        extraction[field] = None
+                        continue
                 normalized, _ = normalize_company_name(raw)
                 extraction[field] = normalized
 
