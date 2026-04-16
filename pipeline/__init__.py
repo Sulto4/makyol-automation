@@ -2,14 +2,20 @@
 
 import logging
 import os
+import re
 import time
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import fitz  # PyMuPDF — used to get page_count for classification
 
 from pipeline.text_extraction import extract_text_from_pdf
 from pipeline.classification import classify_document
-from pipeline.extraction import extract_document_data, normalize_extraction_result
+from pipeline.extraction import (
+    CATEGORIES_WITH_DATA_EXPIRARE,
+    extract_document_data,
+    normalize_extraction_result,
+)
 from pipeline.normalization import normalize_company_name, normalize_address
 from pipeline.validation import validate_extraction
 from pipeline.vision_fallback import extract_with_vision
@@ -20,6 +26,84 @@ logger = logging.getLogger(__name__)
 # classifier has filename + body text to work with, but extraction itself
 # always goes through the vision model.
 _USE_VISION_FOR_ALL = True
+
+# Categories where we trust a trailing DD_MM_YYYY.pdf as a hint about the
+# expiration date — same set that is allowed to carry data_expirare at all.
+# (G4) The fallback only fires when the AI returned nothing for data_expirare.
+_FILENAME_EXPIRY_CATEGORIES = CATEGORIES_WITH_DATA_EXPIRARE
+
+# Filename date patterns we trust as expiry hints (must anchor at end of
+# filename immediately before .pdf). Designed to match the Romanian naming
+# conventions already seen on the corpus:
+#   VLR 004.10_..._24_07_2028.pdf
+#   Aviz Tehnic ..._27.02.2025_AVK.pdf   (trailing token before .pdf)
+#   Agrement tehnic_..._08.04.2027.pdf
+_FILENAME_DATE_RE = re.compile(
+    r"(?<![0-9])(\d{1,2})[._\-](\d{1,2})[._\-](\d{4})(?![0-9])", re.IGNORECASE,
+)
+
+# G5: if an extracted date is in the past by more than this many days AND the
+# filename does not corroborate it, we flag the document for review instead
+# of silently trusting what the AI returned. Six months is the threshold
+# because legitimate expirations that just passed (weeks ago) should still
+# be shown as expired without extra friction.
+_SUSPICIOUS_PAST_EXPIRY_DAYS = 180
+
+# Categories where the `companie` field on the output represents the
+# manufacturer/applicant, not the certifying body. The cert_bodies filter
+# inside normalize() guards companie against stray TÜV/SRAC/MDRAP values on
+# these categories. Module-level so the companie→producator fallback can
+# reuse it.
+CATEGORIES_WITH_CERT_BODY_FILTER = {
+    "ISO",
+    "AVIZ_TEHNIC",
+    "AVIZ_TEHNIC_SI_AGREMENT",
+    "AGREMENT",
+}
+
+
+def _parse_ddmmyyyy(s: str) -> date | None:
+    """Parse a DD.MM.YYYY / DD-MM-YYYY / DD_MM_YYYY string. Returns None on
+    any malformed value (including non-date durations like '2 ani')."""
+    if not s:
+        return None
+    m = re.match(r"^\s*(\d{1,2})[._\-/](\d{1,2})[._\-/](\d{4})\s*$", s)
+    if not m:
+        return None
+    d, mo, y = (int(g) for g in m.groups())
+    try:
+        return date(y, mo, d)
+    except ValueError:
+        return None
+
+
+def _filename_expiry_candidates(filename: str) -> list[date]:
+    """Pull every plausible DD.MM.YYYY hit out of a filename, keep the ones
+    that look like future expirations (year >= current year - 1)."""
+    stem = filename.rsplit(".", 1)[0]
+    cutoff_year = datetime.now().year - 1
+    out: list[date] = []
+    for m in _FILENAME_DATE_RE.finditer(stem):
+        d, mo, y = (int(g) for g in m.groups())
+        if y < cutoff_year:  # likely an issue/contract date, not expiry
+            continue
+        try:
+            out.append(date(y, mo, d))
+        except ValueError:
+            continue
+    return out
+
+
+def _filename_contains_date(filename: str, d: date) -> bool:
+    """Check if the filename contains the given date in any common format."""
+    stem = filename.lower()
+    ddmm = [
+        f"{d.day:02d}.{d.month:02d}.{d.year}",
+        f"{d.day:02d}_{d.month:02d}_{d.year}",
+        f"{d.day:02d}-{d.month:02d}-{d.year}",
+        f"{d.day}.{d.month}.{d.year}",
+    ]
+    return any(s in stem for s in ddmm)
 
 
 def process_document(pdf_path: str, filename: str = "") -> dict:
@@ -219,12 +303,6 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                     "organism de certificare",
                     "grupa specializat",          # Grupa Specializată (agremente)
                 ]
-                CATEGORIES_WITH_CERT_BODY_FILTER = {
-                    "ISO",
-                    "AVIZ_TEHNIC",
-                    "AVIZ_TEHNIC_SI_AGREMENT",
-                    "AGREMENT",
-                }
                 if (
                     field == "companie"
                     and category in CATEGORIES_WITH_CERT_BODY_FILTER
@@ -255,6 +333,26 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
 
                 normalized, _ = normalize_company_name(raw)
                 extraction[field] = normalized
+
+        # Companie fallback: when the cert-body filter nulls `companie` on
+        # ISO/AVT/AGREMENT but the document still has a `producator`, promote
+        # it — on those categories the company being certified and the
+        # producer are the same entity, so we should surface it somewhere.
+        if (
+            category in CATEGORIES_WITH_CERT_BODY_FILTER
+            and not extraction.get("companie")
+            and extraction.get("producator")
+        ):
+            logger.info(
+                "Promoting producator→companie on %s (companie was empty)",
+                category,
+                extra={"extra_data": {
+                    "field_move": "producator->companie",
+                    "category": category,
+                    "value": extraction["producator"][:60],
+                }},
+            )
+            extraction["companie"] = extraction["producator"]
 
         for field in ("adresa_producator",):
             raw = extraction.get(field)
@@ -309,6 +407,36 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                     )
                     extraction["data_expirare"] = None
 
+        # G4: filename-date fallback for data_expirare.
+        # Only fires when:
+        #   - the category legitimately carries an expiration (allowlist)
+        #   - AI produced no date or the hallucination check wiped it
+        #   - the filename contains a clean DD.MM.YYYY (or DD_MM_YYYY /
+        #     DD-MM-YYYY) pattern with year >= current-1
+        # Typical target: VLR 004.10_..._24_07_2028.pdf where Romanian naming
+        # convention appends the expiration date as the last token.
+        if (
+            category in _FILENAME_EXPIRY_CATEGORIES
+            and not extraction.get("data_expirare")
+        ):
+            candidates = _filename_expiry_candidates(filename)
+            if candidates:
+                # Prefer the latest plausible date — expirations are by
+                # definition in the future / most recent one wins.
+                chosen = max(candidates)
+                chosen_str = chosen.strftime("%d.%m.%Y")
+                logger.info(
+                    "Filename-date fallback: no AI expiry, using filename date %s",
+                    chosen_str,
+                    extra={"extra_data": {
+                        "step": "filename_date_fallback",
+                        "filename": filename,
+                        "chosen_date": chosen_str,
+                        "candidates": [c.isoformat() for c in candidates],
+                    }},
+                )
+                extraction["data_expirare"] = chosen_str
+
     except Exception as e:
         logger.warning("Normalization error for %s: %s", filename, e,
                        extra={"extra_data": {"filename": filename, "error": str(e)}})
@@ -333,6 +461,29 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             "step": "validation", "filename": filename,
             "duration_ms": round(duration_ms, 1),
         }})
+
+    # G5: suspicious-expiry review flag. A data_expirare that sits more
+    # than ~6 months in the past is strongly suspicious — probably an issue
+    # date the AI mislabelled. Only flag when the filename doesn't contain
+    # that same date (which would be positive corroboration that the expiry
+    # really is in the past). Keeps the value but nudges a human to double-
+    # check in the UI.
+    if review_status == "OK":
+        d = _parse_ddmmyyyy(extraction.get("data_expirare"))
+        if d:
+            age_days = (date.today() - d).days
+            if age_days > _SUSPICIOUS_PAST_EXPIRY_DAYS and not _filename_contains_date(filename, d):
+                logger.warning(
+                    "Suspicious expiry: %s is %d days in the past and not in filename — flagging REVIEW",
+                    d.isoformat(), age_days,
+                    extra={"extra_data": {
+                        "step": "suspicious_expiry_guard",
+                        "filename": filename,
+                        "data_expirare": extraction.get("data_expirare"),
+                        "age_days": age_days,
+                    }},
+                )
+                review_status = "REVIEW"
 
     result["extraction"] = extraction
     result["review_status"] = review_status
