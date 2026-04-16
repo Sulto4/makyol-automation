@@ -12,7 +12,6 @@ export type SortField =
   | 'data_expirare'
   | 'confidence'
   | 'processing_status'
-  | 'review_status'
   | 'uploaded_at';
 
 export type SortDirection = 'asc' | 'desc';
@@ -32,7 +31,6 @@ const COLUMNS: Column[] = [
   { key: 'data_expirare', label: 'Data expirare' },
   { key: 'confidence', label: 'Încredere' },
   { key: 'processing_status', label: 'Status procesare' },
-  { key: 'review_status', label: 'Status revizie' },
   { key: 'uploaded_at', label: 'Data încărcare' },
 ];
 
@@ -53,19 +51,18 @@ export default function DocumentsTable({
 }: DocumentsTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+      <table className="w-full min-w-[1460px] table-fixed divide-y divide-gray-200 dark:divide-gray-700">
         <colgroup>
-          <col className="w-[15%]" /> {/* Fișier */}
-          <col className="w-[9%]" />  {/* Categorie */}
-          <col className="w-[12%]" /> {/* Material */}
-          <col className="w-[11%]" /> {/* Producător */}
-          <col className="w-[10%]" /> {/* Companie */}
-          <col className="w-[10%]" /> {/* Distribuitor */}
-          <col className="w-[9%]" />  {/* Data expirare */}
-          <col className="w-[7%]" />  {/* Încredere */}
-          <col className="w-[7%]" />  {/* Status procesare */}
-          <col className="w-[6%]" />  {/* Status revizie */}
-          <col className="w-[5%]" />  {/* Data încărcare */}
+          <col className="w-[200px]" /> {/* Fișier */}
+          <col className="w-[180px]" /> {/* Categorie */}
+          <col className="w-[150px]" /> {/* Material */}
+          <col className="w-[130px]" /> {/* Producător */}
+          <col className="w-[130px]" /> {/* Companie */}
+          <col className="w-[130px]" /> {/* Distribuitor */}
+          <col className="w-[180px]" /> {/* Data expirare */}
+          <col className="w-[100px]" /> {/* Încredere */}
+          <col className="w-[130px]" /> {/* Status procesare */}
+          <col className="w-[130px]" /> {/* Data încărcare */}
         </colgroup>
         <thead className="bg-gray-50 dark:bg-gray-900">
           <tr>

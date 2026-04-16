@@ -58,9 +58,6 @@ export default function DocumentRow({ document, extraction }: DocumentRowProps) 
       <td className="whitespace-nowrap px-4 py-3 text-sm">
         <StatusBadge status={document.processing_status} />
       </td>
-      <td className="whitespace-nowrap px-4 py-3 text-sm">
-        <StatusBadge status={document.review_status} variant="review" />
-      </td>
       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
         {formattedDate}
       </td>
