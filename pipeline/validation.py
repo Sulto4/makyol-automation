@@ -15,6 +15,7 @@ from pipeline.config import (
     MAX_ADDRESS_LENGTH,
     MAX_RETRIES,
 )
+from pipeline.date_normalizer import normalize_data_expirare
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +69,32 @@ def _check_material(value: str) -> List[str]:
 
 
 def _check_date(value: str, field_name: str) -> List[str]:
-    """Validate date is in DD.MM.YYYY format."""
+    """Validate a date-ish value.
+
+    Accept three shapes:
+      - Strict DD.MM.YYYY (the canonical case after normalization).
+      - A recognized duration phrase like "Valabil 5 ani" or
+        "Pe durata contractului" — the date normalizer has already
+        classified these as semantically valid even though they are not
+        concrete dates. Flagging them REVIEW was the single largest cause
+        of false-positive reviews on the corpus, so we defer to the
+        normalizer's verdict instead of re-running DATE_PATTERN on them.
+    Only flag when the normalizer says the value is raw/unparseable.
+    """
     if not value:
         return []
-    if not DATE_PATTERN.match(value.strip()):
-        return [f"{field_name} is not in DD.MM.YYYY format: '{value}'"]
-    return []
+    stripped = str(value).strip()
+    if DATE_PATTERN.match(stripped):
+        return []
+    _, kind = normalize_data_expirare(stripped)
+    if kind == "duration":
+        return []
+    # kind in ('date', 'raw', 'empty'): if 'date', normalizer would have
+    # reformatted — we still accept (extraction should have normalized it
+    # already, but be forgiving). Only 'raw' is a validator issue.
+    if kind == "date":
+        return []
+    return [f"{field_name} is not in DD.MM.YYYY format: '{value}'"]
 
 
 def _check_address(value: str, field_name: str) -> List[str]:

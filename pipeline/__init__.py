@@ -11,6 +11,7 @@ import fitz  # PyMuPDF — used to get page_count for classification
 
 from pipeline.text_extraction import extract_text_from_pdf
 from pipeline.classification import classify_document
+from pipeline.date_normalizer import scan_filename_dates
 from pipeline.extraction import (
     CATEGORIES_WITH_DATA_EXPIRARE,
     extract_document_data,
@@ -32,15 +33,10 @@ _USE_VISION_FOR_ALL = True
 # (G4) The fallback only fires when the AI returned nothing for data_expirare.
 _FILENAME_EXPIRY_CATEGORIES = CATEGORIES_WITH_DATA_EXPIRARE
 
-# Filename date patterns we trust as expiry hints (must anchor at end of
-# filename immediately before .pdf). Designed to match the Romanian naming
-# conventions already seen on the corpus:
-#   VLR 004.10_..._24_07_2028.pdf
-#   Aviz Tehnic ..._27.02.2025_AVK.pdf   (trailing token before .pdf)
-#   Agrement tehnic_..._08.04.2027.pdf
-_FILENAME_DATE_RE = re.compile(
-    r"(?<![0-9])(\d{1,2})[._\-](\d{1,2})[._\-](\d{4})(?![0-9])", re.IGNORECASE,
-)
+# Filename-date scanning (numeric + text-month) is delegated to
+# pipeline.date_normalizer.scan_filename_dates so the same logic covers
+# VLR 004.10_..._24_07_2028.pdf AND
+# Fisa tehnica ..._11noiembrie 2024.pdf in one place.
 
 # G5: if an extracted date is in the past by more than this many days AND the
 # filename does not corroborate it, we flag the document for review instead
@@ -78,19 +74,19 @@ def _parse_ddmmyyyy(s: str) -> date | None:
 
 
 def _filename_expiry_candidates(filename: str) -> list[date]:
-    """Pull every plausible DD.MM.YYYY hit out of a filename, keep the ones
-    that look like future expirations (year >= current year - 1)."""
-    stem = filename.rsplit(".", 1)[0]
+    """Pull every plausible expiry date out of a filename.
+
+    Covers both numeric (DD_MM_YYYY) and text-month variants
+    ("11noiembrie2024", "21nov2027"). Filters out anything older than
+    last year so document-code dates stamped in filenames don't
+    accidentally become candidate expirations.
+    """
     cutoff_year = datetime.now().year - 1
     out: list[date] = []
-    for m in _FILENAME_DATE_RE.finditer(stem):
-        d, mo, y = (int(g) for g in m.groups())
-        if y < cutoff_year:  # likely an issue/contract date, not expiry
+    for d in scan_filename_dates(filename):
+        if d.year < cutoff_year:
             continue
-        try:
-            out.append(date(y, mo, d))
-        except ValueError:
-            continue
+        out.append(d)
     return out
 
 

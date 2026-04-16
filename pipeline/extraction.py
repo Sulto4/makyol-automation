@@ -11,7 +11,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-import requests
+import requests  # noqa: F401  -- used below in extract_data_with_ai
 
 from pipeline.config import (
     OPENROUTER_API_KEY,
@@ -23,6 +23,7 @@ from pipeline.config import (
     MAX_MATERIAL_LENGTH,
     MAX_ADDRESS_LENGTH,
 )
+from pipeline.date_normalizer import normalize_data_expirare
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +275,100 @@ def _clean_company_name(name: str) -> str:
     return name
 
 
+def _find_issue_date(text: str) -> datetime | None:
+    """Search the document text for a plausible issue date.
+
+    Romanian certificates use a fairly stable set of issue-date markers:
+    "data emiterii", "data intocmirii", "emis la", "date of issue",
+    "valabil incepand cu". Look for a DD.MM.YYYY (or variant) near any of
+    these and return the first hit. Falls back to the earliest DD.MM.YYYY
+    in the first ~2000 characters — issue dates are always in the header
+    area on these docs.
+    """
+    if not text:
+        return None
+
+    markers = [
+        r"data\s+emiterii?", r"data\s+[îi]ntocmirii?", r"emis(?:\s+la)?",
+        r"data\s+document(?:ului)?", r"date\s+of\s+issue",
+        r"data\s+eliber[aă]rii?", r"eliberat(?:\s+la)?",
+        r"valabil\s+[iî]ncep[âa]nd\s+(?:cu|de\s+la)",
+    ]
+    window = 80  # chars on each side of the marker
+    text_lc = text.lower()
+    date_re = re.compile(r"\b(\d{1,2})[./\-](\d{1,2})[./\-](\d{2,4})\b")
+
+    for marker_pat in markers:
+        for m in re.finditer(marker_pat, text_lc):
+            start = max(0, m.start() - window)
+            end = min(len(text), m.end() + window)
+            segment = text[start:end]
+            dm = date_re.search(segment)
+            if dm:
+                d, mo, y = (int(g) for g in dm.groups())
+                if y < 100:
+                    y += 2000 if y < 70 else 1900
+                try:
+                    return datetime(y, mo, d)
+                except ValueError:
+                    continue
+
+    # Fallback: earliest date in the first 2000 chars of the document.
+    for dm in date_re.finditer(text[:2000]):
+        d, mo, y = (int(g) for g in dm.groups())
+        if y < 100:
+            y += 2000 if y < 70 else 1900
+        try:
+            return datetime(y, mo, d)
+        except ValueError:
+            continue
+    return None
+
+
+def _expiry_from_duration(duration: str, text: str) -> str | None:
+    """Given a duration phrase ("5 ani", "Valabil 3 ani") plus the document
+    text, try to locate the issue date and compute issue + duration.
+
+    Returns a DD.MM.YYYY string on success, None if we couldn't find an
+    issue date or parse the duration. Keeping this separate from the
+    existing _calculate_expiry_date (which requires the explicit
+    "N ani de la DD.MM.YYYY" pattern in a single sentence) because many
+    real documents split issue date and validity period across different
+    fields/headers — the AI extracts the duration as data_expirare and we
+    need to meet it in the middle.
+    """
+    if not duration or not text:
+        return None
+
+    m = re.search(r"(\d+)\s*(ani?|luni?|zile|zi|years?|months?|days?)", duration, re.IGNORECASE)
+    if not m:
+        return None
+    n = int(m.group(1))
+    unit = m.group(2).lower()
+
+    issue = _find_issue_date(text)
+    if issue is None:
+        return None
+
+    try:
+        if unit.startswith("an") or unit.startswith("year"):
+            expiry = issue.replace(year=issue.year + n)
+        elif unit.startswith("lun") or unit.startswith("month"):
+            # naive month add — jump months, clamping day to month length
+            month = issue.month + n
+            year = issue.year + (month - 1) // 12
+            month = ((month - 1) % 12) + 1
+            day = min(issue.day, 28)
+            expiry = issue.replace(year=year, month=month, day=day)
+        elif unit.startswith("zi") or unit.startswith("day"):
+            expiry = issue + timedelta(days=n)
+        else:
+            return None
+    except (ValueError, OverflowError):
+        return None
+    return expiry.strftime("%d.%m.%Y")
+
+
 def _calculate_expiry_date(text: str) -> str | None:
     """Attempt to calculate expiry date from duration patterns in text.
 
@@ -430,25 +525,52 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
                 value = value[:MAX_MATERIAL_LENGTH].rsplit(" ", 1)[0]
 
         elif field == "data_expirare":
-            # Validate date format DD.MM.YYYY
-            date_match = re.match(r"^(\d{1,2})[./](\d{1,2})[./](\d{4})$", value)
-            if date_match:
-                # Normalize to DD.MM.YYYY format
-                day = date_match.group(1).zfill(2)
-                month = date_match.group(2).zfill(2)
-                year = date_match.group(3)
-                value = f"{day}.{month}.{year}"
+            # Unified date normalization — handles Romanian month names,
+            # any separator, ISO format, 2-digit years, trailing commentary,
+            # and recognized duration phrases ("Valabil 5 ani" etc.).
+            normalized_date, kind = normalize_data_expirare(value)
+            if normalized_date is None:
+                normalized[field] = None
+                continue
+            value = normalized_date
+            if kind == "date":
+                # Purely numeric DD.MM.YYYY at this point.
+                pass
+            elif kind == "duration":
+                # Try to upgrade the duration into a concrete expiry by
+                # looking up the issue date in the document text and
+                # adding the duration on top. Keeps the duration string
+                # only if that calculation fails (the validator still
+                # accepts durations as-is).
+                if text:
+                    computed = _expiry_from_duration(value, text)
+                    if computed:
+                        logger.info(
+                            "Computed data_expirare from duration + issue date",
+                            extra={"extra_data": {
+                                "step": "expiry_from_duration",
+                                "category": category,
+                                "original_duration": value,
+                                "computed_expiry": computed,
+                            }},
+                        )
+                        value = computed
+                        date_calculated = True
+                    elif len(value) > 50:
+                        value = value[:50]
+                elif len(value) > 50:
+                    value = value[:50]
             else:
-                # Try to calculate from duration patterns in original text
+                # kind == "raw": couldn't parse. Fall back to the pre-
+                # existing behaviour — try to compute expiry from a
+                # "N ani de la DD.MM.YYYY" pattern in the document text,
+                # otherwise keep value but truncate.
                 calculated = _calculate_expiry_date(text) if text else None
                 if calculated:
                     value = calculated
                     date_calculated = True
-                else:
-                    # Keep non-standard date strings (e.g., "nelimitat", "permanent")
-                    # but truncate to reasonable length
-                    if len(value) > 50:
-                        value = value[:50]
+                elif len(value) > 50:
+                    value = value[:50]
 
         elif field == "adresa_producator":
             # Truncate address
