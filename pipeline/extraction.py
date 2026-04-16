@@ -100,7 +100,17 @@ Extract ONLY the requested fields from the document text. Follow these rules str
 1. Return ONLY valid JSON with the exact field names requested
 2. If a field is not found in the document, use null (not empty string)
 3. For dates, use format DD.MM.YYYY when possible
-4. For "data_expirare" (expiration date): look for "valabil pana la", "valid until", "data expirarii", "valabilitate", "expires", "date of expiry". If only issue date + validity period exist, CALCULATE the expiration date (e.g., issued 01.01.2024 + 3 years = 01.01.2027). ALWAYS try hard to find or calculate an expiration date.
+4. For "data_expirare" (EXPIRATION DATE, not issue date): CRITICAL — do not confuse issue date with expiration date.
+   - Look EXPLICITLY for: "valabil pana la", "valid until", "data expirarii", "valabilitate",
+     "expires on", "expiry date", "termen de valabilitate", "expira la".
+   - Issue date markers ("Data", "Emis la", "Date of issue", "Data intocmirii",
+     "Data emiterii") are NOT expiration dates — do NOT return them as data_expirare.
+   - If ONLY issue date + validity period exist (e.g., "issued 01.01.2024, valid 3 years"),
+     CALCULATE the expiration: 01.01.2027.
+   - If the document does NOT explicitly mention an expiration date, validity period,
+     or duration, return null. Do NOT pick up random dates (document code dates,
+     revision dates, test dates, letter dates) and label them as expiry.
+   - Do NOT invent dates. Null is better than a wrong date.
 5. For "material": extract the ACTUAL PRODUCT/MATERIAL name, NOT standard references.
    - CORRECT: "Tevi PEHD PE100 RC SDR11 DN110-DN630", "Fitinguri PVC-U PN10/PN16"
    - WRONG: "Executat dupa EN 12201-2" (this is a standard reference, not a material)
@@ -169,6 +179,36 @@ _NULL_VALUES = {
     "nu se aplica", "nu este cazul", "nu este disponibil",
     "nedeterminat", "necunoscut", "neprecizat",
 }
+
+# ---------------------------------------------------------------------------
+# Categories where data_expirare is meaningful.
+#
+# Certificate types that are either time-limited authorizations or warranties:
+# these genuinely expire and the field should be kept when extracted.
+#
+# Everything else (FISA_TEHNICA, CUI, DECLARATIE_PERFORMANTA, CERTIFICAT_
+# CALITATE, ALTELE) is a point-in-time document, a permanent registration,
+# or a product spec. The AI tends to hallucinate expirations on these by
+# picking up issue/revision dates from the page, which then makes documents
+# appear "expired" in the UI. We drop data_expirare for those categories.
+#
+# DECLARATIE_CONFORMITATE is kept because some DC documents do state an
+# explicit validity period ("valabil până la DD.MM.YYYY") or contract
+# duration — those are legitimate. Over-extraction on DC is caught by the
+# prompt rule (G2) rather than a hard blacklist.
+# ---------------------------------------------------------------------------
+
+CATEGORIES_WITH_DATA_EXPIRARE = frozenset({
+    "ISO",
+    "CE",
+    "AGREMENT",
+    "AVIZ_TEHNIC",
+    "AVIZ_TEHNIC_SI_AGREMENT",
+    "AVIZ_SANITAR",
+    "AUTORIZATIE_DISTRIBUTIE",
+    "CERTIFICAT_GARANTIE",
+    "DECLARATIE_CONFORMITATE",
+})
 
 
 def smart_truncate(text: str, max_chars: int = 6000) -> str:
@@ -306,8 +346,18 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
     iso_material_nulled = False
     cui_number_merged = False
     date_calculated = False
+    data_expirare_dropped_for_category = False
 
     # --- Category-specific pre-processing (before per-field loop) ---
+
+    # G1: drop data_expirare for categories where it isn't meaningful. Most
+    # misextractions ("expired" docs in the UI) come from FT/CUI/MTC/DoP/
+    # ALTELE where the AI picks up an issue or revision date and labels it
+    # as expiry. These document types don't expire.
+    if category not in CATEGORIES_WITH_DATA_EXPIRARE:
+        if result.get("data_expirare"):
+            data_expirare_dropped_for_category = True
+            result["data_expirare"] = None
 
     # AUTORIZATIE_DISTRIBUTIE: calculate data_expirare from data_emitere + valabilitate
     if category == "AUTORIZATIE_DISTRIBUTIE":
@@ -456,6 +506,7 @@ def normalize_extraction_result(result: dict, category: str, text: str = "") -> 
         "iso_material_nulled": iso_material_nulled,
         "cui_number_merged": cui_number_merged,
         "date_calculated": date_calculated,
+        "data_expirare_dropped_for_category": data_expirare_dropped_for_category,
     }})
 
     return normalized

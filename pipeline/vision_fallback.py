@@ -56,13 +56,22 @@ REGULI GENERALE PER CAMP:
   - NU folosi descrieri generice precum "Produse", "Materiale", "Diverse".
   - Maxim {max_material} caractere.
 
-- **data_expirare** — data sau durata de valabilitate a documentului.
+- **data_expirare** — data sau durata de VALABILITATE a documentului.
+  - ATENTIE: NU confunda data EMITERII ("Data", "Emis la", "Date of issue",
+    "Data intocmirii", "Data emiterii", "Issued on") cu data EXPIRARII.
+    Data emiterii este cand a fost CREAT documentul — NU o returna ca data_expirare.
+  - Cauta EXPLICIT cuvintele: "Valabil pana la", "Valid until", "Expires on",
+    "Expiry date", "Data expirarii", "Valabilitate", "Termen de valabilitate",
+    "Expira la". DOAR data asociata acestor expresii este data de expirare.
   - Format preferat: DD.MM.YYYY (ex: 31.12.2025).
   - Daca documentul da o durata textuala (ex: "2 ani de la receptie", "Pe durata contractului",
     "24 luni", "valabil pana la epuizare"), pastreaza-o CA ATARE in acel format textual.
   - Daca documentul da doar o durata + data emiterii (ex: "valabil 5 ani de la 01.01.2020"),
     calculeaza data: 01.01.2025.
-  - NU inventa date — daca nu e clar, returneaza null.
+  - Daca documentul NU mentioneaza EXPLICIT o data de expirare, durata de
+    valabilitate sau termen, returneaza null. NU extrage vreo data aleatorie
+    (cod document, data revizuirii, data testarii, data scrisorii) ca expirare.
+  - NU inventa date.
 
 - **adresa_producator** — adresa completa (strada, numar, oras, judet, cod postal).
   - Maxim {max_address} caractere.
