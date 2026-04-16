@@ -44,6 +44,9 @@ services:
       API_PREFIX: /api
       CORS_ORIGIN: http://localhost:5173
       PIPELINE_URL: http://pipeline:8001
+      JWT_SECRET: ${JWT_SECRET:-dev_insecure_secret_replace_before_deploy_0123456789abcdef0123456789abcdef}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      AUTH_DISABLED: ${AUTH_DISABLED:-false}
     ports:
       - "3000:3000"
     volumes:

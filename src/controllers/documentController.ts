@@ -2,20 +2,27 @@ import { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { DocumentModel, Document, ProcessingStatus, ReviewStatus, CreateDocumentInput } from '../models/Document';
+import { DocumentModel, Document, ProcessingStatus, ReviewStatus, CreateDocumentInput, OwnerFilter } from '../models/Document';
 import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } from '../models/ExtractionResult';
-// Legacy services kept for potential fallback - pipeline now handles extraction
-// import { PDFExtractorService } from '../services/pdfExtractor';
-// import { MetadataParserService } from '../services/metadataParser';
 import { PipelineClientService, PipelineError } from '../services/pipelineClient';
 import { AuditService } from '../services/auditService';
 import { ArchiveService, ArchiveDocumentRecord } from '../services/archiveService';
 import { logger } from '../utils/logger';
 
 /**
- * Document controller class
- * Handles HTTP requests for document upload and processing
+ * Return the owner filter for the current request:
+ * - `null` for admins (see everything)
+ * - `req.user.id` for regular users (scoped to their own rows)
  */
+function ownerOf(req: Request): OwnerFilter {
+  if (!req.user) return null;
+  return req.user.is_admin ? null : req.user.id;
+}
+
+function userIdOf(req: Request): string | null {
+  return req.user?.id ?? null;
+}
+
 export class DocumentController {
   protected pool: Pool;
   private documentModel: DocumentModel;
@@ -32,10 +39,15 @@ export class DocumentController {
   }
 
   /**
-   * Reprocess a single document through the pipeline
-   * Updates classification, upserts extraction result, and sets status to COMPLETED
+   * Reprocess a single document through the pipeline.
+   * `owner` scopes updates; `actorUserId` is recorded in audit logs.
+   * Pass `null` for internal/admin paths.
    */
-  protected async reprocessSingleDocument(document: Document): Promise<void> {
+  protected async reprocessSingleDocument(
+    document: Document,
+    owner: OwnerFilter,
+    actorUserId: string | null,
+  ): Promise<void> {
     const pipelineResponse = await this.pipelineClient.processDocument(document.file_path, document.original_filename);
     logger.info(`Pipeline reprocessed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
 
@@ -43,17 +55,15 @@ export class DocumentController {
       throw new Error(pipelineResponse.error);
     }
 
-    // Persist classification to documents table
     if (pipelineResponse.classification) {
       await this.documentModel.updateClassification(document.id, {
         categorie: pipelineResponse.classification,
         confidence: pipelineResponse.confidence ?? 0,
         metoda_clasificare: pipelineResponse.method ?? 'ai',
-      });
+      }, owner);
       logger.info(`Classification saved for document ${document.id}: ${pipelineResponse.classification}`);
     }
 
-    // Map pipeline extracted data to extraction result fields
     const extraction = pipelineResponse.extraction || {};
     const extractionStatus = pipelineResponse.confidence >= 0.8
       ? ExtractionStatus.SUCCESS
@@ -74,132 +84,112 @@ export class DocumentController {
       distribuitor: extraction.distribuitor ?? null,
       adresa_producator: extraction.adresa_producator ?? null,
       extraction_model: extraction.extraction_model ?? null,
+      owner_user_id: document.owner_user_id,
     };
 
-    // Upsert extraction result: update if exists, create if not
-    const existing = await this.extractionResultModel.findByDocumentId(document.id);
+    const existing = await this.extractionResultModel.findByDocumentId(document.id, owner);
     if (existing) {
-      await this.extractionResultModel.updateByDocumentId(document.id, extractionInput);
+      await this.extractionResultModel.updateByDocumentId(document.id, extractionInput, owner);
     } else {
       await this.extractionResultModel.create(extractionInput);
     }
     logger.info(`Extraction result upserted for document ${document.id} with status: ${extractionStatus}`);
 
-    // Update document status to COMPLETED and clear error
     await this.documentModel.updateStatus(document.id, {
       processing_status: ProcessingStatus.COMPLETED,
       processing_completed_at: new Date(),
       error_message: null,
-    });
+    }, owner);
+
+    // Silence unused-parameter lint when actorUserId not needed yet (audit is in caller)
+    void actorUserId;
   }
 
   /**
-   * Upload and process a PDF document
-   *
-   * POST /api/documents
+   * POST /api/documents — upload and process a PDF
    */
   async uploadDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const actor = userIdOf(req);
+      const owner = ownerOf(req);
+      const ownerUserId = req.user?.id ?? null;
+
       let filePath: string;
       let filename: string;
       let originalFilename: string;
       let fileSize: number;
 
-      // Check if file was uploaded via multer
       if (req.file) {
         filePath = req.file.path;
         filename = req.file.filename;
         originalFilename = req.file.originalname;
         fileSize = req.file.size;
-      }
-      // For testing: accept file_path in request body
-      else if (req.body.file_path) {
+      } else if (req.body.file_path) {
         filePath = req.body.file_path;
-
         try {
           const stats = await fs.stat(filePath);
           fileSize = stats.size;
-        } catch (error) {
+        } catch {
           res.status(400).json({
-            error: {
-              name: 'ValidationError',
-              message: 'File not found at the specified path',
-              code: 'FILE_NOT_FOUND',
-            }
+            error: { name: 'ValidationError', message: 'File not found at the specified path', code: 'FILE_NOT_FOUND' },
           });
           return;
         }
-
         originalFilename = path.basename(filePath);
         filename = originalFilename;
-      }
-      // No file provided
-      else {
+      } else {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'No file provided. Include a file upload or file_path in request body',
-            code: 'NO_FILE_PROVIDED',
-          }
+          error: { name: 'ValidationError', message: 'No file provided. Include a file upload or file_path in request body', code: 'NO_FILE_PROVIDED' },
         });
         return;
       }
 
-      // Validate file is PDF
       if (!originalFilename.toLowerCase().endsWith('.pdf')) {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'Only PDF files are supported',
-            code: 'INVALID_FILE_TYPE',
-          }
+          error: { name: 'ValidationError', message: 'Only PDF files are supported', code: 'INVALID_FILE_TYPE' },
         });
         return;
       }
 
-      // Step 1: Create document record with PENDING status
       const documentInput: CreateDocumentInput = {
         filename,
         original_filename: originalFilename,
         file_path: filePath,
         file_size: fileSize,
         mime_type: 'application/pdf',
+        owner_user_id: ownerUserId,
       };
 
       const document = await this.documentModel.create(documentInput);
-      logger.info(`Document created with ID: ${document.id}`);
+      logger.info(`Document created with ID: ${document.id} (owner=${ownerUserId})`);
 
-      // Audit log: Document upload
       try {
         await this.auditService.logDocumentUpload({
           filename: document.filename,
           original_filename: document.original_filename,
           file_size: document.file_size,
           file_path: document.file_path,
-        }, null);
+        }, actor);
       } catch (auditError: any) {
         logger.error(`Failed to create audit log for document upload ${document.id}:`, auditError);
       }
 
-      // Step 2: Update status to PROCESSING
       await this.documentModel.updateStatus(document.id, {
         processing_status: ProcessingStatus.PROCESSING,
         processing_started_at: new Date(),
-      });
+      }, owner);
 
-      // Audit log: Status change to PROCESSING
       try {
         await this.auditService.logDocumentStatusChange({
           document_id: document.id,
           filename: document.filename,
           previous_status: ProcessingStatus.PENDING,
           new_status: ProcessingStatus.PROCESSING,
-        }, null);
+        }, actor);
       } catch (auditError: any) {
         logger.error(`Failed to create audit log for status change ${document.id}:`, auditError);
       }
 
-      // Step 3: Process document through Python pipeline
       let extractionResult;
       try {
         const pipelineStartTime = Date.now();
@@ -207,7 +197,6 @@ export class DocumentController {
         const pipelineResponseTimeMs = Date.now() - pipelineStartTime;
         logger.info(`Pipeline processed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
 
-        // Per-document processing summary
         const extraction = pipelineResponse.extraction || {};
         const extractionFields = ['material', 'data_expirare', 'companie', 'producator', 'distribuitor', 'adresa_producator', 'extraction_model'];
         const extractedFields = extractionFields.filter(f => extraction[f] != null && extraction[f] !== '');
@@ -227,24 +216,21 @@ export class DocumentController {
           throw new Error(pipelineResponse.error);
         }
 
-        // Persist classification to documents table
         if (pipelineResponse.classification) {
           await this.documentModel.updateClassification(document.id, {
             categorie: pipelineResponse.classification,
             confidence: pipelineResponse.confidence ?? 0,
             metoda_clasificare: pipelineResponse.method ?? 'ai',
-          });
+          }, owner);
           logger.info(`Classification saved for document ${document.id}: ${pipelineResponse.classification}`);
         }
 
-        // Map pipeline extracted data to extraction result fields
         const extractionStatus = pipelineResponse.confidence >= 0.8
           ? ExtractionStatus.SUCCESS
           : pipelineResponse.confidence >= 0.5
             ? ExtractionStatus.PARTIAL
             : ExtractionStatus.FAILED;
 
-        // Create extraction result record with pipeline data
         const extractionInput: CreateExtractionResultInput = {
           document_id: document.id,
           extracted_text: null,
@@ -258,37 +244,34 @@ export class DocumentController {
           distribuitor: extraction.distribuitor ?? null,
           adresa_producator: extraction.adresa_producator ?? null,
           extraction_model: extraction.extraction_model ?? null,
+          owner_user_id: ownerUserId,
         };
 
         extractionResult = await this.extractionResultModel.create(extractionInput);
         logger.info(`Extraction result created for document ${document.id} with status: ${extractionStatus}`);
 
-        // Update document status to COMPLETED
         await this.documentModel.updateStatus(document.id, {
           processing_status: ProcessingStatus.COMPLETED,
           processing_completed_at: new Date(),
-        });
+        }, owner);
 
-        // Audit log: Status change to COMPLETED
         try {
           await this.auditService.logDocumentStatusChange({
             document_id: document.id,
             filename: document.filename,
             previous_status: ProcessingStatus.PROCESSING,
             new_status: ProcessingStatus.COMPLETED,
-          }, null);
+          }, actor);
         } catch (auditError: any) {
           logger.error(`Failed to create audit log for status change ${document.id}:`, auditError);
         }
 
       } catch (error: any) {
-        // Handle pipeline errors gracefully
         const errorMessage = error instanceof PipelineError
           ? `Pipeline error: ${error.message}`
           : error.message;
         logger.error(`Pipeline processing failed for document ${document.id}:`, error);
 
-        // Create failed extraction result with error details
         const extractionInput: CreateExtractionResultInput = {
           document_id: document.id,
           extraction_status: ExtractionStatus.FAILED,
@@ -297,18 +280,17 @@ export class DocumentController {
             code: error.code || (error instanceof PipelineError ? 'PIPELINE_ERROR' : 'PROCESSING_ERROR'),
             timestamp: new Date().toISOString(),
           },
+          owner_user_id: ownerUserId,
         };
 
         extractionResult = await this.extractionResultModel.create(extractionInput);
 
-        // Update document status to FAILED
         await this.documentModel.updateStatus(document.id, {
           processing_status: ProcessingStatus.FAILED,
           error_message: errorMessage,
           processing_completed_at: new Date(),
-        });
+        }, owner);
 
-        // Audit log: Status change to FAILED
         try {
           await this.auditService.logDocumentStatusChange({
             document_id: document.id,
@@ -316,14 +298,13 @@ export class DocumentController {
             previous_status: ProcessingStatus.PROCESSING,
             new_status: ProcessingStatus.FAILED,
             reason: error.message,
-          }, null);
+          }, actor);
         } catch (auditError: any) {
           logger.error(`Failed to create audit log for status change ${document.id}:`, auditError);
         }
       }
 
-      // Get the updated document
-      const updatedDocument = await this.documentModel.findById(document.id);
+      const updatedDocument = await this.documentModel.findById(document.id, owner);
 
       res.status(201).json({
         document: updatedDocument,
@@ -335,13 +316,9 @@ export class DocumentController {
     }
   }
 
-  /**
-   * List all documents with optional filtering and pagination
-   *
-   * GET /api/documents
-   */
   async listDocuments(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const owner = ownerOf(req);
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
       const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
       const status = req.query.status as ProcessingStatus | undefined;
@@ -352,12 +329,12 @@ export class DocumentController {
             name: 'ValidationError',
             message: `Invalid status. Must be one of: ${Object.values(ProcessingStatus).join(', ')}`,
             code: 'INVALID_STATUS',
-          }
+          },
         });
         return;
       }
 
-      const documents = await this.documentModel.findAll(limit, offset, status);
+      const documents = await this.documentModel.findAll(limit, offset, status, owner);
 
       res.status(200).json({
         documents,
@@ -371,61 +348,41 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Reprocess a document through the pipeline
-   *
-   * POST /api/documents/:id/reprocess
-   */
   async reprocessDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const owner = ownerOf(req);
+      const actor = userIdOf(req);
       const documentId = parseInt(req.params.id, 10);
 
       if (isNaN(documentId) || documentId <= 0) {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'Invalid document ID. Must be a positive integer.',
-            code: 'INVALID_DOCUMENT_ID',
-          }
+          error: { name: 'ValidationError', message: 'Invalid document ID. Must be a positive integer.', code: 'INVALID_DOCUMENT_ID' },
         });
         return;
       }
 
-      const document = await this.documentModel.findById(documentId);
+      const document = await this.documentModel.findById(documentId, owner);
 
       if (!document) {
         res.status(404).json({
-          error: {
-            name: 'NotFoundError',
-            message: 'Document not found',
-            code: 'DOCUMENT_NOT_FOUND',
-          }
+          error: { name: 'NotFoundError', message: 'Document not found', code: 'DOCUMENT_NOT_FOUND' },
         });
         return;
       }
 
       try {
-        await this.reprocessSingleDocument(document);
+        await this.reprocessSingleDocument(document, owner, actor);
       } catch (error: any) {
         if (error instanceof PipelineError && error.code === 'ECONNREFUSED') {
           res.status(503).json({
-            error: {
-              name: 'ServiceUnavailableError',
-              message: 'Pipeline service is not available',
-              code: 'PIPELINE_UNAVAILABLE',
-            }
+            error: { name: 'ServiceUnavailableError', message: 'Pipeline service is not available', code: 'PIPELINE_UNAVAILABLE' },
           });
           return;
         }
 
-        // File-level errors (e.g., file not found, unreadable)
         if (error instanceof PipelineError || error.code === 'ENOENT') {
           res.status(422).json({
-            error: {
-              name: 'UnprocessableEntityError',
-              message: `Failed to reprocess document: ${error.message}`,
-              code: 'REPROCESS_FAILED',
-            }
+            error: { name: 'UnprocessableEntityError', message: `Failed to reprocess document: ${error.message}`, code: 'REPROCESS_FAILED' },
           });
           return;
         }
@@ -433,9 +390,8 @@ export class DocumentController {
         throw error;
       }
 
-      // Get updated document and extraction
-      const updatedDocument = await this.documentModel.findById(documentId);
-      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+      const updatedDocument = await this.documentModel.findById(documentId, owner);
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId, owner);
 
       logger.info(`Document ${documentId} reprocessed successfully`);
 
@@ -449,46 +405,41 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Reprocess all documents matching optional filters
-   *
-   * POST /api/documents/reprocess-all
-   */
   async reprocessAll(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const owner = ownerOf(req);
+      const actor = userIdOf(req);
       const { status, limit } = req.body || {};
 
-      // Validate status against ProcessingStatus enum if provided
       if (status && !Object.values(ProcessingStatus).includes(status)) {
         res.status(400).json({
           error: {
             name: 'ValidationError',
             message: `Invalid status. Must be one of: ${Object.values(ProcessingStatus).join(', ')}`,
             code: 'INVALID_STATUS',
-          }
+          },
         });
         return;
       }
 
-      // Query matching documents
       const documents = await this.documentModel.findAll(
         limit ? parseInt(limit as string, 10) : undefined,
         undefined,
-        status as ProcessingStatus | undefined
+        status as ProcessingStatus | undefined,
+        owner,
       );
 
       const jobId = `reprocess-${Date.now()}`;
 
-      // Respond immediately
       res.status(202).json({
         message: `Reprocessing ${documents.length} document(s) in the background`,
         jobId,
         total: documents.length,
       });
 
-      // Fire-and-forget: background processing in its own try-catch
       void (async () => {
         try {
+          logger.info(`[${jobId}] Background reprocessing STARTED for ${documents.length} documents (owner=${owner ?? 'admin-all'})`);
           const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
           let processed = 0;
@@ -496,26 +447,25 @@ export class DocumentController {
 
           for (const document of documents) {
             try {
-              await this.reprocessSingleDocument(document);
+              logger.info(`[${jobId}] Processing document ${document.id} (${document.original_filename})...`);
+              await this.reprocessSingleDocument(document, owner, actor);
               processed++;
               logger.info(`[${jobId}] Reprocessed document ${document.id} (${processed}/${documents.length})`);
             } catch (error: any) {
               failed++;
               logger.error(`[${jobId}] Failed to reprocess document ${document.id}: ${error.message}`);
 
-              // Update document status to FAILED
               try {
                 await this.documentModel.updateStatus(document.id, {
                   processing_status: ProcessingStatus.FAILED,
                   error_message: error.message,
                   processing_completed_at: new Date(),
-                });
+                }, owner);
               } catch (updateError: any) {
                 logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${updateError.message}`);
               }
             }
 
-            // 1s delay between documents
             if (document !== documents[documents.length - 1]) {
               await delay(1000);
             }
@@ -534,14 +484,12 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Get processing statistics for documents and extractions
-   *
-   * GET /api/documents/stats
-   */
-  async getStats(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Classification stats from documents table
+      const owner = ownerOf(req);
+      const ownerClause = owner !== null ? 'WHERE owner_user_id = $1' : '';
+      const ownerParams = owner !== null ? [owner] : [];
+
       const classificationQuery = `
         SELECT
           COUNT(*)::int AS total_documents,
@@ -558,9 +506,9 @@ export class DocumentController {
           ROUND(AVG(confidence)::numeric, 4) AS average_confidence,
           COUNT(*) FILTER (WHERE categorie = 'ALTELE')::int AS categorie_altele
         FROM documents
+        ${ownerClause}
       `;
 
-      // Extraction stats from extraction_results table
       const extractionQuery = `
         SELECT
           COUNT(*)::int AS total,
@@ -571,11 +519,12 @@ export class DocumentController {
           COUNT(distribuitor)::int AS has_distribuitor,
           COUNT(adresa_producator)::int AS has_adresa_producator
         FROM extraction_results
+        ${ownerClause}
       `;
 
       const [classificationResult, extractionResult] = await Promise.all([
-        this.pool.query(classificationQuery),
-        this.pool.query(extractionQuery),
+        this.pool.query(classificationQuery, ownerParams),
+        this.pool.query(extractionQuery, ownerParams),
       ]);
 
       const classRow = classificationResult.rows[0];
@@ -615,22 +564,18 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Delete all documents and their associated data
-   *
-   * DELETE /api/documents
-   */
-  async clearAllDocuments(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  async clearAllDocuments(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const deletedCount = await this.documentModel.deleteAll();
+      const owner = ownerOf(req);
+      const actor = userIdOf(req);
+      const deletedCount = await this.documentModel.deleteAll(owner);
 
-      // Audit log: Bulk document delete
       try {
         await this.auditService.logDocumentDelete({
           document_id: 0,
           filename: '*',
           file_path: '*',
-        }, null);
+        }, actor);
       } catch (auditError: any) {
         logger.error('Failed to create audit log for bulk document delete:', auditError);
       }
@@ -647,16 +592,12 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Upload and process multiple PDF documents with folder structure
-   *
-   * Accepts files, creates document records immediately (PENDING),
-   * responds with 202, then processes documents in the background.
-   *
-   * POST /api/documents/upload-folder
-   */
   async uploadFolder(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const owner = ownerOf(req);
+      const actor = userIdOf(req);
+      const ownerUserId = req.user?.id ?? null;
+
       const files = req.files as Express.Multer.File[] | undefined;
       const relativePaths: string[] = req.body.relativePaths
         ? (typeof req.body.relativePaths === 'string'
@@ -666,16 +607,11 @@ export class DocumentController {
 
       if (!files || files.length === 0) {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'No files provided. Upload files via multipart form data.',
-            code: 'NO_FILES_PROVIDED',
-          }
+          error: { name: 'ValidationError', message: 'No files provided. Upload files via multipart form data.', code: 'NO_FILES_PROVIDED' },
         });
         return;
       }
 
-      // Phase 1: Create document records immediately (fast, no pipeline calls)
       const results: Array<{
         document: Document | null;
         extraction: any;
@@ -684,21 +620,14 @@ export class DocumentController {
         error: string | null;
       }> = [];
 
-      const documentsToProcess: Array<{ document: Document; filePath: string }> = [];
+      const documentsToProcess: Array<{ document: Document }> = [];
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const relativePath = relativePaths[i] || file.originalname;
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx];
+        const relativePath = relativePaths[idx] || file.originalname;
 
-        // Skip non-PDF files
         if (!file.originalname.toLowerCase().endsWith('.pdf')) {
-          results.push({
-            document: null,
-            extraction: null,
-            relativePath,
-            success: false,
-            error: 'Only PDF files are supported',
-          });
+          results.push({ document: null, extraction: null, relativePath, success: false, error: 'Only PDF files are supported' });
           continue;
         }
 
@@ -710,35 +639,22 @@ export class DocumentController {
             file_size: file.size,
             mime_type: 'application/pdf',
             relative_path: relativePath,
+            owner_user_id: ownerUserId,
           };
 
           const document = await this.documentModel.create(documentInput);
           logger.info(`[uploadFolder] Document created with ID: ${document.id}, relativePath: ${relativePath}`);
 
-          documentsToProcess.push({ document, filePath: file.path });
-
-          results.push({
-            document,
-            extraction: null,
-            relativePath,
-            success: true,
-            error: null,
-          });
+          documentsToProcess.push({ document });
+          results.push({ document, extraction: null, relativePath, success: true, error: null });
         } catch (fileError: any) {
           logger.error(`[uploadFolder] Failed to create record for ${file.originalname}:`, fileError);
-          results.push({
-            document: null,
-            extraction: null,
-            relativePath,
-            success: false,
-            error: fileError.message,
-          });
+          results.push({ document: null, extraction: null, relativePath, success: false, error: fileError.message });
         }
       }
 
       const jobId = `folder-upload-${Date.now()}`;
 
-      // Phase 2: Respond immediately with created documents
       res.status(202).json({
         results,
         totalProcessed: files.length,
@@ -748,23 +664,21 @@ export class DocumentController {
         message: `${documentsToProcess.length} document(s) accepted for processing in the background`,
       });
 
-      // Phase 3: Process documents in the background (fire-and-forget)
       void (async () => {
         const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         let processed = 0;
         let failed = 0;
         const total = documentsToProcess.length;
 
-        for (let idx = 0; idx < total; idx++) {
-          const { document } = documentsToProcess[idx];
+        for (let i = 0; i < total; i++) {
+          const { document } = documentsToProcess[i];
           try {
-            // Update status to PROCESSING
             await this.documentModel.updateStatus(document.id, {
               processing_status: ProcessingStatus.PROCESSING,
               processing_started_at: new Date(),
-            });
+            }, owner);
 
-            await this.reprocessSingleDocument(document);
+            await this.reprocessSingleDocument(document, owner, actor);
             processed++;
             logger.info(`[${jobId}] Processed document ${document.id} (${processed}/${total})`);
           } catch (error: any) {
@@ -783,6 +697,7 @@ export class DocumentController {
                   code: error.code || 'PROCESSING_ERROR',
                   timestamp: new Date().toISOString(),
                 },
+                owner_user_id: ownerUserId,
               });
             } catch (extractionError: any) {
               logger.error(`[${jobId}] Failed to create error extraction for document ${document.id}: ${extractionError.message}`);
@@ -793,14 +708,13 @@ export class DocumentController {
                 processing_status: ProcessingStatus.FAILED,
                 error_message: errorMessage,
                 processing_completed_at: new Date(),
-              });
+              }, owner);
             } catch (statusError: any) {
               logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${statusError.message}`);
             }
           }
 
-          // Small delay between documents to avoid overwhelming the pipeline
-          if (idx < total - 1) {
+          if (i < total - 1) {
             await delay(500);
           }
         }
@@ -815,22 +729,14 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Export documents as a ZIP archive with folder structure and Excel summary
-   *
-   * POST /api/documents/export-archive
-   */
   async exportArchive(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const owner = ownerOf(req);
       const { documents: documentEntries, folderName } = req.body || {};
 
       if (!documentEntries || !Array.isArray(documentEntries) || documentEntries.length === 0) {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'Request body must include a non-empty "documents" array with { id, relativePath } entries.',
-            code: 'INVALID_DOCUMENTS_INPUT',
-          }
+          error: { name: 'ValidationError', message: 'Request body must include a non-empty "documents" array with { id, relativePath } entries.', code: 'INVALID_DOCUMENTS_INPUT' },
         });
         return;
       }
@@ -845,13 +751,13 @@ export class DocumentController {
           continue;
         }
 
-        const document = await this.documentModel.findById(documentId);
+        const document = await this.documentModel.findById(documentId, owner);
         if (!document) {
-          logger.warn(`[exportArchive] Document not found: ${documentId}`);
+          logger.warn(`[exportArchive] Document not found (or not owned): ${documentId}`);
           continue;
         }
 
-        const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+        const extraction = await this.extractionResultModel.findByDocumentId(documentId, owner);
 
         archiveRecords.push({
           document,
@@ -863,18 +769,12 @@ export class DocumentController {
 
       if (archiveRecords.length === 0) {
         res.status(404).json({
-          error: {
-            name: 'NotFoundError',
-            message: 'No valid documents found for the given IDs.',
-            code: 'NO_DOCUMENTS_FOUND',
-          }
+          error: { name: 'NotFoundError', message: 'No valid documents found for the given IDs.', code: 'NO_DOCUMENTS_FOUND' },
         });
         return;
       }
 
-      const archiveFilename = folderName
-        ? `${folderName}.zip`
-        : `archive-${Date.now()}.zip`;
+      const archiveFilename = folderName ? `${folderName}.zip` : `archive-${Date.now()}.zip`;
 
       const archiveService = new ArchiveService();
       await archiveService.generateArchive(archiveRecords, res, archiveFilename);
@@ -886,11 +786,6 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Review a document (approve or reject)
-   *
-   * PATCH /api/documents/:id/review
-   */
   async reviewDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
     const VALID_CATEGORIES = [
       'ISO', 'CE', 'FISA_TEHNICA', 'AGREMENT', 'AVIZ_TEHNIC', 'AVIZ_SANITAR',
@@ -899,28 +794,22 @@ export class DocumentController {
     ];
 
     try {
+      const owner = ownerOf(req);
+      const actor = userIdOf(req);
       const documentId = parseInt(req.params.id, 10);
 
       if (isNaN(documentId) || documentId <= 0) {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'Invalid document ID. Must be a positive integer.',
-            code: 'INVALID_DOCUMENT_ID',
-          }
+          error: { name: 'ValidationError', message: 'Invalid document ID. Must be a positive integer.', code: 'INVALID_DOCUMENT_ID' },
         });
         return;
       }
 
-      const document = await this.documentModel.findById(documentId);
+      const document = await this.documentModel.findById(documentId, owner);
 
       if (!document) {
         res.status(404).json({
-          error: {
-            name: 'NotFoundError',
-            message: 'Document not found',
-            code: 'DOCUMENT_NOT_FOUND',
-          }
+          error: { name: 'NotFoundError', message: 'Document not found', code: 'DOCUMENT_NOT_FOUND' },
         });
         return;
       }
@@ -929,11 +818,7 @@ export class DocumentController {
 
       if (action !== 'approve' && action !== 'reject') {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'Action must be "approve" or "reject".',
-            code: 'INVALID_ACTION',
-          }
+          error: { name: 'ValidationError', message: 'Action must be "approve" or "reject".', code: 'INVALID_ACTION' },
         });
         return;
       }
@@ -941,7 +826,7 @@ export class DocumentController {
       let updatedDocument: Document | null = null;
 
       if (action === 'approve') {
-        updatedDocument = await this.documentModel.updateReviewStatus(documentId, ReviewStatus.OK);
+        updatedDocument = await this.documentModel.updateReviewStatus(documentId, ReviewStatus.OK, owner);
 
         try {
           await this.auditService.logDocumentReview({
@@ -949,7 +834,7 @@ export class DocumentController {
             filename: document.filename,
             review_action: 'approve',
             comment,
-          }, null);
+          }, actor);
         } catch (auditError: any) {
           logger.error(`Failed to create audit log for document review ${documentId}:`, auditError);
         }
@@ -957,11 +842,7 @@ export class DocumentController {
       } else if (rejection_reason === 'wrong_classification') {
         if (!corrected_category || !VALID_CATEGORIES.includes(corrected_category)) {
           res.status(400).json({
-            error: {
-              name: 'ValidationError',
-              message: `corrected_category must be one of: ${VALID_CATEGORIES.join(', ')}`,
-              code: 'INVALID_CATEGORY',
-            }
+            error: { name: 'ValidationError', message: `corrected_category must be one of: ${VALID_CATEGORIES.join(', ')}`, code: 'INVALID_CATEGORY' },
           });
           return;
         }
@@ -973,7 +854,7 @@ export class DocumentController {
           confidence: 1.0,
           metoda_clasificare: 'human_review',
           review_status: ReviewStatus.OK,
-        });
+        }, owner);
 
         try {
           await this.auditService.logDocumentReview({
@@ -984,7 +865,7 @@ export class DocumentController {
             original_category: originalCategory || undefined,
             corrected_category,
             comment,
-          }, null);
+          }, actor);
         } catch (auditError: any) {
           logger.error(`Failed to create audit log for document review ${documentId}:`, auditError);
         }
@@ -992,16 +873,12 @@ export class DocumentController {
       } else if (rejection_reason === 'wrong_extraction') {
         if (!wrong_fields || !Array.isArray(wrong_fields) || wrong_fields.length === 0) {
           res.status(400).json({
-            error: {
-              name: 'ValidationError',
-              message: 'wrong_fields must be a non-empty array.',
-              code: 'INVALID_WRONG_FIELDS',
-            }
+            error: { name: 'ValidationError', message: 'wrong_fields must be a non-empty array.', code: 'INVALID_WRONG_FIELDS' },
           });
           return;
         }
 
-        updatedDocument = await this.documentModel.updateReviewStatus(documentId, ReviewStatus.REVIEW);
+        updatedDocument = await this.documentModel.updateReviewStatus(documentId, ReviewStatus.REVIEW, owner);
 
         try {
           await this.auditService.logDocumentReview({
@@ -1011,23 +888,19 @@ export class DocumentController {
             rejection_reason: 'wrong_extraction',
             wrong_fields,
             comment,
-          }, null);
+          }, actor);
         } catch (auditError: any) {
           logger.error(`Failed to create audit log for document review ${documentId}:`, auditError);
         }
 
       } else {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'rejection_reason must be "wrong_classification" or "wrong_extraction" when action is "reject".',
-            code: 'INVALID_REJECTION_REASON',
-          }
+          error: { name: 'ValidationError', message: 'rejection_reason must be "wrong_classification" or "wrong_extraction" when action is "reject".', code: 'INVALID_REJECTION_REASON' },
         });
         return;
       }
 
-      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId, owner);
 
       res.status(200).json({
         document: updatedDocument,
@@ -1039,40 +912,28 @@ export class DocumentController {
     }
   }
 
-  /**
-   * Get a document by ID with its extraction results
-   *
-   * GET /api/documents/:id
-   */
   async getDocumentById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const owner = ownerOf(req);
       const documentId = parseInt(req.params.id, 10);
 
       if (isNaN(documentId) || documentId <= 0) {
         res.status(400).json({
-          error: {
-            name: 'ValidationError',
-            message: 'Invalid document ID. Must be a positive integer.',
-            code: 'INVALID_DOCUMENT_ID',
-          }
+          error: { name: 'ValidationError', message: 'Invalid document ID. Must be a positive integer.', code: 'INVALID_DOCUMENT_ID' },
         });
         return;
       }
 
-      const document = await this.documentModel.findById(documentId);
+      const document = await this.documentModel.findById(documentId, owner);
 
       if (!document) {
         res.status(404).json({
-          error: {
-            name: 'NotFoundError',
-            message: 'Document not found',
-            code: 'DOCUMENT_NOT_FOUND',
-          }
+          error: { name: 'NotFoundError', message: 'Document not found', code: 'DOCUMENT_NOT_FOUND' },
         });
         return;
       }
 
-      const extraction = await this.extractionResultModel.findByDocumentId(documentId);
+      const extraction = await this.extractionResultModel.findByDocumentId(documentId, owner);
 
       res.status(200).json({
         document,

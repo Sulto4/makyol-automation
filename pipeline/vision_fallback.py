@@ -1,9 +1,10 @@
-"""Gemini Vision fallback for scanned PDFs with insufficient extracted text.
+"""Gemini Vision extraction from PDF pages.
 
-Converts first N pages to high-DPI PNG images via PyMuPDF, base64-encodes them,
+Converts selected pages to high-DPI PNG images via PyMuPDF, base64-encodes them,
 and sends to OpenRouter as multimodal content (text prompt + image_url entries).
-Uses the same AI model and extraction prompts as text-based extraction.
-Targets scanned certificates (e.g., ISO Huayang) where OCR yields <20 chars.
+Uses the same AI model and category-specific extraction instructions as
+text-based extraction so field semantics (companie vs producator vs distribuitor)
+stay consistent across both paths.
 """
 
 import base64
@@ -24,51 +25,52 @@ from pipeline.config import (
     OPENROUTER_API_KEY,
     OPENROUTER_URL,
     VISION_DPI,
-    VISION_MAX_PAGES,
 )
+from pipeline.extraction import EXTRACTION_SCHEMA
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Vision extraction prompt (same extraction rules as text-based prompt)
+# Vision extraction prompt — uses the same category-specific instructions
+# as text-based extraction (pipeline.extraction.EXTRACTION_SCHEMA) so the
+# semantics of companie vs producator vs distribuitor stay consistent.
 # ---------------------------------------------------------------------------
 
-_VISION_EXTRACTION_PROMPT = """Esti un expert in extragerea datelor din documente din domeniul constructiilor si materialelor de constructii din Romania.
+_VISION_PROMPT_TEMPLATE = """Esti un expert in extragerea datelor din documente din domeniul constructiilor si materialelor de constructii din Romania.
 
-Analizeaza imaginile atasate dintr-un document PDF clasificat ca "{category}" si extrage urmatoarele informatii:
+Analizeaza imaginile atasate dintr-un document PDF clasificat ca "{category}" si extrage informatiile cerute mai jos.
 
-1. **companie** — Numele companiei principale mentionate in document (producator sau emitent).
-   - Extrage DOAR numele companiei, fara CUI, adresa, sau alte detalii.
-   - Daca sunt mai multe companii, alege compania PRINCIPALA (emitentul/producatorul).
-   - NU include liste separate prin virgula cu mai multe companii.
-   - Maxim {max_company} caractere.
+INSTRUCTIUNI SPECIFICE CATEGORIEI "{category}":
+{category_instructions}
 
-2. **material** — Descrierea materialului/produsului.
-   - Extrage o descriere CONCISA a materialului sau produsului principal.
-   - Include tipul produsului, dimensiunile relevante, standardele (daca sunt mentionate scurt).
-   - NU include descrieri generice precum "Produse", "Materiale", "Diverse".
-   - NU repeta informatii deja prezente in alte campuri.
-   - Maxim {max_material} caractere.
+CAMPURI DE EXTRAS PENTRU ACEASTA CATEGORIE: {fields_list}
 
-3. **data_expirare** — Data de expirare a documentului.
-   - Format: DD.MM.YYYY (ex: 31.12.2025).
-   - Daca documentul mentioneaza o durata de valabilitate (ex: "valabil 5 ani de la 01.01.2020"),
-     calculeaza data de expirare: 01.01.2020 + 5 ani = 01.01.2025.
-   - Daca nu exista data de expirare clara, returneaza null.
-   - NU inventa date — daca nu este clar, returneaza null.
+REGULI GENERALE PER CAMP:
 
-4. **producator** — Numele producatorului (daca este diferit de companie).
-   - Daca producatorul este acelasi cu compania, returneaza null.
-   - Maxim {max_company} caractere.
+- **companie** / **producator** / **distribuitor** — respecta distinctia din instructiunile de mai sus.
+  - Extrage DOAR numele, fara CUI, adresa sau alte detalii.
+  - NU combina mai multe companii intr-un singur camp.
+  - Maxim {max_company} caractere fiecare.
 
-5. **distribuitor** — Numele distribuitorului (daca este mentionat).
-   - Returneaza null daca nu este mentionat un distribuitor.
-   - Maxim {max_company} caractere.
+- **material** — descriere concisa a produsului principal (tip, dimensiuni, standarde relevante).
+  - NU folosi descrieri generice precum "Produse", "Materiale", "Diverse".
+  - Maxim {max_material} caractere.
 
-6. **adresa_producator** — Adresa producatorului sau a companiei.
-   - Extrage adresa completa daca este disponibila.
-   - Include strada, numar, oras, judet, cod postal daca sunt mentionate.
-   - Maxim {max_address} caractere.
+- **data_expirare** — data sau durata de valabilitate a documentului.
+  - Format preferat: DD.MM.YYYY (ex: 31.12.2025).
+  - Daca documentul da o durata textuala (ex: "2 ani de la receptie", "Pe durata contractului",
+    "24 luni", "valabil pana la epuizare"), pastreaza-o CA ATARE in acel format textual.
+  - Daca documentul da doar o durata + data emiterii (ex: "valabil 5 ani de la 01.01.2020"),
+    calculeaza data: 01.01.2025.
+  - NU inventa date — daca nu e clar, returneaza null.
+
+- **adresa_producator** — adresa completa (strada, numar, oras, judet, cod postal).
+  - Maxim {max_address} caractere.
+
+- **nume_document** — titlul oficial al documentului (max 40 caractere, fara numere/date/coduri).
+  - Exemple: "Agrement Tehnic", "Aviz Sanitar", "Certificat CE PED",
+    "Certificat ISO 9001", "Certificat de Inregistrare", "Fisa Tehnica Produs",
+    "Declaratie de Performanta", "Certificat de Garantie".
 
 REGULI IMPORTANTE:
 - Raspunde DOAR cu un JSON valid, fara explicatii sau text suplimentar.
@@ -79,31 +81,65 @@ REGULI IMPORTANTE:
 - Daca imaginile sunt ilizibile, returneaza un JSON cu toate campurile null.
 - Corecteaza GRESELI EVIDENTE de OCR (ex: "lndustrie" → "Industrie").
 
-Format raspuns:
+Format raspuns (include TOATE campurile — pune null unde nu se aplica):
 {{
     "companie": "Numele Companiei" sau null,
     "material": "Descrierea materialului" sau null,
-    "data_expirare": "DD.MM.YYYY" sau null,
+    "data_expirare": "DD.MM.YYYY sau durata textuala" sau null,
     "producator": "Numele Producatorului" sau null,
     "distribuitor": "Numele Distribuitorului" sau null,
-    "adresa_producator": "Adresa completa" sau null
+    "adresa_producator": "Adresa completa" sau null,
+    "nume_document": "Titlul documentului" sau null,
+    "cui_number": "cod CUI" sau null,
+    "standard_iso": "ISO 9001:2015" sau null
 }}"""
 
 
+def _build_prompt(category: str) -> str:
+    """Render the vision prompt with per-category instructions from the schema."""
+    schema = EXTRACTION_SCHEMA.get(category, EXTRACTION_SCHEMA["ALTELE"])
+    instructions = schema.get("instructions", "Extrage toate informatiile disponibile.")
+    # Include nume_document in the field list like the text-based path does.
+    fields = list(set(schema.get("fields", []) + ["nume_document"]))
+    return _VISION_PROMPT_TEMPLATE.format(
+        category=category,
+        category_instructions=instructions,
+        fields_list=", ".join(sorted(fields)),
+        max_company=MAX_COMPANY_LENGTH,
+        max_material=MAX_MATERIAL_LENGTH,
+        max_address=MAX_ADDRESS_LENGTH,
+    )
+
+
+def _select_page_indices(total_pages: int) -> list[int]:
+    """Pick which pages to send to vision.
+
+    Strategy: for >2 pages, send first two + last (3 images). For <=2 pages,
+    send all. Keeps token cost bounded and preserves the most signal-dense
+    pages (cover/header on 1-2, signatures/expiry on last).
+    """
+    if total_pages <= 2:
+        return list(range(total_pages))
+    return [0, 1, total_pages - 1]
+
+
 def _pdf_pages_to_base64(pdf_path: str) -> list[str]:
-    """Convert first pages of a PDF to base64-encoded PNG images.
+    """Convert selected pages of a PDF to base64-encoded PNG images.
+
+    Pages are chosen by _select_page_indices: first two + last page for
+    documents longer than 2 pages, otherwise every page.
 
     Args:
         pdf_path: Path to the PDF file.
 
     Returns:
-        List of base64-encoded PNG strings (one per page, up to VISION_MAX_PAGES).
+        List of base64-encoded PNG strings, in page order.
     """
-    images_b64 = []
+    images_b64: list[str] = []
     doc = fitz.open(pdf_path)
     try:
-        page_count = min(len(doc), VISION_MAX_PAGES)
-        for i in range(page_count):
+        indices = _select_page_indices(len(doc))
+        for i in indices:
             page = doc[i]
             pix = page.get_pixmap(dpi=VISION_DPI)
             png_bytes = pix.tobytes("png")
@@ -138,13 +174,8 @@ def extract_with_vision(pdf_path: str, category: str) -> dict | None:
         logger.warning("No pages extracted from %s", pdf_path)
         return None
 
-    # Build multimodal content: text prompt + image entries
-    prompt_text = _VISION_EXTRACTION_PROMPT.format(
-        category=category,
-        max_company=MAX_COMPANY_LENGTH,
-        max_material=MAX_MATERIAL_LENGTH,
-        max_address=MAX_ADDRESS_LENGTH,
-    )
+    # Build multimodal content: category-specific text prompt + image entries
+    prompt_text = _build_prompt(category)
 
     content_parts = [{"type": "text", "text": prompt_text}]
     for b64_img in images_b64:

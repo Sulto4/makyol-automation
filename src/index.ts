@@ -9,6 +9,9 @@ import { logger } from './utils/logger';
 import { createDocumentRoutes } from './routes/documents';
 import { createAuditLogRoutes } from './routes/auditLogs';
 import { createSettingsRoutes } from './routes/settings';
+import { createAuthRoutes } from './routes/auth';
+import { createAuthMiddleware } from './middleware/authMiddleware';
+import { AuthService } from './services/authService';
 
 /**
  * Run all SQL migrations from the migrations/ directory.
@@ -87,10 +90,25 @@ function createApp(pool: Pool): Express {
     });
   });
 
-  // API routes
-  app.use(`${appConfig.api.prefix}/documents`, createDocumentRoutes(pool));
-  app.use(`${appConfig.api.prefix}/audit-logs`, createAuditLogRoutes(pool));
-  app.use(`${appConfig.api.prefix}/settings`, createSettingsRoutes(pool));
+  // Auth: public routes + middleware factory shared with protected routers
+  const authService = new AuthService(pool);
+  const requireAuth = createAuthMiddleware(authService);
+  app.use(`${appConfig.api.prefix}/auth`, createAuthRoutes(pool));
+
+  // Dev bypass: set AUTH_DISABLED=true in .env to skip auth on all protected routes.
+  // When disabled, req.user is undefined → controllers treat the caller as admin.
+  const authDisabled = process.env.AUTH_DISABLED === 'true';
+  if (authDisabled) {
+    logger.warn('AUTH_DISABLED=true — authentication bypassed on all routes. DO NOT USE IN PRODUCTION.');
+  }
+  const authGuard = authDisabled
+    ? (_req: any, _res: any, next: any) => next()
+    : requireAuth;
+
+  // Protected API routes — require a valid Bearer JWT unless AUTH_DISABLED
+  app.use(`${appConfig.api.prefix}/documents`, authGuard, createDocumentRoutes(pool));
+  app.use(`${appConfig.api.prefix}/audit-logs`, authGuard, createAuditLogRoutes(pool));
+  app.use(`${appConfig.api.prefix}/settings`, authGuard, createSettingsRoutes(pool));
 
   // 404 handler (must be after all routes)
   app.use(notFoundHandler);

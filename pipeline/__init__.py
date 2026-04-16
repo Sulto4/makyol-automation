@@ -9,16 +9,17 @@ import fitz  # PyMuPDF — used to get page_count for classification
 
 from pipeline.text_extraction import extract_text_from_pdf
 from pipeline.classification import classify_document
-from pipeline.extraction import extract_document_data
+from pipeline.extraction import extract_document_data, normalize_extraction_result
 from pipeline.normalization import normalize_company_name, normalize_address
 from pipeline.validation import validate_extraction
 from pipeline.vision_fallback import extract_with_vision
 
 logger = logging.getLogger(__name__)
 
-# Vision fallback thresholds
-_MIN_TEXT_LENGTH = 20        # Below this: definitely use vision
-_LOW_QUALITY_TEXT_LENGTH = 800  # Below this: check text quality, may use vision
+# Vision is now applied to every document. Text extraction still runs so the
+# classifier has filename + body text to work with, but extraction itself
+# always goes through the vision model.
+_USE_VISION_FOR_ALL = True
 
 
 def process_document(pdf_path: str, filename: str = "") -> dict:
@@ -76,18 +77,13 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             "engine_used": "multi-engine",
         }})
 
-    # Step 2: Vision fallback if text is too short or low quality
+    # Step 2: Vision is the primary extraction path for every document.
+    # Text is kept for classification (filename+body cascade) and for the
+    # retry-on-null guard below, but extraction itself always uses vision.
     vision_extraction = None
     text_len = len(text.strip())
-    use_vision = False
-
-    if text_len < _LOW_QUALITY_TEXT_LENGTH:
-        use_vision = True
-        logger.info("Short text (%d chars < %d), using vision fallback",
-                    text_len, _LOW_QUALITY_TEXT_LENGTH)
-
-    if use_vision:
-        result["used_vision"] = True
+    use_vision = _USE_VISION_FOR_ALL
+    result["used_vision"] = use_vision
 
     # Step 3: Classification
     t0 = time.time()
@@ -127,8 +123,11 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             vision_extraction = extract_with_vision(pdf_path, category)
 
         if vision_extraction is not None:
-            extraction = vision_extraction
-            extraction["extraction_model"] = "vision:" + (extraction.get("extraction_model") or "gemini-2.0-flash")
+            # Run vision output through the same normalizer as text-based
+            # extraction so category-specific rules (ISO material=None,
+            # CUI merging, OCR/diacritics, truncation, nume_document) apply.
+            extraction = normalize_extraction_result(vision_extraction, category, text)
+            extraction["extraction_model"] = "vision:" + (vision_extraction.get("extraction_model") or "gemini-2.0-flash")
         else:
             extraction = extract_document_data(text, category, filename=filename)
     except Exception as e:
@@ -166,9 +165,12 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         result["error"] = "AI extraction returned all null fields"
         result["review_status"] = "NEEDS_CHECK"
 
-    # Step 5: Normalize company names and addresses
-    # Skip hallucination checks when vision was used — vision extracts from image,
-    # not from OCR text, so the values won't appear in the (garbage) text.
+    # Step 5: Normalize company names and addresses.
+    # Hallucination checks compare extracted values against OCR text. On
+    # scanned PDFs OCR produces garbled text where real words/addresses
+    # never appear verbatim, so vision extractions (which read the image)
+    # would be incorrectly flagged. Skip the checks whenever vision is
+    # the extraction source.
     skip_hallucination_checks = result.get("used_vision", False)
     t0 = time.time()
     try:
@@ -194,18 +196,43 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                 val_lower = val.lower()
                 val_words = val.split()
 
-                # Reject certification bodies extracted as "companie" on ISO docs
+                # Reject certification/approval bodies extracted as "companie"
+                # on documents where the COMPANY being certified is what we want.
+                # Scope covers ISO certificates and Romanian technical approvals
+                # (AVIZ_TEHNIC, AVIZ_TEHNIC_SI_AGREMENT, AGREMENT) where MDRAP /
+                # INCERC / AXA CERT etc. issue the document but the companie
+                # field should hold the manufacturer/applicant.
                 cert_bodies = [
+                    # International ISO cert bodies
                     "international management", "management certification",
                     "bureau veritas", "tuv rheinland", "tuv sud", "lloyd",
-                    "sgs ", "dekra", "dnv", "eurocert", "iqnet", "srac",
-                    "certind", "aeroq", "qualitas", "organism de certificare",
+                    "sgs ", "dekra", "dnv", "eurocert", "iqnet",
+                    # Romanian ISO cert bodies
+                    "srac", "certind", "aeroq", "qualitas",
+                    "axa cert", "axa certification",
+                    # Romanian aviz/agrement issuing bodies
+                    "ministerul dezvolt",         # Ministerul Dezvoltării
+                    "mdrap",                      # Ministerul Dezvoltării (abrev.)
+                    "consiliul tehnic",           # Consiliul Tehnic Permanent
+                    "incerc",                     # Institutul de Cercetări
+                    "inspectoratul de stat",      # Inspectoratul de Stat în Construcții
+                    "organism de certificare",
+                    "grupa specializat",          # Grupa Specializată (agremente)
                 ]
-                if field == "companie" and category == "ISO":
+                CATEGORIES_WITH_CERT_BODY_FILTER = {
+                    "ISO",
+                    "AVIZ_TEHNIC",
+                    "AVIZ_TEHNIC_SI_AGREMENT",
+                    "AGREMENT",
+                }
+                if (
+                    field == "companie"
+                    and category in CATEGORIES_WITH_CERT_BODY_FILTER
+                ):
                     if any(cb in val_lower for cb in cert_bodies):
                         logger.warning(
-                            "Certification body extracted as companie on ISO doc: '%s' — setting to None",
-                            val[:60],
+                            "Certification body extracted as companie on %s doc: '%s' — setting to None",
+                            category, val[:60],
                         )
                         extraction[field] = None
                         continue

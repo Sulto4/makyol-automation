@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, FileText, Upload, AlertTriangle, Settings, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import UserMenu from './UserMenu';
 
 const navItems = [
   { to: '/', label: 'Panou de Control', icon: LayoutDashboard },
@@ -43,6 +44,9 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="border-t border-gray-200 dark:border-gray-700 py-2">
+        <UserMenu />
+      </div>
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={toggleTheme}

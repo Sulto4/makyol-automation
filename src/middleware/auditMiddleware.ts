@@ -5,15 +5,10 @@ import { ActionType } from '../models/AuditLog';
 import { logger } from '../utils/logger';
 
 /**
- * Extended request interface with user context
- * Will be populated by authentication middleware when implemented
+ * Extended request interface with user context.
+ * `req.user` is populated by authMiddleware (see src/middleware/authMiddleware.ts).
  */
-export interface AuditableRequest extends Request {
-  user?: {
-    id: string;
-    username?: string;
-  };
-}
+export type AuditableRequest = Request;
 
 /**
  * Route pattern matching for audit logging

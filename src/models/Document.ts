@@ -39,6 +39,7 @@ export interface Document {
   metoda_clasificare: string | null;
   review_status: ReviewStatus | null;
   relative_path: string | null;
+  owner_user_id: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -57,6 +58,7 @@ export interface CreateDocumentInput {
   metoda_clasificare?: string;
   review_status?: ReviewStatus;
   relative_path?: string;
+  owner_user_id?: string | null;
 }
 
 /**
@@ -84,7 +86,18 @@ export interface UpdateClassificationInput {
 }
 
 /**
- * Document model class for database operations
+ * Owner filter type.
+ * - `string`: scope queries to that user_id (regular users).
+ * - `null`: no scoping — admin / system / tests. Caller accepts responsibility for read/write access.
+ */
+export type OwnerFilter = string | null;
+
+/**
+ * Document model class for database operations.
+ *
+ * All read/write methods accept an `OwnerFilter` that scopes the SQL to a
+ * single user when a UUID is provided. Pass `null` only from admin paths
+ * or internal tasks — controllers should derive it via `req.user`.
  */
 export class DocumentModel {
   private pool: Pool;
@@ -93,9 +106,7 @@ export class DocumentModel {
     this.pool = pool;
   }
 
-  /**
-   * Create a new document record
-   */
+  /** Create a new document record. owner_user_id defaults to NULL for legacy callers. */
   async create(input: CreateDocumentInput): Promise<Document> {
     const query = `
       INSERT INTO documents (
@@ -104,8 +115,9 @@ export class DocumentModel {
         file_path,
         file_size,
         mime_type,
-        relative_path
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        relative_path,
+        owner_user_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
 
@@ -116,49 +128,57 @@ export class DocumentModel {
       input.file_size,
       input.mime_type || 'application/pdf',
       input.relative_path || null,
+      input.owner_user_id || null,
     ];
 
     const result: QueryResult<Document> = await this.pool.query(query, values);
     return result.rows[0];
   }
 
-  /**
-   * Find a document by ID
-   */
-  async findById(id: number): Promise<Document | null> {
-    const query = 'SELECT * FROM documents WHERE id = $1';
-    const result: QueryResult<Document> = await this.pool.query(query, [id]);
-    return result.rows[0] || null;
+  async findById(id: number, owner: OwnerFilter = null): Promise<Document | null> {
+    if (owner === null) {
+      const r: QueryResult<Document> = await this.pool.query(
+        'SELECT * FROM documents WHERE id = $1',
+        [id],
+      );
+      return r.rows[0] || null;
+    }
+    const r: QueryResult<Document> = await this.pool.query(
+      'SELECT * FROM documents WHERE id = $1 AND owner_user_id = $2',
+      [id, owner],
+    );
+    return r.rows[0] || null;
   }
 
-  /**
-   * Find all documents with optional filtering
-   */
   async findAll(
     limit?: number,
     offset?: number,
-    status?: ProcessingStatus
+    status?: ProcessingStatus,
+    owner: OwnerFilter = null,
   ): Promise<Document[]> {
-    let query = 'SELECT * FROM documents';
+    const clauses: string[] = [];
     const values: any[] = [];
-    let paramIndex = 1;
+    let i = 1;
 
+    if (owner !== null) {
+      clauses.push(`owner_user_id = $${i++}`);
+      values.push(owner);
+    }
     if (status) {
-      query += ` WHERE processing_status = $${paramIndex}`;
+      clauses.push(`processing_status = $${i++}`);
       values.push(status);
-      paramIndex++;
     }
 
+    let query = 'SELECT * FROM documents';
+    if (clauses.length) query += ` WHERE ${clauses.join(' AND ')}`;
     query += ' ORDER BY uploaded_at DESC';
 
     if (limit) {
-      query += ` LIMIT $${paramIndex}`;
+      query += ` LIMIT $${i++}`;
       values.push(limit);
-      paramIndex++;
     }
-
     if (offset) {
-      query += ` OFFSET $${paramIndex}`;
+      query += ` OFFSET $${i++}`;
       values.push(offset);
     }
 
@@ -166,134 +186,134 @@ export class DocumentModel {
     return result.rows;
   }
 
-  /**
-   * Update document processing status
-   */
   async updateStatus(
     id: number,
-    statusUpdate: UpdateDocumentStatusInput
+    statusUpdate: UpdateDocumentStatusInput,
+    owner: OwnerFilter = null,
   ): Promise<Document | null> {
     const setClauses: string[] = [];
     const values: any[] = [];
-    let paramIndex = 1;
+    let i = 1;
 
-    setClauses.push(`processing_status = $${paramIndex}`);
+    setClauses.push(`processing_status = $${i++}`);
     values.push(statusUpdate.processing_status);
-    paramIndex++;
 
     if (statusUpdate.error_message !== undefined) {
-      setClauses.push(`error_message = $${paramIndex}`);
+      setClauses.push(`error_message = $${i++}`);
       values.push(statusUpdate.error_message);
-      paramIndex++;
     }
-
     if (statusUpdate.processing_started_at) {
-      setClauses.push(`processing_started_at = $${paramIndex}`);
+      setClauses.push(`processing_started_at = $${i++}`);
       values.push(statusUpdate.processing_started_at);
-      paramIndex++;
     }
-
     if (statusUpdate.processing_completed_at) {
-      setClauses.push(`processing_completed_at = $${paramIndex}`);
+      setClauses.push(`processing_completed_at = $${i++}`);
       values.push(statusUpdate.processing_completed_at);
-      paramIndex++;
     }
 
-    const query = `
-      UPDATE documents
-      SET ${setClauses.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
+    let where = `WHERE id = $${i++}`;
     values.push(id);
+    if (owner !== null) {
+      where += ` AND owner_user_id = $${i++}`;
+      values.push(owner);
+    }
 
+    const query = `UPDATE documents SET ${setClauses.join(', ')} ${where} RETURNING *`;
     const result: QueryResult<Document> = await this.pool.query(query, values);
     return result.rows[0] || null;
   }
 
-  /**
-   * Update document classification fields
-   */
   async updateClassification(
     id: number,
-    input: UpdateClassificationInput
+    input: UpdateClassificationInput,
+    owner: OwnerFilter = null,
   ): Promise<Document | null> {
-    const query = `
-      UPDATE documents
-      SET categorie = $1,
-          confidence = $2,
-          metoda_clasificare = $3,
-          review_status = $4
-      WHERE id = $5
-      RETURNING *
-    `;
-
-    const values = [
+    const values: any[] = [
       input.categorie,
       input.confidence,
       input.metoda_clasificare,
       input.review_status || ReviewStatus.OK,
       id,
     ];
-
+    let where = 'WHERE id = $5';
+    if (owner !== null) {
+      where += ' AND owner_user_id = $6';
+      values.push(owner);
+    }
+    const query = `
+      UPDATE documents
+      SET categorie = $1, confidence = $2, metoda_clasificare = $3, review_status = $4
+      ${where}
+      RETURNING *
+    `;
     const result: QueryResult<Document> = await this.pool.query(query, values);
     return result.rows[0] || null;
   }
 
-  /**
-   * Delete all documents and return the count of deleted rows
-   */
-  async deleteAll(): Promise<number> {
-    const query = 'DELETE FROM documents RETURNING id';
-    const result: QueryResult = await this.pool.query(query);
-    return result.rowCount ?? 0;
+  async updateReviewStatus(
+    id: number,
+    reviewStatus: ReviewStatus,
+    owner: OwnerFilter = null,
+  ): Promise<Document | null> {
+    const values: any[] = [reviewStatus, id];
+    let where = 'WHERE id = $2';
+    if (owner !== null) {
+      where += ' AND owner_user_id = $3';
+      values.push(owner);
+    }
+    const query = `UPDATE documents SET review_status = $1 ${where} RETURNING *`;
+    const result: QueryResult<Document> = await this.pool.query(query, values);
+    return result.rows[0] || null;
   }
 
-  /**
-   * Delete a document by ID
-   */
-  async delete(id: number): Promise<boolean> {
-    const query = 'DELETE FROM documents WHERE id = $1 RETURNING id';
-    const result: QueryResult = await this.pool.query(query, [id]);
-    return result.rowCount !== null && result.rowCount > 0;
+  async deleteAll(owner: OwnerFilter = null): Promise<number> {
+    if (owner === null) {
+      const r: QueryResult = await this.pool.query('DELETE FROM documents RETURNING id');
+      return r.rowCount ?? 0;
+    }
+    const r: QueryResult = await this.pool.query(
+      'DELETE FROM documents WHERE owner_user_id = $1 RETURNING id',
+      [owner],
+    );
+    return r.rowCount ?? 0;
   }
 
-  /**
-   * Count documents by status
-   */
-  async countByStatus(status?: ProcessingStatus): Promise<number> {
-    let query = 'SELECT COUNT(*) as count FROM documents';
+  async delete(id: number, owner: OwnerFilter = null): Promise<boolean> {
+    if (owner === null) {
+      const r: QueryResult = await this.pool.query(
+        'DELETE FROM documents WHERE id = $1 RETURNING id',
+        [id],
+      );
+      return (r.rowCount ?? 0) > 0;
+    }
+    const r: QueryResult = await this.pool.query(
+      'DELETE FROM documents WHERE id = $1 AND owner_user_id = $2 RETURNING id',
+      [id, owner],
+    );
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  async countByStatus(status?: ProcessingStatus, owner: OwnerFilter = null): Promise<number> {
+    const clauses: string[] = [];
     const values: any[] = [];
-
+    let i = 1;
+    if (owner !== null) {
+      clauses.push(`owner_user_id = $${i++}`);
+      values.push(owner);
+    }
     if (status) {
-      query += ' WHERE processing_status = $1';
+      clauses.push(`processing_status = $${i++}`);
       values.push(status);
     }
+    let query = 'SELECT COUNT(*) as count FROM documents';
+    if (clauses.length) query += ` WHERE ${clauses.join(' AND ')}`;
 
     const result: QueryResult<{ count: string }> = await this.pool.query(query, values);
     return parseInt(result.rows[0].count, 10);
   }
 
-  /**
-   * Update only the review_status column of a document
-   */
-  async updateReviewStatus(
-    id: number,
-    reviewStatus: ReviewStatus
-  ): Promise<Document | null> {
-    const query = `
-      UPDATE documents SET review_status = $1 WHERE id = $2 RETURNING *
-    `;
-
-    const result: QueryResult<Document> = await this.pool.query(query, [reviewStatus, id]);
-    return result.rows[0] || null;
-  }
-
-  /**
-   * Find documents pending processing
-   */
-  async findPending(limit?: number): Promise<Document[]> {
-    return this.findAll(limit, undefined, ProcessingStatus.PENDING);
+  async findPending(limit?: number, owner: OwnerFilter = null): Promise<Document[]> {
+    return this.findAll(limit, undefined, ProcessingStatus.PENDING, owner);
   }
 }
 

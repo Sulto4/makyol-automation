@@ -1,4 +1,5 @@
 import { Pool, QueryResult } from 'pg';
+import { OwnerFilter } from './Document';
 
 /**
  * Extraction status enum
@@ -10,9 +11,6 @@ export enum ExtractionStatus {
   FAILED = 'failed',
 }
 
-/**
- * Certificate metadata interface
- */
 export interface CertificateMetadata {
   certificate_number?: string;
   issuing_organization?: string;
@@ -20,22 +18,16 @@ export interface CertificateMetadata {
   expiry_date?: string;
   certified_company?: string;
   certification_scope?: string;
-  [key: string]: any; // Allow additional fields
+  [key: string]: any;
 }
 
-/**
- * Error details interface
- */
 export interface ErrorDetails {
   message: string;
   code?: string;
   timestamp?: string;
-  [key: string]: any; // Allow additional error fields
+  [key: string]: any;
 }
 
-/**
- * ExtractionResult interface matching the extraction_results table schema
- */
 export interface ExtractionResult {
   id: number;
   document_id: number;
@@ -51,13 +43,11 @@ export interface ExtractionResult {
   distribuitor: string | null;
   adresa_producator: string | null;
   extraction_model: string | null;
+  owner_user_id: string | null;
   created_at: Date;
   updated_at: Date;
 }
 
-/**
- * Input type for creating a new extraction result
- */
 export interface CreateExtractionResultInput {
   document_id: number;
   extracted_text?: string | null;
@@ -72,11 +62,9 @@ export interface CreateExtractionResultInput {
   distribuitor?: string | null;
   adresa_producator?: string | null;
   extraction_model?: string | null;
+  owner_user_id?: string | null;
 }
 
-/**
- * Input type for updating an extraction result
- */
 export interface UpdateExtractionResultInput {
   extracted_text?: string | null;
   metadata?: CertificateMetadata;
@@ -92,9 +80,6 @@ export interface UpdateExtractionResultInput {
   extraction_model?: string | null;
 }
 
-/**
- * ExtractionResult model class for database operations
- */
 export class ExtractionResultModel {
   private pool: Pool;
 
@@ -102,26 +87,13 @@ export class ExtractionResultModel {
     this.pool = pool;
   }
 
-  /**
-   * Create a new extraction result record
-   */
   async create(input: CreateExtractionResultInput): Promise<ExtractionResult> {
     const query = `
       INSERT INTO extraction_results (
-        document_id,
-        extracted_text,
-        metadata,
-        confidence_score,
-        extraction_status,
-        error_details,
-        material,
-        data_expirare,
-        companie,
-        producator,
-        distribuitor,
-        adresa_producator,
-        extraction_model
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        document_id, extracted_text, metadata, confidence_score, extraction_status,
+        error_details, material, data_expirare, companie, producator,
+        distribuitor, adresa_producator, extraction_model, owner_user_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       RETURNING *
     `;
 
@@ -139,58 +111,72 @@ export class ExtractionResultModel {
       input.distribuitor || null,
       input.adresa_producator || null,
       input.extraction_model || null,
+      input.owner_user_id || null,
     ];
 
     const result: QueryResult<ExtractionResult> = await this.pool.query(query, values);
     return result.rows[0];
   }
 
-  /**
-   * Find an extraction result by ID
-   */
-  async findById(id: number): Promise<ExtractionResult | null> {
-    const query = 'SELECT * FROM extraction_results WHERE id = $1';
-    const result: QueryResult<ExtractionResult> = await this.pool.query(query, [id]);
-    return result.rows[0] || null;
+  async findById(id: number, owner: OwnerFilter = null): Promise<ExtractionResult | null> {
+    if (owner === null) {
+      const r: QueryResult<ExtractionResult> = await this.pool.query(
+        'SELECT * FROM extraction_results WHERE id = $1',
+        [id],
+      );
+      return r.rows[0] || null;
+    }
+    const r: QueryResult<ExtractionResult> = await this.pool.query(
+      'SELECT * FROM extraction_results WHERE id = $1 AND owner_user_id = $2',
+      [id, owner],
+    );
+    return r.rows[0] || null;
   }
 
-  /**
-   * Find an extraction result by document ID
-   */
-  async findByDocumentId(documentId: number): Promise<ExtractionResult | null> {
-    const query = 'SELECT * FROM extraction_results WHERE document_id = $1';
-    const result: QueryResult<ExtractionResult> = await this.pool.query(query, [documentId]);
-    return result.rows[0] || null;
+  async findByDocumentId(documentId: number, owner: OwnerFilter = null): Promise<ExtractionResult | null> {
+    if (owner === null) {
+      const r: QueryResult<ExtractionResult> = await this.pool.query(
+        'SELECT * FROM extraction_results WHERE document_id = $1',
+        [documentId],
+      );
+      return r.rows[0] || null;
+    }
+    const r: QueryResult<ExtractionResult> = await this.pool.query(
+      'SELECT * FROM extraction_results WHERE document_id = $1 AND owner_user_id = $2',
+      [documentId, owner],
+    );
+    return r.rows[0] || null;
   }
 
-  /**
-   * Find all extraction results with optional filtering
-   */
   async findAll(
     limit?: number,
     offset?: number,
-    status?: ExtractionStatus
+    status?: ExtractionStatus,
+    owner: OwnerFilter = null,
   ): Promise<ExtractionResult[]> {
-    let query = 'SELECT * FROM extraction_results';
+    const clauses: string[] = [];
     const values: any[] = [];
-    let paramIndex = 1;
+    let i = 1;
 
+    if (owner !== null) {
+      clauses.push(`owner_user_id = $${i++}`);
+      values.push(owner);
+    }
     if (status) {
-      query += ` WHERE extraction_status = $${paramIndex}`;
+      clauses.push(`extraction_status = $${i++}`);
       values.push(status);
-      paramIndex++;
     }
 
+    let query = 'SELECT * FROM extraction_results';
+    if (clauses.length) query += ` WHERE ${clauses.join(' AND ')}`;
     query += ' ORDER BY created_at DESC';
 
     if (limit) {
-      query += ` LIMIT $${paramIndex}`;
+      query += ` LIMIT $${i++}`;
       values.push(limit);
-      paramIndex++;
     }
-
     if (offset) {
-      query += ` OFFSET $${paramIndex}`;
+      query += ` OFFSET $${i++}`;
       values.push(offset);
     }
 
@@ -198,269 +184,152 @@ export class ExtractionResultModel {
     return result.rows;
   }
 
-  /**
-   * Update an extraction result
-   */
+  private buildUpdateSet(
+    updateData: UpdateExtractionResultInput,
+    startIndex: number,
+  ): { setClauses: string[]; values: any[]; nextIndex: number } {
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let i = startIndex;
+
+    const push = (col: string, val: any) => {
+      setClauses.push(`${col} = $${i++}`);
+      values.push(val);
+    };
+
+    if (updateData.extracted_text !== undefined) push('extracted_text', updateData.extracted_text);
+    if (updateData.metadata !== undefined) push('metadata', JSON.stringify(updateData.metadata));
+    if (updateData.confidence_score !== undefined) push('confidence_score', updateData.confidence_score);
+    if (updateData.extraction_status !== undefined) push('extraction_status', updateData.extraction_status);
+    if (updateData.error_details !== undefined) {
+      push('error_details', updateData.error_details ? JSON.stringify(updateData.error_details) : null);
+    }
+    if (updateData.material !== undefined) push('material', updateData.material);
+    if (updateData.data_expirare !== undefined) push('data_expirare', updateData.data_expirare);
+    if (updateData.companie !== undefined) push('companie', updateData.companie);
+    if (updateData.producator !== undefined) push('producator', updateData.producator);
+    if (updateData.distribuitor !== undefined) push('distribuitor', updateData.distribuitor);
+    if (updateData.adresa_producator !== undefined) push('adresa_producator', updateData.adresa_producator);
+    if (updateData.extraction_model !== undefined) push('extraction_model', updateData.extraction_model);
+
+    return { setClauses, values, nextIndex: i };
+  }
+
   async update(
     id: number,
-    updateData: UpdateExtractionResultInput
+    updateData: UpdateExtractionResultInput,
+    owner: OwnerFilter = null,
   ): Promise<ExtractionResult | null> {
-    const setClauses: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    const { setClauses, values, nextIndex } = this.buildUpdateSet(updateData, 1);
+    if (setClauses.length === 0) return this.findById(id, owner);
 
-    if (updateData.extracted_text !== undefined) {
-      setClauses.push(`extracted_text = $${paramIndex}`);
-      values.push(updateData.extracted_text);
-      paramIndex++;
-    }
-
-    if (updateData.metadata !== undefined) {
-      setClauses.push(`metadata = $${paramIndex}`);
-      values.push(JSON.stringify(updateData.metadata));
-      paramIndex++;
-    }
-
-    if (updateData.confidence_score !== undefined) {
-      setClauses.push(`confidence_score = $${paramIndex}`);
-      values.push(updateData.confidence_score);
-      paramIndex++;
-    }
-
-    if (updateData.extraction_status !== undefined) {
-      setClauses.push(`extraction_status = $${paramIndex}`);
-      values.push(updateData.extraction_status);
-      paramIndex++;
-    }
-
-    if (updateData.error_details !== undefined) {
-      setClauses.push(`error_details = $${paramIndex}`);
-      values.push(updateData.error_details ? JSON.stringify(updateData.error_details) : null);
-      paramIndex++;
-    }
-
-    if (updateData.material !== undefined) {
-      setClauses.push(`material = $${paramIndex}`);
-      values.push(updateData.material);
-      paramIndex++;
-    }
-
-    if (updateData.data_expirare !== undefined) {
-      setClauses.push(`data_expirare = $${paramIndex}`);
-      values.push(updateData.data_expirare);
-      paramIndex++;
-    }
-
-    if (updateData.companie !== undefined) {
-      setClauses.push(`companie = $${paramIndex}`);
-      values.push(updateData.companie);
-      paramIndex++;
-    }
-
-    if (updateData.producator !== undefined) {
-      setClauses.push(`producator = $${paramIndex}`);
-      values.push(updateData.producator);
-      paramIndex++;
-    }
-
-    if (updateData.distribuitor !== undefined) {
-      setClauses.push(`distribuitor = $${paramIndex}`);
-      values.push(updateData.distribuitor);
-      paramIndex++;
-    }
-
-    if (updateData.adresa_producator !== undefined) {
-      setClauses.push(`adresa_producator = $${paramIndex}`);
-      values.push(updateData.adresa_producator);
-      paramIndex++;
-    }
-
-    if (updateData.extraction_model !== undefined) {
-      setClauses.push(`extraction_model = $${paramIndex}`);
-      values.push(updateData.extraction_model);
-      paramIndex++;
-    }
-
-    if (setClauses.length === 0) {
-      // No fields to update
-      return this.findById(id);
-    }
-
-    const query = `
-      UPDATE extraction_results
-      SET ${setClauses.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
+    let i = nextIndex;
+    let where = `WHERE id = $${i++}`;
     values.push(id);
-
+    if (owner !== null) {
+      where += ` AND owner_user_id = $${i++}`;
+      values.push(owner);
+    }
+    const query = `UPDATE extraction_results SET ${setClauses.join(', ')} ${where} RETURNING *`;
     const result: QueryResult<ExtractionResult> = await this.pool.query(query, values);
     return result.rows[0] || null;
   }
 
-  /**
-   * Update extraction result by document ID
-   */
   async updateByDocumentId(
     documentId: number,
-    updateData: UpdateExtractionResultInput
+    updateData: UpdateExtractionResultInput,
+    owner: OwnerFilter = null,
   ): Promise<ExtractionResult | null> {
-    const setClauses: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    const { setClauses, values, nextIndex } = this.buildUpdateSet(updateData, 1);
+    if (setClauses.length === 0) return this.findByDocumentId(documentId, owner);
 
-    if (updateData.extracted_text !== undefined) {
-      setClauses.push(`extracted_text = $${paramIndex}`);
-      values.push(updateData.extracted_text);
-      paramIndex++;
-    }
-
-    if (updateData.metadata !== undefined) {
-      setClauses.push(`metadata = $${paramIndex}`);
-      values.push(JSON.stringify(updateData.metadata));
-      paramIndex++;
-    }
-
-    if (updateData.confidence_score !== undefined) {
-      setClauses.push(`confidence_score = $${paramIndex}`);
-      values.push(updateData.confidence_score);
-      paramIndex++;
-    }
-
-    if (updateData.extraction_status !== undefined) {
-      setClauses.push(`extraction_status = $${paramIndex}`);
-      values.push(updateData.extraction_status);
-      paramIndex++;
-    }
-
-    if (updateData.error_details !== undefined) {
-      setClauses.push(`error_details = $${paramIndex}`);
-      values.push(updateData.error_details ? JSON.stringify(updateData.error_details) : null);
-      paramIndex++;
-    }
-
-    if (updateData.material !== undefined) {
-      setClauses.push(`material = $${paramIndex}`);
-      values.push(updateData.material);
-      paramIndex++;
-    }
-
-    if (updateData.data_expirare !== undefined) {
-      setClauses.push(`data_expirare = $${paramIndex}`);
-      values.push(updateData.data_expirare);
-      paramIndex++;
-    }
-
-    if (updateData.companie !== undefined) {
-      setClauses.push(`companie = $${paramIndex}`);
-      values.push(updateData.companie);
-      paramIndex++;
-    }
-
-    if (updateData.producator !== undefined) {
-      setClauses.push(`producator = $${paramIndex}`);
-      values.push(updateData.producator);
-      paramIndex++;
-    }
-
-    if (updateData.distribuitor !== undefined) {
-      setClauses.push(`distribuitor = $${paramIndex}`);
-      values.push(updateData.distribuitor);
-      paramIndex++;
-    }
-
-    if (updateData.adresa_producator !== undefined) {
-      setClauses.push(`adresa_producator = $${paramIndex}`);
-      values.push(updateData.adresa_producator);
-      paramIndex++;
-    }
-
-    if (updateData.extraction_model !== undefined) {
-      setClauses.push(`extraction_model = $${paramIndex}`);
-      values.push(updateData.extraction_model);
-      paramIndex++;
-    }
-
-    if (setClauses.length === 0) {
-      // No fields to update
-      return this.findByDocumentId(documentId);
-    }
-
-    const query = `
-      UPDATE extraction_results
-      SET ${setClauses.join(', ')}
-      WHERE document_id = $${paramIndex}
-      RETURNING *
-    `;
+    let i = nextIndex;
+    let where = `WHERE document_id = $${i++}`;
     values.push(documentId);
-
+    if (owner !== null) {
+      where += ` AND owner_user_id = $${i++}`;
+      values.push(owner);
+    }
+    const query = `UPDATE extraction_results SET ${setClauses.join(', ')} ${where} RETURNING *`;
     const result: QueryResult<ExtractionResult> = await this.pool.query(query, values);
     return result.rows[0] || null;
   }
 
-  /**
-   * Delete an extraction result by ID
-   */
-  async delete(id: number): Promise<boolean> {
-    const query = 'DELETE FROM extraction_results WHERE id = $1 RETURNING id';
-    const result: QueryResult = await this.pool.query(query, [id]);
-    return result.rowCount !== null && result.rowCount > 0;
+  async delete(id: number, owner: OwnerFilter = null): Promise<boolean> {
+    if (owner === null) {
+      const r: QueryResult = await this.pool.query(
+        'DELETE FROM extraction_results WHERE id = $1 RETURNING id',
+        [id],
+      );
+      return (r.rowCount ?? 0) > 0;
+    }
+    const r: QueryResult = await this.pool.query(
+      'DELETE FROM extraction_results WHERE id = $1 AND owner_user_id = $2 RETURNING id',
+      [id, owner],
+    );
+    return (r.rowCount ?? 0) > 0;
   }
 
-  /**
-   * Delete an extraction result by document ID
-   */
-  async deleteByDocumentId(documentId: number): Promise<boolean> {
-    const query = 'DELETE FROM extraction_results WHERE document_id = $1 RETURNING id';
-    const result: QueryResult = await this.pool.query(query, [documentId]);
-    return result.rowCount !== null && result.rowCount > 0;
+  async deleteByDocumentId(documentId: number, owner: OwnerFilter = null): Promise<boolean> {
+    if (owner === null) {
+      const r: QueryResult = await this.pool.query(
+        'DELETE FROM extraction_results WHERE document_id = $1 RETURNING id',
+        [documentId],
+      );
+      return (r.rowCount ?? 0) > 0;
+    }
+    const r: QueryResult = await this.pool.query(
+      'DELETE FROM extraction_results WHERE document_id = $1 AND owner_user_id = $2 RETURNING id',
+      [documentId, owner],
+    );
+    return (r.rowCount ?? 0) > 0;
   }
 
-  /**
-   * Search extraction results by metadata field
-   */
   async searchByMetadata(
     field: string,
     value: string,
-    limit?: number
+    limit?: number,
+    owner: OwnerFilter = null,
   ): Promise<ExtractionResult[]> {
+    const values: any[] = [`%${value}%`];
+    let where = `WHERE metadata->>'${field}' ILIKE $1`;
+    let i = 2;
+    if (owner !== null) {
+      where += ` AND owner_user_id = $${i++}`;
+      values.push(owner);
+    }
     const query = `
       SELECT * FROM extraction_results
-      WHERE metadata->>'${field}' ILIKE $1
+      ${where}
       ORDER BY created_at DESC
       ${limit ? `LIMIT ${limit}` : ''}
     `;
-
-    const result: QueryResult<ExtractionResult> = await this.pool.query(query, [`%${value}%`]);
+    const result: QueryResult<ExtractionResult> = await this.pool.query(query, values);
     return result.rows;
   }
 
-  /**
-   * Get extraction results with successful status
-   */
-  async findSuccessful(limit?: number): Promise<ExtractionResult[]> {
-    return this.findAll(limit, undefined, ExtractionStatus.SUCCESS);
+  async findSuccessful(limit?: number, owner: OwnerFilter = null): Promise<ExtractionResult[]> {
+    return this.findAll(limit, undefined, ExtractionStatus.SUCCESS, owner);
   }
 
-  /**
-   * Get extraction results with failed status
-   */
-  async findFailed(limit?: number): Promise<ExtractionResult[]> {
-    return this.findAll(limit, undefined, ExtractionStatus.FAILED);
+  async findFailed(limit?: number, owner: OwnerFilter = null): Promise<ExtractionResult[]> {
+    return this.findAll(limit, undefined, ExtractionStatus.FAILED, owner);
   }
 
-  /**
-   * Count extraction results by status
-   */
-  async countByStatus(status?: ExtractionStatus): Promise<number> {
-    let query = 'SELECT COUNT(*) as count FROM extraction_results';
+  async countByStatus(status?: ExtractionStatus, owner: OwnerFilter = null): Promise<number> {
+    const clauses: string[] = [];
     const values: any[] = [];
-
+    let i = 1;
+    if (owner !== null) {
+      clauses.push(`owner_user_id = $${i++}`);
+      values.push(owner);
+    }
     if (status) {
-      query += ' WHERE extraction_status = $1';
+      clauses.push(`extraction_status = $${i++}`);
       values.push(status);
     }
-
+    let query = 'SELECT COUNT(*) as count FROM extraction_results';
+    if (clauses.length) query += ` WHERE ${clauses.join(' AND ')}`;
     const result: QueryResult<{ count: string }> = await this.pool.query(query, values);
     return parseInt(result.rows[0].count, 10);
   }
