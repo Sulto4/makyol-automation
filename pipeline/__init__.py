@@ -449,17 +449,22 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
 
     # Step 6: Validation
     t0 = time.time()
+    review_reasons: list[dict] = []
     try:
-        extraction, review_status = validate_extraction(extraction, category)
+        extraction, review_status, review_reasons = validate_extraction(extraction, category)
     except Exception as e:
         logger.warning("Validation error for %s: %s", filename, e,
                        extra={"extra_data": {"filename": filename, "error": str(e)}})
         review_status = "REVIEW"
+        review_reasons = [{"reason": "validator_exception", "field": "", "message": str(e)}]
     finally:
         duration_ms = (time.time() - t0) * 1000
         logger.info("Validation complete", extra={"extra_data": {
             "step": "validation", "filename": filename,
             "duration_ms": round(duration_ms, 1),
+            "review_status": review_status,
+            "review_reasons": review_reasons,
+            "reason_keys": sorted({r["reason"] for r in review_reasons}),
         }})
 
     # G5: suspicious-expiry review flag. A data_expirare that sits more
@@ -484,26 +489,46 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
                     }},
                 )
                 review_status = "REVIEW"
+                review_reasons.append({
+                    "reason": "suspicious_expiry",
+                    "field": "data_expirare",
+                    "message": (
+                        f"data_expirare '{extraction.get('data_expirare')}' is "
+                        f"{age_days} days in the past and filename does not "
+                        f"corroborate it — likely an issue date, not expiry"
+                    ),
+                })
 
     result["extraction"] = extraction
     result["review_status"] = review_status
+    result["review_reasons"] = review_reasons
     result["error"] = None
 
-    # Pipeline-complete summary
+    # Pipeline-complete summary — includes review reasons + populated field
+    # names so a single log line tells you everything about the run without
+    # grepping back through per-step entries.
     total_duration_ms = round((time.time() - pipeline_start) * 1000, 1)
     result["total_duration_ms"] = total_duration_ms
     field_count = len(extraction) if isinstance(extraction, dict) else 0
-    non_null_count = len([v for v in extraction.values() if v is not None]) if isinstance(extraction, dict) else 0
+    populated_fields = (
+        [k for k, v in extraction.items() if v is not None]
+        if isinstance(extraction, dict) else []
+    )
     logger.info("Pipeline complete", extra={"extra_data": {
         "step": "pipeline_complete", "filename": filename,
         "total_duration_ms": total_duration_ms,
         "review_status": result["review_status"],
+        "review_reasons": review_reasons,
+        "reason_keys": sorted({r["reason"] for r in review_reasons}),
         "used_vision": result["used_vision"],
         "has_error": result["error"] is not None,
         "field_count": field_count,
-        "non_null_fields": non_null_count,
+        "non_null_fields": len(populated_fields),
+        "populated_fields": populated_fields,
         "category": result["classification"],
+        "confidence": result.get("confidence"),
         "method": result["method"],
+        "extraction_model": extraction.get("extraction_model") if isinstance(extraction, dict) else None,
     }})
 
     return result

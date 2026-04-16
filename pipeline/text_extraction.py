@@ -83,50 +83,107 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     Returns:
         Extracted text string. May be empty if all engines fail.
     """
+    import time as _time
+    filename = os.path.basename(pdf_path)
     text = ""
     engine = "none"
+    # Per-engine timings give us a clear view of where OCR-heavy docs spend
+    # their seconds. Without this we could only see the total.
+    engine_attempts: list[dict] = []
 
     # Engine 1: pdfplumber
+    _t0 = _time.time()
     try:
         text = _extract_with_pdfplumber(pdf_path)
+        attempt = {
+            "engine": "pdfplumber",
+            "ok": True,
+            "text_length": len(text),
+            "duration_ms": round((_time.time() - _t0) * 1000, 1),
+        }
+        engine_attempts.append(attempt)
         if text.strip():
             engine = "pdfplumber"
         if len(text.strip()) >= MIN_TEXT_LENGTH:
-            logger.info("Text extraction result for %s",
-                        os.path.basename(pdf_path),
-                        extra={"extra_data": _extraction_metrics(
-                            pdf_path, text, engine)})
+            metrics = _extraction_metrics(pdf_path, text, engine)
+            metrics["engine_attempts"] = engine_attempts
+            logger.info("Text extraction result for %s", filename,
+                        extra={"extra_data": metrics})
             return text
     except Exception as e:
-        logger.warning("pdfplumber failed for %s: %s", pdf_path, e)
+        engine_attempts.append({
+            "engine": "pdfplumber", "ok": False,
+            "error": str(e),
+            "duration_ms": round((_time.time() - _t0) * 1000, 1),
+        })
+        logger.warning("pdfplumber failed for %s: %s", pdf_path, e,
+                       extra={"extra_data": {
+                           "step": "text_extraction",
+                           "engine": "pdfplumber", "error": str(e),
+                       }})
 
     # Engine 2: PyMuPDF
+    _t0 = _time.time()
     try:
         text_pymupdf = _extract_with_pymupdf(pdf_path)
+        attempt = {
+            "engine": "pymupdf",
+            "ok": True,
+            "text_length": len(text_pymupdf),
+            "duration_ms": round((_time.time() - _t0) * 1000, 1),
+        }
+        engine_attempts.append(attempt)
         if len(text_pymupdf.strip()) > len(text.strip()):
             text = text_pymupdf
             engine = "pymupdf"
         if len(text.strip()) >= MIN_TEXT_LENGTH:
-            logger.info("Text extraction result for %s",
-                        os.path.basename(pdf_path),
-                        extra={"extra_data": _extraction_metrics(
-                            pdf_path, text, engine)})
+            metrics = _extraction_metrics(pdf_path, text, engine)
+            metrics["engine_attempts"] = engine_attempts
+            logger.info("Text extraction result for %s", filename,
+                        extra={"extra_data": metrics})
             return text
     except Exception as e:
-        logger.warning("PyMuPDF failed for %s: %s", pdf_path, e)
+        engine_attempts.append({
+            "engine": "pymupdf", "ok": False,
+            "error": str(e),
+            "duration_ms": round((_time.time() - _t0) * 1000, 1),
+        })
+        logger.warning("PyMuPDF failed for %s: %s", pdf_path, e,
+                       extra={"extra_data": {
+                           "step": "text_extraction",
+                           "engine": "pymupdf", "error": str(e),
+                       }})
 
     # Engine 3: OCR via Tesseract
+    _t0 = _time.time()
     try:
         text_ocr = _extract_with_ocr(pdf_path)
+        attempt = {
+            "engine": "ocr",
+            "ok": True,
+            "text_length": len(text_ocr),
+            "duration_ms": round((_time.time() - _t0) * 1000, 1),
+        }
+        engine_attempts.append(attempt)
         if len(text_ocr.strip()) > len(text.strip()):
             text = text_ocr
             engine = "ocr"
     except Exception as e:
-        logger.warning("OCR failed for %s: %s", pdf_path, e)
+        engine_attempts.append({
+            "engine": "ocr", "ok": False,
+            "error": str(e),
+            "duration_ms": round((_time.time() - _t0) * 1000, 1),
+        })
+        logger.warning("OCR failed for %s: %s", pdf_path, e,
+                       extra={"extra_data": {
+                           "step": "text_extraction",
+                           "engine": "ocr", "error": str(e),
+                       }})
 
-    logger.info("Text extraction result for %s", os.path.basename(pdf_path),
-                extra={"extra_data": _extraction_metrics(
-                    pdf_path, text, engine)})
+    metrics = _extraction_metrics(pdf_path, text, engine)
+    metrics["engine_attempts"] = engine_attempts
+    logger.info("Text extraction result for %s", filename,
+                extra={"extra_data": metrics})
     return text
 
 

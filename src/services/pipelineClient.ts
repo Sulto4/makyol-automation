@@ -15,6 +15,19 @@ export interface PipelineExtractionData {
   [key: string]: string | null | undefined;
 }
 
+/**
+ * Structured review reason emitted by pipeline/validation when a document
+ * fails validation. `reason` is a short aggregatable key
+ * ('date_format', 'length_exceeded', 'comma_list', 'suspicious_expiry', ...),
+ * `field` names the offending field if applicable, `message` is the raw
+ * validator text suitable for display.
+ */
+export interface PipelineReviewReason {
+  reason: string;
+  field: string;
+  message: string;
+}
+
 export interface PipelineResponse {
   filename: string;
   classification: string | null;
@@ -22,7 +35,9 @@ export interface PipelineResponse {
   method: string | null;
   extraction: PipelineExtractionData;
   review_status: string;
+  review_reasons?: PipelineReviewReason[];
   used_vision: boolean;
+  total_duration_ms?: number;
   error: string | null;
 }
 

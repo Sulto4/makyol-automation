@@ -172,19 +172,65 @@ def extract_with_vision(pdf_path: str, category: str) -> dict | None:
     Returns:
         Extraction result dict, or None on failure.
     """
+    import time as _time
+    total_start = _time.time()
+
     # Convert pages to base64 images
+    convert_start = _time.time()
     try:
+        # Gather page count separately so we can log the selection decision.
+        try:
+            _doc = fitz.open(pdf_path)
+            total_pages = len(_doc)
+            _doc.close()
+        except Exception:
+            total_pages = 0
+        selected_indices = _select_page_indices(total_pages)
         images_b64 = _pdf_pages_to_base64(pdf_path)
     except Exception as e:
-        logger.error("Failed to convert PDF pages to images: %s", e)
+        logger.error(
+            "Failed to convert PDF pages to images: %s", e,
+            extra={"extra_data": {
+                "step": "vision_image_convert",
+                "pdf_path": pdf_path, "error": str(e),
+            }},
+        )
         return None
 
     if not images_b64:
-        logger.warning("No pages extracted from %s", pdf_path)
+        logger.warning(
+            "No pages extracted from %s", pdf_path,
+            extra={"extra_data": {"step": "vision_image_convert", "pdf_path": pdf_path}},
+        )
         return None
+
+    convert_duration_ms = round((_time.time() - convert_start) * 1000, 1)
+    total_image_bytes = sum(len(b) for b in images_b64) * 3 // 4  # base64 → raw
+    logger.info(
+        "Vision images prepared",
+        extra={"extra_data": {
+            "step": "vision_image_convert",
+            "pdf_path": pdf_path,
+            "total_pages": total_pages,
+            "selected_pages": selected_indices,
+            "image_count": len(images_b64),
+            "image_bytes_approx": total_image_bytes,
+            "dpi": VISION_DPI,
+            "duration_ms": convert_duration_ms,
+        }},
+    )
 
     # Build multimodal content: category-specific text prompt + image entries
     prompt_text = _build_prompt(category)
+    logger.debug(
+        "Vision prompt built",
+        extra={"extra_data": {
+            "step": "vision_prompt",
+            "category": category,
+            "prompt_chars": len(prompt_text),
+            "prompt_preview": prompt_text[:400],
+        }},
+    )
 
     content_parts = [{"type": "text", "text": prompt_text}]
     for b64_img in images_b64:
@@ -206,28 +252,82 @@ def extract_with_vision(pdf_path: str, category: str) -> dict | None:
         "max_tokens": AI_MAX_TOKENS,
     }
 
+    api_start = _time.time()
     try:
         response = requests.post(
             OPENROUTER_URL, headers=headers, json=payload, timeout=120
         )
+        api_duration_ms = round((_time.time() - api_start) * 1000, 1)
         response.raise_for_status()
 
         result = response.json()
         content = result["choices"][0]["message"]["content"]
+        usage = result.get("usage") or {}
+        logger.info(
+            "Vision API response received",
+            extra={"extra_data": {
+                "step": "vision_api",
+                "category": category,
+                "status_code": response.status_code,
+                "duration_ms": api_duration_ms,
+                "model": AI_MODEL,
+                "response_chars": len(content),
+                "prompt_tokens": usage.get("prompt_tokens"),
+                "completion_tokens": usage.get("completion_tokens"),
+                "total_tokens": usage.get("total_tokens"),
+                "response_preview": content[:500],
+            }},
+        )
 
         # Strip markdown code fences if present
         content = re.sub(r"^```json\s*", "", content.strip())
         content = re.sub(r"\s*```$", "", content.strip())
 
         parsed = json.loads(content)
+        non_null = [k for k, v in parsed.items() if v is not None]
+        logger.info(
+            "Vision extraction parsed",
+            extra={"extra_data": {
+                "step": "vision_extract",
+                "category": category,
+                "total_duration_ms": round((_time.time() - total_start) * 1000, 1),
+                "field_names": list(parsed.keys()),
+                "non_null_count": len(non_null),
+                "non_null_fields": non_null,
+            }},
+        )
         return parsed
 
     except requests.exceptions.Timeout:
-        logger.error("Vision extraction timed out for %s", pdf_path)
+        logger.error(
+            "Vision extraction timed out for %s", pdf_path,
+            extra={"extra_data": {
+                "step": "vision_api", "pdf_path": pdf_path,
+                "timeout_seconds": 120,
+                "duration_ms": round((_time.time() - api_start) * 1000, 1),
+            }},
+        )
         return None
     except requests.exceptions.RequestException as e:
-        logger.error("Vision extraction request failed: %s", e)
+        status_code = getattr(e.response, "status_code", None) if hasattr(e, "response") else None
+        response_body = getattr(e.response, "text", None) if hasattr(e, "response") else None
+        logger.error(
+            "Vision extraction request failed: %s", e,
+            extra={"extra_data": {
+                "step": "vision_api", "pdf_path": pdf_path,
+                "error": str(e),
+                "status_code": status_code,
+                "response_body": response_body[:500] if response_body else None,
+            }},
+        )
         return None
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.error("Vision extraction response parsing failed: %s", e)
+        logger.error(
+            "Vision extraction response parsing failed: %s", e,
+            extra={"extra_data": {
+                "step": "vision_parse", "pdf_path": pdf_path,
+                "error": str(e), "error_type": type(e).__name__,
+                "content_preview": content[:500] if "content" in dir() else None,
+            }},
+        )
         return None

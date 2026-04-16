@@ -103,7 +103,7 @@ def validate_extraction(
     category: str,
     retry_func=None,
     retry_context: Dict[str, Any] = None,
-) -> Tuple[Dict[str, Any], str]:
+) -> Tuple[Dict[str, Any], str, List[Dict[str, str]]]:
     """Validate extracted data against schema constraints.
 
     Args:
@@ -113,15 +113,37 @@ def validate_extraction(
         retry_context: Optional context passed to retry_func.
 
     Returns:
-        Tuple of (validated_result, review_status).
+        Tuple of (validated_result, review_status, review_reasons).
         review_status is 'OK', 'REVIEW', or 'FAILED'.
+        review_reasons is a list of {"reason": key, "field": name, "message": text}
+        dicts — empty when status is 'OK'. Callers typically persist these
+        into extraction_results.metadata so the UI can show *why* a document
+        was flagged without re-running the validator.
     """
     issues = _collect_issues(result)
 
     if not issues:
-        return result, "OK"
+        logger.info(
+            "Validation passed",
+            extra={"extra_data": {
+                "step": "validation", "category": category,
+                "review_status": "OK",
+            }},
+        )
+        return result, "OK", []
 
-    logger.warning("Validation issues for %s: %s", category, issues)
+    structured = _structure_issues(issues)
+    logger.warning(
+        "Validation issues for %s (%d): %s",
+        category, len(issues), "; ".join(issues),
+        extra={"extra_data": {
+            "step": "validation", "category": category,
+            "review_status": "REVIEW",
+            "issue_count": len(issues),
+            "review_reasons": structured,
+            "reason_keys": sorted({r["reason"] for r in structured}),
+        }},
+    )
 
     # Attempt retry if retry function provided
     if retry_func and retry_context:
@@ -130,13 +152,60 @@ def validate_extraction(
         if retried_result:
             retry_issues = _collect_issues(retried_result)
             if not retry_issues:
-                return retried_result, "OK"
+                logger.info(
+                    "Validation passed after retry",
+                    extra={"extra_data": {
+                        "step": "validation", "category": category,
+                        "review_status": "OK", "retried": True,
+                    }},
+                )
+                return retried_result, "OK", []
             # Retry didn't fully fix it — use retried result but flag for review
-            logger.warning("Retry still has issues: %s", retry_issues)
-            return retried_result, "REVIEW"
+            retry_structured = _structure_issues(retry_issues)
+            logger.warning(
+                "Retry still has issues: %s",
+                "; ".join(retry_issues),
+                extra={"extra_data": {
+                    "step": "validation", "category": category,
+                    "review_status": "REVIEW", "retried": True,
+                    "review_reasons": retry_structured,
+                }},
+            )
+            return retried_result, "REVIEW", retry_structured
 
     # No retry or retry not available — flag for review
-    return result, "REVIEW"
+    return result, "REVIEW", structured
+
+
+# ---------------------------------------------------------------------------
+# Issue categorization — converts raw validator strings into structured
+# {reason, field, message} dicts so downstream consumers (UI, dashboards,
+# breakdown scripts) can group without re-parsing English error text.
+# ---------------------------------------------------------------------------
+
+_REASON_PATTERNS = [
+    (re.compile(r"^(\w+) is not in DD\.MM\.YYYY format"), "date_format"),
+    (re.compile(r"^(\w+) exceeds \d+ chars"), "length_exceeded"),
+    (re.compile(r"^(\w+) appears to be a comma-separated list"), "comma_list"),
+    (re.compile(r"^material is too generic"), "material_generic"),
+    (re.compile(r"^material appears to be Chinese-only"), "material_chinese"),
+    (re.compile(r"^(\w+) contains repeated segments"), "repeated_segments"),
+]
+
+
+def _structure_issues(issues: List[str]) -> List[Dict[str, str]]:
+    out: List[Dict[str, str]] = []
+    for issue in issues:
+        reason = "other"
+        field = ""
+        for pat, key in _REASON_PATTERNS:
+            m = pat.match(issue)
+            if m:
+                reason = key
+                field = m.group(1) if m.groups() else ""
+                break
+        out.append({"reason": reason, "field": field, "message": issue})
+    return out
 
 
 def _collect_issues(result: Dict[str, Any]) -> List[str]:

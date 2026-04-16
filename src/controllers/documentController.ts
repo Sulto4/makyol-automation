@@ -216,13 +216,30 @@ export class DocumentController {
           throw new Error(pipelineResponse.error);
         }
 
+        // Normalize review_status from pipeline — it returns 'OK' | 'REVIEW'
+        // | 'FAILED' | 'NEEDS_CHECK' but our ReviewStatus enum only knows
+        // OK/REVIEW. Anything that isn't a clean OK goes to REVIEW so the
+        // UI surfaces it and the field never falls back to OK silently.
+        const pipelineReviewStatus =
+          pipelineResponse.review_status === 'OK'
+            ? ReviewStatus.OK
+            : ReviewStatus.REVIEW;
+        const pipelineReviewReasons: unknown =
+          (pipelineResponse as any).review_reasons ?? [];
+
         if (pipelineResponse.classification) {
           await this.documentModel.updateClassification(document.id, {
             categorie: pipelineResponse.classification,
             confidence: pipelineResponse.confidence ?? 0,
             metoda_clasificare: pipelineResponse.method ?? 'ai',
+            // FIX: previously review_status was never forwarded, so every
+            // doc ended up OK regardless of what the pipeline decided.
+            review_status: pipelineReviewStatus,
           }, owner);
-          logger.info(`Classification saved for document ${document.id}: ${pipelineResponse.classification}`);
+          logger.info(
+            `Classification saved for document ${document.id}: ` +
+            `${pipelineResponse.classification} (review_status=${pipelineReviewStatus})`,
+          );
         }
 
         const extractionStatus = pipelineResponse.confidence >= 0.8
@@ -234,7 +251,16 @@ export class DocumentController {
         const extractionInput: CreateExtractionResultInput = {
           document_id: document.id,
           extracted_text: null,
-          metadata: {},
+          // Persist structured review reasons + pipeline provenance so the
+          // UI can show WHY a document is in REVIEW without having to grep
+          // the JSON logs, and so future backfills can group by reason.
+          metadata: {
+            review_reasons: pipelineReviewReasons,
+            pipeline_used_vision: pipelineResponse.used_vision,
+            pipeline_method: pipelineResponse.method,
+            pipeline_total_duration_ms:
+              (pipelineResponse as any).total_duration_ms ?? null,
+          },
           confidence_score: pipelineResponse.confidence ?? null,
           extraction_status: extractionStatus,
           material: extraction.material ?? null,
