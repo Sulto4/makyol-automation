@@ -15,7 +15,7 @@ from pipeline.logging_config import setup_logging
 setup_logging()
 
 from pipeline import process_document
-from pipeline.config import OPENROUTER_API_KEY, OPENROUTER_URL, AI_MODEL
+from pipeline.config import OPENROUTER_URL, settings, reload_settings
 
 logger = logging.getLogger(__name__)
 
@@ -60,27 +60,25 @@ app = FastAPI(title="Makyol Pipeline API", version="1.0.0")
 @app.on_event("startup")
 async def check_ai_connectivity():
     """Verify AI provider connectivity at startup (non-blocking)."""
-    masked_key = (
-        OPENROUTER_API_KEY[:8] + "..." + OPENROUTER_API_KEY[-4:]
-        if len(OPENROUTER_API_KEY) > 12
-        else "***"
-    )
+    api_key = settings.openrouter_api_key
+    model = settings.ai_model
+    masked_key = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
                 OPENROUTER_URL,
                 headers={
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": AI_MODEL,
+                    "model": model,
                     "max_tokens": 1,
                     "messages": [{"role": "user", "content": "ping"}],
                 },
             )
         if resp.status_code == 200:
-            logger.info("AI connectivity: OK (model=%s)", AI_MODEL)
+            logger.info("AI connectivity: OK (model=%s)", model)
         elif resp.status_code in (401, 403):
             logger.critical(
                 "AI connectivity: AUTH FAILED (status=%s, key=%s, response=%s)",
@@ -115,6 +113,23 @@ class HealthResponse(BaseModel):
 async def health_check():
     """Health check endpoint."""
     return HealthResponse(status="ok", service="python-pipeline")
+
+
+@app.post("/api/pipeline/reload-settings")
+async def reload_pipeline_settings():
+    """Re-fetch settings from the backend and update the in-process cache.
+
+    Called (fire-and-forget) by the backend after a settings upsert so the
+    pipeline picks up UI changes without a container restart. The backend
+    ignores the response body; we return a summary anyway so an operator
+    calling this directly can see what actually changed.
+    """
+    try:
+        result = reload_settings()
+        return {"status": "ok", **result}
+    except Exception as exc:
+        logger.error("Settings reload failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"reload failed: {exc}")
 
 
 @app.get("/api/pipeline/stats")

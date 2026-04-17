@@ -3,6 +3,49 @@ import { Pool } from 'pg';
 import { SettingsService } from '../services/settingsService';
 import { logger } from '../utils/logger';
 
+// Base URL for the Python pipeline. We call its /reload-settings endpoint
+// after every settings upsert/delete so the in-process cache on that side
+// gets refreshed — no container restart required. Matches the same env
+// var the pipelineClient service reads.
+const PIPELINE_URL = process.env.PIPELINE_URL || 'http://localhost:8001';
+const PIPELINE_RELOAD_TIMEOUT_MS = 5_000;
+
+/**
+ * Tell the Python pipeline to re-fetch settings from the DB.
+ *
+ * Fire-and-forget: we log and swallow any error. A failed reload is
+ * non-fatal — worst case, the user's setting change takes effect on the
+ * next pipeline restart instead of instantly. We never want a transient
+ * pipeline blip to turn a successful setting save into a 500 response.
+ */
+async function notifyPipelineReload(reason: string): Promise<void> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PIPELINE_RELOAD_TIMEOUT_MS);
+  try {
+    const resp = await fetch(`${PIPELINE_URL}/api/pipeline/reload-settings`, {
+      method: 'POST',
+      signal: controller.signal,
+    });
+    if (resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      logger.info(
+        `Pipeline settings reloaded (${reason}): changed=${JSON.stringify((body as any)?.changed ?? [])}`,
+      );
+    } else {
+      const text = await resp.text().catch(() => '');
+      logger.warn(
+        `Pipeline reload returned HTTP ${resp.status} (${reason}): ${text.slice(0, 200)}`,
+      );
+    }
+  } catch (err: any) {
+    logger.warn(
+      `Pipeline reload failed (${reason}) — changes apply on next restart: ${err?.message ?? err}`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Settings controller class
  * Handles HTTP requests for settings management
@@ -134,6 +177,10 @@ export class SettingsController {
       // Use upsert to create or update
       const setting = await this.settingsService.upsertSetting(key, value, null);
 
+      // Best-effort: tell the pipeline to hot-reload. Fire-and-forget so
+      // the user's UI save response isn't blocked on pipeline latency.
+      void notifyPipelineReload(`upsert:${key}`);
+
       res.status(200).json({
         success: true,
         data: setting,
@@ -199,6 +246,10 @@ export class SettingsController {
         return;
       }
 
+      // Pipeline has the stale value cached — tell it to reload so the
+      // deleted setting falls back to its hardcoded default on next use.
+      void notifyPipelineReload(`delete:${key}`);
+
       res.status(200).json({
         success: true,
         message: `Setting '${key}' deleted successfully`,
@@ -225,6 +276,10 @@ export class SettingsController {
     try {
       logger.info('Initializing default settings');
       const count = await this.settingsService.initializeDefaults();
+
+      if (count > 0) {
+        void notifyPipelineReload(`initialize:${count}`);
+      }
 
       res.status(200).json({
         success: true,

@@ -14,11 +14,9 @@ import logging
 
 from pipeline.http_client import get_session
 from pipeline.config import (
-    OPENROUTER_API_KEY,
     OPENROUTER_URL,
-    AI_MODEL,
-    AI_TEMPERATURE,
     AI_MAX_TOKENS,
+    settings,
 )
 
 logger = logging.getLogger(__name__)
@@ -528,13 +526,13 @@ def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | No
     prompt = _AI_CLASSIFICATION_PROMPT.format(text=truncated_text)
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": AI_MODEL,
+        "model": settings.ai_model,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": AI_TEMPERATURE,  # 0.0 — NON-NEGOTIABLE (fixed from 0.1)
+        "temperature": settings.ai_temperature,
         "max_tokens": AI_MAX_TOKENS,
     }
 
@@ -543,8 +541,8 @@ def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | No
         extra={"extra_data": {
             "text_length": text_length,
             "truncated_to": len(truncated_text) if was_truncated else None,
-            "model": AI_MODEL,
-            "temperature": AI_TEMPERATURE,
+            "model": settings.ai_model,
+            "temperature": settings.ai_temperature,
             "max_tokens": AI_MAX_TOKENS,
         }},
     )

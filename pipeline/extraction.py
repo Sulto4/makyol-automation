@@ -14,14 +14,12 @@ from datetime import datetime, timedelta
 from pipeline.http_client import get_session
 
 from pipeline.config import (
-    OPENROUTER_API_KEY,
     OPENROUTER_URL,
-    AI_MODEL,
-    AI_TEMPERATURE,
     AI_MAX_TOKENS,
     MAX_COMPANY_LENGTH,
     MAX_MATERIAL_LENGTH,
     MAX_ADDRESS_LENGTH,
+    settings,
 )
 from pipeline.date_normalizer import normalize_data_expirare
 
@@ -701,16 +699,16 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
     )
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": AI_MODEL,
+        "model": settings.ai_model,
         "messages": [
             {"role": "system", "content": _EXTRACTION_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        "temperature": AI_TEMPERATURE,  # 0.0 — NON-NEGOTIABLE
+        "temperature": settings.ai_temperature,
         "max_tokens": AI_MAX_TOKENS,
     }
 
@@ -728,7 +726,7 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
                 "category": category,
                 "status_code": response.status_code,
                 "response_length": len(response_body),
-                "model": AI_MODEL,
+                "model": settings.ai_model,
             }},
         )
 
@@ -817,7 +815,7 @@ def extract_document_data(text: str, category: str, filename: str = "") -> dict:
         raw_result = regex_extract(text, category)
         extraction_model = "regex_fallback"
     else:
-        extraction_model = AI_MODEL
+        extraction_model = settings.ai_model
 
     # Track AI-sourced fields (non-null from AI/regex_fallback result)
     ai_fields = [k for k, v in raw_result.items() if v is not None] if raw_result else []

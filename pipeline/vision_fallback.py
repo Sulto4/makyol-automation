@@ -17,15 +17,12 @@ import fitz  # PyMuPDF
 from pipeline.http_client import get_session
 from pipeline.config import (
     AI_MAX_TOKENS,
-    AI_MODEL,
-    AI_TEMPERATURE,
     MAX_ADDRESS_LENGTH,
     MAX_COMPANY_LENGTH,
     MAX_MATERIAL_LENGTH,
-    OPENROUTER_API_KEY,
     OPENROUTER_URL,
     VISION_DPI,
-    VISION_MAX_PAGES,
+    settings,
 )
 from pipeline.extraction import EXTRACTION_SCHEMA
 
@@ -136,7 +133,7 @@ def _select_page_indices(total_pages: int, max_pages: int | None = None) -> list
       * Otherwise → first (max_pages - 1) pages + last page.
     """
     if max_pages is None:
-        max_pages = VISION_MAX_PAGES
+        max_pages = settings.vision_max_pages
     # Defensive: someone could set max_pages to 0 via the settings UI;
     # fall back to 1 so we still send at least one image.
     if max_pages < 1:
@@ -295,13 +292,13 @@ def extract_with_vision(
         })
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {settings.openrouter_api_key}",
         "Content-Type": "application/json",
     }
     payload = {
-        "model": AI_MODEL,
+        "model": settings.ai_model,
         "messages": [{"role": "user", "content": content_parts}],
-        "temperature": AI_TEMPERATURE,  # 0.0 — NON-NEGOTIABLE
+        "temperature": settings.ai_temperature,
         "max_tokens": AI_MAX_TOKENS,
     }
 
@@ -323,7 +320,7 @@ def extract_with_vision(
                 "category": category,
                 "status_code": response.status_code,
                 "duration_ms": api_duration_ms,
-                "model": AI_MODEL,
+                "model": settings.ai_model,
                 "response_chars": len(content),
                 "prompt_tokens": usage.get("prompt_tokens"),
                 "completion_tokens": usage.get("completion_tokens"),
