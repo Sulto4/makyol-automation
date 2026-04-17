@@ -16,11 +16,13 @@ export default function SettingsPage() {
     ai_temperature,
     tesseract_path,
     vision_max_pages,
+    batch_concurrency,
     setOpenRouterApiKey,
     setAiModel,
     setAiTemperature,
     setTesseractPath,
     setVisionMaxPages,
+    setBatchConcurrency,
     updateSettings,
   } = useSettingsStore();
 
@@ -44,6 +46,7 @@ export default function SettingsPage() {
           ai_temperature: settingsMap.ai_temperature ?? ai_temperature,
           tesseract_path: settingsMap.tesseract_path ?? tesseract_path,
           vision_max_pages: settingsMap.vision_max_pages ?? vision_max_pages,
+          batch_concurrency: settingsMap.batch_concurrency ?? batch_concurrency,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Eroare la încărcarea setărilor';
@@ -67,6 +70,7 @@ export default function SettingsPage() {
         updateSetting('ai_temperature', ai_temperature),
         updateSetting('tesseract_path', tesseract_path),
         updateSetting('vision_max_pages', vision_max_pages),
+        updateSetting('batch_concurrency', batch_concurrency),
       ]);
 
       toast.success('Setările au fost salvate cu succes');
@@ -108,11 +112,13 @@ export default function SettingsPage() {
                 aiTemperature={ai_temperature}
                 tesseractPath={tesseract_path}
                 visionMaxPages={vision_max_pages}
+                batchConcurrency={batch_concurrency}
                 onOpenRouterApiKeyChange={setOpenRouterApiKey}
                 onAiModelChange={setAiModel}
                 onAiTemperatureChange={setAiTemperature}
                 onTesseractPathChange={setTesseractPath}
                 onVisionMaxPagesChange={setVisionMaxPages}
+                onBatchConcurrencyChange={setBatchConcurrency}
                 disabled={isSaving}
               />
 

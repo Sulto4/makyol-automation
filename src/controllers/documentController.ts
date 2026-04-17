@@ -7,14 +7,19 @@ import { ExtractionResultModel, ExtractionStatus, CreateExtractionResultInput } 
 import { PipelineClientService, PipelineError } from '../services/pipelineClient';
 import { AuditService } from '../services/auditService';
 import { ArchiveService, ArchiveDocumentRecord } from '../services/archiveService';
+import { SettingsService } from '../services/settingsService';
+import { SettingKey } from '../models/settings';
 import { logger } from '../utils/logger';
 import { createLimiter } from '../utils/concurrency';
 
-// How many documents to process simultaneously in batch operations
-// (reprocessAll, uploadFolder). 3 is well below the concurrency we
-// validated in benchmarks (8 docs × 9 models with no throttling) and
-// leaves safety headroom under burst.
-const BATCH_CONCURRENCY = 3;
+// Fallback used when the DB is unreachable at batch start. 3 matches the
+// seeded default in settingsService.DEFAULT_SETTINGS. Validated up to 8
+// concurrent during benchmark with no OpenRouter throttling.
+const DEFAULT_BATCH_CONCURRENCY = 3;
+// Clamp to the same range the settings validator allows so a corrupt DB
+// value cannot blow out concurrency or drop it below 1.
+const BATCH_CONCURRENCY_MIN = 1;
+const BATCH_CONCURRENCY_MAX = 10;
 
 /**
  * Return the owner filter for the current request:
@@ -36,6 +41,7 @@ export class DocumentController {
   private extractionResultModel: ExtractionResultModel;
   private pipelineClient: PipelineClientService;
   private auditService: AuditService;
+  private settingsService: SettingsService;
 
   constructor(pool: Pool) {
     this.pool = pool;
@@ -43,6 +49,35 @@ export class DocumentController {
     this.extractionResultModel = new ExtractionResultModel(pool);
     this.pipelineClient = new PipelineClientService();
     this.auditService = new AuditService(pool);
+    this.settingsService = new SettingsService(pool);
+  }
+
+  /**
+   * Read the current batch concurrency from settings. Invoked at the
+   * start of each batch operation so the admin's UI-side changes take
+   * effect on the next run without a server restart. Clamped to the
+   * [BATCH_CONCURRENCY_MIN, BATCH_CONCURRENCY_MAX] range so a stale or
+   * corrupt DB value can't produce a pathological value.
+   */
+  private async resolveBatchConcurrency(): Promise<number> {
+    try {
+      const raw = await this.settingsService.getSettingValue<number>(
+        SettingKey.BATCH_CONCURRENCY,
+        DEFAULT_BATCH_CONCURRENCY,
+      );
+      const parsed = typeof raw === 'number' ? raw : Number(raw);
+      if (!Number.isFinite(parsed)) return DEFAULT_BATCH_CONCURRENCY;
+      const clamped = Math.max(
+        BATCH_CONCURRENCY_MIN,
+        Math.min(BATCH_CONCURRENCY_MAX, Math.floor(parsed)),
+      );
+      return clamped;
+    } catch (err: any) {
+      logger.warn(
+        `Failed to read batch_concurrency setting, falling back to ${DEFAULT_BATCH_CONCURRENCY}: ${err?.message ?? err}`,
+      );
+      return DEFAULT_BATCH_CONCURRENCY;
+    }
   }
 
   /**
@@ -472,11 +507,12 @@ export class DocumentController {
 
       void (async () => {
         try {
-          logger.info(`[${jobId}] Background reprocessing STARTED for ${documents.length} documents (owner=${owner ?? 'admin-all'}, concurrency=${BATCH_CONCURRENCY})`);
+          const concurrency = await this.resolveBatchConcurrency();
+          logger.info(`[${jobId}] Background reprocessing STARTED for ${documents.length} documents (owner=${owner ?? 'admin-all'}, concurrency=${concurrency})`);
 
           let processed = 0;
           let failed = 0;
-          const limit = createLimiter(BATCH_CONCURRENCY);
+          const limit = createLimiter(concurrency);
 
           await Promise.all(documents.map(document => limit(async () => {
             try {
@@ -697,9 +733,10 @@ export class DocumentController {
         let processed = 0;
         let failed = 0;
         const total = documentsToProcess.length;
-        const limit = createLimiter(BATCH_CONCURRENCY);
+        const concurrency = await this.resolveBatchConcurrency();
+        const limit = createLimiter(concurrency);
 
-        logger.info(`[${jobId}] Folder upload processing STARTED for ${total} documents (concurrency=${BATCH_CONCURRENCY})`);
+        logger.info(`[${jobId}] Folder upload processing STARTED for ${total} documents (concurrency=${concurrency})`);
 
         await Promise.all(documentsToProcess.map(({ document }) => limit(async () => {
           try {

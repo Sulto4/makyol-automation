@@ -39,6 +39,7 @@ export enum SettingKey {
   AI_TEMPERATURE = 'ai_temperature',
   TESSERACT_PATH = 'tesseract_path',
   VISION_MAX_PAGES = 'vision_max_pages',
+  BATCH_CONCURRENCY = 'batch_concurrency',
 }
 
 /**

@@ -25,6 +25,7 @@ from pipeline.config import (
     OPENROUTER_API_KEY,
     OPENROUTER_URL,
     VISION_DPI,
+    VISION_MAX_PAGES,
 )
 from pipeline.extraction import EXTRACTION_SCHEMA
 
@@ -120,16 +121,40 @@ def _build_prompt(category: str) -> str:
     )
 
 
-def _select_page_indices(total_pages: int) -> list[int]:
+def _select_page_indices(total_pages: int, max_pages: int | None = None) -> list[int]:
     """Pick which pages to send to vision.
 
-    Strategy: for >2 pages, send first two + last (3 images). For <=2 pages,
-    send all. Keeps token cost bounded and preserves the most signal-dense
-    pages (cover/header on 1-2, signatures/expiry on last).
+    Strategy: favor the first pages (cover/header/product info) plus the
+    last page (signatures/expiry). `max_pages` caps the total images sent
+    so cost stays bounded; when the document has fewer pages than that
+    budget we just send them all.
+
+    Edge cases:
+      * max_pages == 1 → first page only.
+      * max_pages == 2 → first + last (no middle gap to worry about).
+      * max_pages >= total_pages → return every page.
+      * Otherwise → first (max_pages - 1) pages + last page.
     """
-    if total_pages <= 2:
+    if max_pages is None:
+        max_pages = VISION_MAX_PAGES
+    # Defensive: someone could set max_pages to 0 via the settings UI;
+    # fall back to 1 so we still send at least one image.
+    if max_pages < 1:
+        max_pages = 1
+
+    if total_pages <= 0:
+        return []
+    if total_pages <= max_pages:
         return list(range(total_pages))
-    return [0, 1, total_pages - 1]
+    if max_pages == 1:
+        return [0]
+    # First (max_pages - 1) pages + the final page. De-duplicate in case
+    # max_pages - 1 == total_pages - 1 already covers the last index.
+    head = list(range(max_pages - 1))
+    last = total_pages - 1
+    if last not in head:
+        head.append(last)
+    return head
 
 
 def _pdf_pages_to_base64(pdf_path: str) -> list[str]:
