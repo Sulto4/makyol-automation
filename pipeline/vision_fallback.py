@@ -160,9 +160,10 @@ def _pdf_pages_to_base64(pdf_path: str) -> list[str]:
     Pages are chosen by _select_page_indices: first two + last page for
     documents longer than 2 pages, otherwise every page.
 
-    Pages are rendered in parallel via a small thread pool — each pixmap
-    render is independent, and PyMuPDF releases the GIL during the C-side
-    rasterization, so this yields real wall-clock gain on 3-page docs.
+    Pages render through the process-wide PAGE_RENDER_POOL so total
+    in-flight pixmap work is bounded regardless of how many documents the
+    backend is processing concurrently. This is what keeps a
+    concurrency-5 batch from spawning 15 simultaneous 300-DPI renders.
 
     Args:
         pdf_path: Path to the PDF file.
@@ -170,7 +171,7 @@ def _pdf_pages_to_base64(pdf_path: str) -> list[str]:
     Returns:
         List of base64-encoded PNG strings, in page order.
     """
-    from concurrent.futures import ThreadPoolExecutor
+    from pipeline.thread_pools import PAGE_RENDER_POOL
 
     doc = fitz.open(pdf_path)
     try:
@@ -183,10 +184,8 @@ def _pdf_pages_to_base64(pdf_path: str) -> list[str]:
             png_bytes = pix.tobytes("png")
             return base64.b64encode(png_bytes).decode("ascii")
 
-        # max_workers caps at page count — no point over-provisioning.
-        with ThreadPoolExecutor(max_workers=min(len(indices), 3)) as ex:
-            # Preserve page order: map() iterates the futures in submission order.
-            return list(ex.map(_render_one, indices))
+        # map() iterates futures in submission order → page order preserved.
+        return list(PAGE_RENDER_POOL.map(_render_one, indices))
     finally:
         doc.close()
 

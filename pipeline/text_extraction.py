@@ -130,25 +130,30 @@ def extract_text_from_pdf(pdf_path: str) -> str:
        ordering so there's no quality regression vs the serial version.
     3. Only if both fast engines gave insufficient text do we pay for OCR.
 
+    Both the text engine race and the OCR fallback submit into the
+    process-wide pools from pipeline.thread_pools so total concurrent
+    work is bounded even under heavy batch load.
+
     Args:
         pdf_path: Path to the PDF file.
 
     Returns:
         Extracted text string. May be empty if all engines fail.
     """
-    from concurrent.futures import ThreadPoolExecutor
+    from pipeline.thread_pools import TEXT_ENGINE_POOL
 
     filename = os.path.basename(pdf_path)
     engine_attempts: list[dict] = []
 
     # Engines 1 + 2 in parallel: pdfplumber and PyMuPDF.
-    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="text-engine") as ex:
-        plumber_fut = ex.submit(_run_engine, "pdfplumber", _extract_with_pdfplumber,
-                                pdf_path, engine_attempts)
-        pymupdf_fut = ex.submit(_run_engine, "pymupdf", _extract_with_pymupdf,
-                                pdf_path, engine_attempts)
-        text_plumber = plumber_fut.result()
-        text_pymupdf = pymupdf_fut.result()
+    plumber_fut = TEXT_ENGINE_POOL.submit(
+        _run_engine, "pdfplumber", _extract_with_pdfplumber, pdf_path, engine_attempts,
+    )
+    pymupdf_fut = TEXT_ENGINE_POOL.submit(
+        _run_engine, "pymupdf", _extract_with_pymupdf, pdf_path, engine_attempts,
+    )
+    text_plumber = plumber_fut.result()
+    text_pymupdf = pymupdf_fut.result()
 
     # Preference mirrors the old serial logic: pdfplumber wins when it
     # produced usable text; otherwise take the longer of the two.
@@ -230,13 +235,14 @@ def _extract_with_pymupdf(pdf_path: str) -> str:
 def _extract_with_ocr(pdf_path: str) -> str:
     """Extract text using OCR (Tesseract) via PyMuPDF page rendering.
 
-    Pages are rendered + OCR'd in parallel. Tesseract is a separate C
-    subprocess (so no Python GIL contention) and pixmap rendering
-    releases the GIL, so this gives near-linear speedup on multi-page
-    scanned docs. Workers capped at 4 to stay memory-friendly — each
-    page at 300 DPI is ~5–15 MB in memory during OCR.
+    Pages are rendered + OCR'd through the process-wide OCR_POOL, so the
+    total number of concurrent Tesseract invocations is capped regardless
+    of how many docs the backend is feeding us. Each 300-DPI page pixmap
+    is ~5–15 MB in memory during OCR and Tesseract holds a CPU for 1–3 s
+    per page, so unbounded per-doc parallelism was the root cause of the
+    CPU saturation we saw at concurrency=5.
     """
-    from concurrent.futures import ThreadPoolExecutor
+    from pipeline.thread_pools import OCR_POOL
 
     doc = fitz.open(pdf_path)
     try:
@@ -250,9 +256,7 @@ def _extract_with_ocr(pdf_path: str) -> str:
             image = Image.open(io.BytesIO(img_bytes))
             return pytesseract.image_to_string(image, lang=OCR_LANGUAGES) or ""
 
-        with ThreadPoolExecutor(max_workers=min(page_count, 4),
-                                thread_name_prefix="ocr") as ex:
-            pages_text = list(ex.map(_ocr_one, range(page_count)))
+        pages_text = list(OCR_POOL.map(_ocr_one, range(page_count)))
     finally:
         doc.close()
     return "\n".join(pages_text)
