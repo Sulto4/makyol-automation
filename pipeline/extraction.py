@@ -11,7 +11,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-import requests  # noqa: F401  -- used below in extract_data_with_ai
+from pipeline.http_client import get_session
 
 from pipeline.config import (
     OPENROUTER_API_KEY,
@@ -716,7 +716,7 @@ def extract_data_with_ai(text: str, category: str, filename: str = "") -> dict |
 
     response_body = None
     try:
-        response = requests.post(
+        response = get_session().post(
             OPENROUTER_URL, headers=headers, json=payload, timeout=60
         )
         response.raise_for_status()

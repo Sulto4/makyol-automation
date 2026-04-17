@@ -4,12 +4,11 @@ import logging
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-import fitz  # PyMuPDF — used to get page_count for classification
-
-from pipeline.text_extraction import extract_text_from_pdf
+from pipeline.text_extraction import extract_text_from_pdf, get_page_count
 from pipeline.classification import classify_document
 from pipeline.date_normalizer import scan_filename_dates
 from pipeline.extraction import (
@@ -19,7 +18,7 @@ from pipeline.extraction import (
 )
 from pipeline.normalization import normalize_company_name, normalize_address
 from pipeline.validation import validate_extraction
-from pipeline.vision_fallback import extract_with_vision
+from pipeline.vision_fallback import _pdf_pages_to_base64, extract_with_vision
 
 logger = logging.getLogger(__name__)
 
@@ -165,16 +164,22 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
     use_vision = _USE_VISION_FOR_ALL
     result["used_vision"] = use_vision
 
-    # Step 3: Classification
+    # Step 2b: Kick off PDF page rendering in the background while we
+    # classify on the main thread. Rendering only needs the PDF path, not
+    # the category, so the two are independent work and can overlap. For
+    # vision-enabled docs this recovers the ~200–600 ms that would
+    # otherwise be paid serially between classification end and vision
+    # call start.
+    page_count = get_page_count(pdf_path)
+    _render_executor: ThreadPoolExecutor | None = None
+    images_future = None
+    if use_vision:
+        _render_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pdf-render")
+        images_future = _render_executor.submit(_pdf_pages_to_base64, pdf_path)
+
+    # Step 3: Classification (runs in parallel with page rendering)
     t0 = time.time()
     try:
-        # Extract page_count for text-based classification heuristics
-        try:
-            doc = fitz.open(pdf_path)
-            page_count = len(doc)
-            doc.close()
-        except Exception:
-            page_count = 0
         has_tables = False  # Table detection not in pipeline text extractor
 
         category, confidence, method = classify_document(filename, text, page_count, has_tables)
@@ -185,6 +190,11 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         logger.error("Classification failed for %s: %s", filename, e,
                      extra={"extra_data": {"filename": filename, "error": str(e)}})
         result["error"] = f"Classification failed: {e}"
+        # Tear down the render executor cleanly on the error path — don't
+        # leak the thread or block on a render we'll never use.
+        if _render_executor is not None:
+            images_future.cancel() if images_future else None
+            _render_executor.shutdown(wait=False)
         return result
     finally:
         duration_ms = (time.time() - t0) * 1000
@@ -200,7 +210,24 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
     t0 = time.time()
     try:
         if result["used_vision"]:
-            vision_extraction = extract_with_vision(pdf_path, category)
+            # Wait on the pre-started render; pass images directly to
+            # extract_with_vision to avoid a duplicate render.
+            try:
+                pre_rendered = images_future.result() if images_future else None
+            except Exception as render_err:
+                logger.warning(
+                    "Background page render failed; vision will re-render",
+                    extra={"extra_data": {
+                        "filename": filename, "error": str(render_err),
+                    }},
+                )
+                pre_rendered = None
+            vision_extraction = extract_with_vision(
+                pdf_path,
+                category,
+                images_b64=pre_rendered,
+                total_pages=page_count,
+            )
 
         if vision_extraction is not None:
             # Run vision output through the same normalizer as text-based
@@ -216,6 +243,10 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         result["error"] = f"Extraction failed: {e}"
         return result
     finally:
+        # Release the render executor now that vision is done. wait=False
+        # is safe because `.result()` above already joined the future.
+        if _render_executor is not None:
+            _render_executor.shutdown(wait=False)
         duration_ms = (time.time() - t0) * 1000
         ext = extraction if "extraction" in dir() else {}
         non_null = len([v for v in ext.values() if v is not None]) if isinstance(ext, dict) else 0

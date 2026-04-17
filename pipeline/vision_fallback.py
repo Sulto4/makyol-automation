@@ -13,8 +13,8 @@ import logging
 import re
 
 import fitz  # PyMuPDF
-import requests
 
+from pipeline.http_client import get_session
 from pipeline.config import (
     AI_MAX_TOKENS,
     AI_MODEL,
@@ -138,28 +138,44 @@ def _pdf_pages_to_base64(pdf_path: str) -> list[str]:
     Pages are chosen by _select_page_indices: first two + last page for
     documents longer than 2 pages, otherwise every page.
 
+    Pages are rendered in parallel via a small thread pool — each pixmap
+    render is independent, and PyMuPDF releases the GIL during the C-side
+    rasterization, so this yields real wall-clock gain on 3-page docs.
+
     Args:
         pdf_path: Path to the PDF file.
 
     Returns:
         List of base64-encoded PNG strings, in page order.
     """
-    images_b64: list[str] = []
+    from concurrent.futures import ThreadPoolExecutor
+
     doc = fitz.open(pdf_path)
     try:
         indices = _select_page_indices(len(doc))
-        for i in indices:
-            page = doc[i]
-            pix = page.get_pixmap(dpi=VISION_DPI)
+        if not indices:
+            return []
+
+        def _render_one(idx: int) -> str:
+            pix = doc[idx].get_pixmap(dpi=VISION_DPI)
             png_bytes = pix.tobytes("png")
-            b64_str = base64.b64encode(png_bytes).decode("ascii")
-            images_b64.append(b64_str)
+            return base64.b64encode(png_bytes).decode("ascii")
+
+        # max_workers caps at page count — no point over-provisioning.
+        with ThreadPoolExecutor(max_workers=min(len(indices), 3)) as ex:
+            # Preserve page order: map() iterates the futures in submission order.
+            return list(ex.map(_render_one, indices))
     finally:
         doc.close()
-    return images_b64
 
 
-def extract_with_vision(pdf_path: str, category: str) -> dict | None:
+def extract_with_vision(
+    pdf_path: str,
+    category: str,
+    *,
+    images_b64: list[str] | None = None,
+    total_pages: int | None = None,
+) -> dict | None:
     """Extract structured data from a scanned PDF using Gemini Vision.
 
     Converts PDF pages to images and sends them as multimodal content
@@ -168,6 +184,12 @@ def extract_with_vision(pdf_path: str, category: str) -> dict | None:
     Args:
         pdf_path: Path to the PDF file.
         category: Document category from classification.
+        images_b64: Optional pre-rendered base64 PNG pages. When passed,
+            the orchestrator has already started rendering in parallel
+            with classification; we skip the re-render here and go straight
+            to the API call. Must be paired with `total_pages`.
+        total_pages: Optional page count of the source PDF. Only used for
+            logging the selection decision when `images_b64` is supplied.
 
     Returns:
         Extraction result dict, or None on failure.
@@ -175,18 +197,24 @@ def extract_with_vision(pdf_path: str, category: str) -> dict | None:
     import time as _time
     total_start = _time.time()
 
-    # Convert pages to base64 images
+    # Convert pages to base64 images — unless the caller already did so.
     convert_start = _time.time()
     try:
-        # Gather page count separately so we can log the selection decision.
-        try:
-            _doc = fitz.open(pdf_path)
-            total_pages = len(_doc)
-            _doc.close()
-        except Exception:
-            total_pages = 0
-        selected_indices = _select_page_indices(total_pages)
-        images_b64 = _pdf_pages_to_base64(pdf_path)
+        if images_b64 is None:
+            # Gather page count separately so we can log the selection decision.
+            try:
+                _doc = fitz.open(pdf_path)
+                total_pages = len(_doc)
+                _doc.close()
+            except Exception:
+                total_pages = 0
+            selected_indices = _select_page_indices(total_pages)
+            images_b64 = _pdf_pages_to_base64(pdf_path)
+        else:
+            # Trust the pre-rendered images — derive selected_indices for
+            # logging parity. If total_pages wasn't provided, we emit 0.
+            total_pages = total_pages if total_pages is not None else 0
+            selected_indices = _select_page_indices(total_pages) if total_pages else list(range(len(images_b64)))
     except Exception as e:
         logger.error(
             "Failed to convert PDF pages to images: %s", e,
@@ -254,7 +282,7 @@ def extract_with_vision(pdf_path: str, category: str) -> dict | None:
 
     api_start = _time.time()
     try:
-        response = requests.post(
+        response = get_session().post(
             OPENROUTER_URL, headers=headers, json=payload, timeout=120
         )
         api_duration_ms = round((_time.time() - api_start) * 1000, 1)

@@ -8,6 +8,13 @@ import { PipelineClientService, PipelineError } from '../services/pipelineClient
 import { AuditService } from '../services/auditService';
 import { ArchiveService, ArchiveDocumentRecord } from '../services/archiveService';
 import { logger } from '../utils/logger';
+import { createLimiter } from '../utils/concurrency';
+
+// How many documents to process simultaneously in batch operations
+// (reprocessAll, uploadFolder). 3 is well below the concurrency we
+// validated in benchmarks (8 docs × 9 models with no throttling) and
+// leaves safety headroom under burst.
+const BATCH_CONCURRENCY = 3;
 
 /**
  * Return the owner filter for the current request:
@@ -465,13 +472,13 @@ export class DocumentController {
 
       void (async () => {
         try {
-          logger.info(`[${jobId}] Background reprocessing STARTED for ${documents.length} documents (owner=${owner ?? 'admin-all'})`);
-          const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+          logger.info(`[${jobId}] Background reprocessing STARTED for ${documents.length} documents (owner=${owner ?? 'admin-all'}, concurrency=${BATCH_CONCURRENCY})`);
 
           let processed = 0;
           let failed = 0;
+          const limit = createLimiter(BATCH_CONCURRENCY);
 
-          for (const document of documents) {
+          await Promise.all(documents.map(document => limit(async () => {
             try {
               logger.info(`[${jobId}] Processing document ${document.id} (${document.original_filename})...`);
               await this.reprocessSingleDocument(document, owner, actor);
@@ -491,11 +498,7 @@ export class DocumentController {
                 logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${updateError.message}`);
               }
             }
-
-            if (document !== documents[documents.length - 1]) {
-              await delay(1000);
-            }
-          }
+          })));
 
           logger.info(`[${jobId}] Batch reprocessing complete: ${processed} succeeded, ${failed} failed out of ${documents.length}`);
         } catch (bgError: any) {
@@ -691,13 +694,14 @@ export class DocumentController {
       });
 
       void (async () => {
-        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         let processed = 0;
         let failed = 0;
         const total = documentsToProcess.length;
+        const limit = createLimiter(BATCH_CONCURRENCY);
 
-        for (let i = 0; i < total; i++) {
-          const { document } = documentsToProcess[i];
+        logger.info(`[${jobId}] Folder upload processing STARTED for ${total} documents (concurrency=${BATCH_CONCURRENCY})`);
+
+        await Promise.all(documentsToProcess.map(({ document }) => limit(async () => {
           try {
             await this.documentModel.updateStatus(document.id, {
               processing_status: ProcessingStatus.PROCESSING,
@@ -739,11 +743,7 @@ export class DocumentController {
               logger.error(`[${jobId}] Failed to update status for document ${document.id}: ${statusError.message}`);
             }
           }
-
-          if (i < total - 1) {
-            await delay(500);
-          }
-        }
+        })));
 
         logger.info(`[${jobId}] Folder upload processing complete: ${processed} succeeded, ${failed} failed out of ${total}`);
       })();

@@ -29,6 +29,23 @@ logging.getLogger("pdfminer.pdfdocument").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
+def get_page_count(pdf_path: str) -> int:
+    """Return the number of pages in a PDF, or 0 if it can't be opened.
+
+    Used by the pipeline orchestrator for classification heuristics so it
+    doesn't have to import fitz directly or duplicate the open-then-close
+    boilerplate.
+    """
+    try:
+        doc = fitz.open(pdf_path)
+        try:
+            return len(doc)
+        finally:
+            doc.close()
+    except Exception:
+        return 0
+
+
 def _extraction_metrics(pdf_path: str, text: str, engine: str) -> dict:
     """Compute structured metrics for text extraction logging.
 
@@ -69,13 +86,49 @@ def _extraction_metrics(pdf_path: str, text: str, engine: str) -> dict:
     }
 
 
+def _run_engine(engine_name: str, fn, pdf_path: str, engine_attempts: list[dict]) -> str:
+    """Run a text extraction engine and record its timing/outcome.
+
+    Returns the extracted text (empty string on failure). Side-effect:
+    appends an attempt dict to `engine_attempts`. Keeping this helper
+    makes the race in extract_text_from_pdf read top-to-bottom without
+    repeating the try/except/timing pattern three times.
+    """
+    import time as _time
+    t0 = _time.time()
+    try:
+        text = fn(pdf_path) or ""
+        engine_attempts.append({
+            "engine": engine_name, "ok": True,
+            "text_length": len(text),
+            "duration_ms": round((_time.time() - t0) * 1000, 1),
+        })
+        return text
+    except Exception as e:
+        engine_attempts.append({
+            "engine": engine_name, "ok": False,
+            "error": str(e),
+            "duration_ms": round((_time.time() - t0) * 1000, 1),
+        })
+        logger.warning("%s failed for %s: %s", engine_name, pdf_path, e,
+                       extra={"extra_data": {
+                           "step": "text_extraction",
+                           "engine": engine_name, "error": str(e),
+                       }})
+        return ""
+
+
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text from a PDF using multi-engine strategy.
 
     Strategy:
-    1. Try pdfplumber (best for digitally-created PDFs)
-    2. If insufficient text, try PyMuPDF
-    3. If still insufficient, try OCR via Tesseract
+    1. Race pdfplumber and PyMuPDF in parallel (both are fast, ms–100s of
+       ms; running them concurrently costs no extra latency on the happy
+       path and halves the worst case when pdfplumber is slow).
+    2. Apply preference: pdfplumber wins if it returned ≥MIN_TEXT_LENGTH;
+       otherwise take whichever produced more text. Preserves the prior
+       ordering so there's no quality regression vs the serial version.
+    3. Only if both fast engines gave insufficient text do we pay for OCR.
 
     Args:
         pdf_path: Path to the PDF file.
@@ -83,102 +136,34 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     Returns:
         Extracted text string. May be empty if all engines fail.
     """
-    import time as _time
+    from concurrent.futures import ThreadPoolExecutor
+
     filename = os.path.basename(pdf_path)
-    text = ""
-    engine = "none"
-    # Per-engine timings give us a clear view of where OCR-heavy docs spend
-    # their seconds. Without this we could only see the total.
     engine_attempts: list[dict] = []
 
-    # Engine 1: pdfplumber
-    _t0 = _time.time()
-    try:
-        text = _extract_with_pdfplumber(pdf_path)
-        attempt = {
-            "engine": "pdfplumber",
-            "ok": True,
-            "text_length": len(text),
-            "duration_ms": round((_time.time() - _t0) * 1000, 1),
-        }
-        engine_attempts.append(attempt)
-        if text.strip():
-            engine = "pdfplumber"
-        if len(text.strip()) >= MIN_TEXT_LENGTH:
-            metrics = _extraction_metrics(pdf_path, text, engine)
-            metrics["engine_attempts"] = engine_attempts
-            logger.info("Text extraction result for %s", filename,
-                        extra={"extra_data": metrics})
-            return text
-    except Exception as e:
-        engine_attempts.append({
-            "engine": "pdfplumber", "ok": False,
-            "error": str(e),
-            "duration_ms": round((_time.time() - _t0) * 1000, 1),
-        })
-        logger.warning("pdfplumber failed for %s: %s", pdf_path, e,
-                       extra={"extra_data": {
-                           "step": "text_extraction",
-                           "engine": "pdfplumber", "error": str(e),
-                       }})
+    # Engines 1 + 2 in parallel: pdfplumber and PyMuPDF.
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="text-engine") as ex:
+        plumber_fut = ex.submit(_run_engine, "pdfplumber", _extract_with_pdfplumber,
+                                pdf_path, engine_attempts)
+        pymupdf_fut = ex.submit(_run_engine, "pymupdf", _extract_with_pymupdf,
+                                pdf_path, engine_attempts)
+        text_plumber = plumber_fut.result()
+        text_pymupdf = pymupdf_fut.result()
 
-    # Engine 2: PyMuPDF
-    _t0 = _time.time()
-    try:
-        text_pymupdf = _extract_with_pymupdf(pdf_path)
-        attempt = {
-            "engine": "pymupdf",
-            "ok": True,
-            "text_length": len(text_pymupdf),
-            "duration_ms": round((_time.time() - _t0) * 1000, 1),
-        }
-        engine_attempts.append(attempt)
-        if len(text_pymupdf.strip()) > len(text.strip()):
-            text = text_pymupdf
-            engine = "pymupdf"
-        if len(text.strip()) >= MIN_TEXT_LENGTH:
-            metrics = _extraction_metrics(pdf_path, text, engine)
-            metrics["engine_attempts"] = engine_attempts
-            logger.info("Text extraction result for %s", filename,
-                        extra={"extra_data": metrics})
-            return text
-    except Exception as e:
-        engine_attempts.append({
-            "engine": "pymupdf", "ok": False,
-            "error": str(e),
-            "duration_ms": round((_time.time() - _t0) * 1000, 1),
-        })
-        logger.warning("PyMuPDF failed for %s: %s", pdf_path, e,
-                       extra={"extra_data": {
-                           "step": "text_extraction",
-                           "engine": "pymupdf", "error": str(e),
-                       }})
+    # Preference mirrors the old serial logic: pdfplumber wins when it
+    # produced usable text; otherwise take the longer of the two.
+    if len(text_plumber.strip()) >= MIN_TEXT_LENGTH:
+        text, engine = text_plumber, "pdfplumber"
+    elif len(text_pymupdf.strip()) > len(text_plumber.strip()):
+        text, engine = text_pymupdf, "pymupdf"
+    else:
+        text, engine = text_plumber, ("pdfplumber" if text_plumber else "none")
 
-    # Engine 3: OCR via Tesseract
-    _t0 = _time.time()
-    try:
-        text_ocr = _extract_with_ocr(pdf_path)
-        attempt = {
-            "engine": "ocr",
-            "ok": True,
-            "text_length": len(text_ocr),
-            "duration_ms": round((_time.time() - _t0) * 1000, 1),
-        }
-        engine_attempts.append(attempt)
+    # Engine 3: OCR fallback — only if neither cheap engine produced enough.
+    if len(text.strip()) < MIN_TEXT_LENGTH:
+        text_ocr = _run_engine("ocr", _extract_with_ocr, pdf_path, engine_attempts)
         if len(text_ocr.strip()) > len(text.strip()):
-            text = text_ocr
-            engine = "ocr"
-    except Exception as e:
-        engine_attempts.append({
-            "engine": "ocr", "ok": False,
-            "error": str(e),
-            "duration_ms": round((_time.time() - _t0) * 1000, 1),
-        })
-        logger.warning("OCR failed for %s: %s", pdf_path, e,
-                       extra={"extra_data": {
-                           "step": "text_extraction",
-                           "engine": "ocr", "error": str(e),
-                       }})
+            text, engine = text_ocr, "ocr"
 
     metrics = _extraction_metrics(pdf_path, text, engine)
     metrics["engine_attempts"] = engine_attempts
@@ -243,16 +228,31 @@ def _extract_with_pymupdf(pdf_path: str) -> str:
 
 
 def _extract_with_ocr(pdf_path: str) -> str:
-    """Extract text using OCR (Tesseract) via PyMuPDF page rendering."""
-    pages_text = []
+    """Extract text using OCR (Tesseract) via PyMuPDF page rendering.
+
+    Pages are rendered + OCR'd in parallel. Tesseract is a separate C
+    subprocess (so no Python GIL contention) and pixmap rendering
+    releases the GIL, so this gives near-linear speedup on multi-page
+    scanned docs. Workers capped at 4 to stay memory-friendly — each
+    page at 300 DPI is ~5–15 MB in memory during OCR.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
     doc = fitz.open(pdf_path)
     try:
-        for page in doc:
-            pix = page.get_pixmap(dpi=300)
+        page_count = len(doc)
+        if page_count == 0:
+            return ""
+
+        def _ocr_one(idx: int) -> str:
+            pix = doc[idx].get_pixmap(dpi=300)
             img_bytes = pix.tobytes("png")
             image = Image.open(io.BytesIO(img_bytes))
-            page_text = pytesseract.image_to_string(image, lang=OCR_LANGUAGES)
-            pages_text.append(page_text)
+            return pytesseract.image_to_string(image, lang=OCR_LANGUAGES) or ""
+
+        with ThreadPoolExecutor(max_workers=min(page_count, 4),
+                                thread_name_prefix="ocr") as ex:
+            pages_text = list(ex.map(_ocr_one, range(page_count)))
     finally:
         doc.close()
     return "\n".join(pages_text)

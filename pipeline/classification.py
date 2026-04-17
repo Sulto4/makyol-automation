@@ -12,8 +12,7 @@ import re
 import json
 import logging
 
-import requests
-
+from pipeline.http_client import get_session
 from pipeline.config import (
     OPENROUTER_API_KEY,
     OPENROUTER_URL,
@@ -551,7 +550,7 @@ def classify_by_ai(text: str, filename: str = "") -> tuple[str, float, str] | No
     )
 
     try:
-        response = requests.post(
+        response = get_session().post(
             OPENROUTER_URL, headers=headers, json=payload, timeout=120
         )
         response.raise_for_status()

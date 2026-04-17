@@ -1,5 +1,6 @@
 """FastAPI service for the Makyol document processing pipeline."""
 
+import asyncio
 import logging
 import os
 import tempfile
@@ -145,7 +146,14 @@ async def process_single(file: UploadFile = File(...)):
             tmp.write(content)
             tmp_path = tmp.name
 
-        result = process_document(tmp_path, filename=file.filename)
+        # process_document is synchronous and does blocking I/O (PDF
+        # parsing, OpenRouter HTTP calls). Running it directly here would
+        # block the asyncio event loop and serialize all concurrent
+        # requests. Offload to a thread so multiple docs can be in flight
+        # at once — backend now sends up to BATCH_CONCURRENCY=3.
+        result = await asyncio.to_thread(
+            process_document, tmp_path, filename=file.filename
+        )
         _track_result(result)
         return result
 
