@@ -13,6 +13,20 @@ SCHEMAS_DIR = PIPELINE_DIR / "schemas"
 BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:3000")
 SETTINGS_API_ENDPOINT = f"{BACKEND_API_URL}/api/settings"
 
+# Shared secret for service-to-service auth — bypasses JWT on the backend
+# when the backend's authMiddleware sees this value as Bearer. Must match
+# INTERNAL_API_TOKEN set on the backend service.
+_INTERNAL_API_TOKEN = os.environ.get("INTERNAL_API_TOKEN", "").strip()
+
+
+def _auth_headers() -> dict:
+    """Headers to attach to backend-bound requests when the internal
+    service token is configured. Returns an empty dict if the token is
+    missing so legacy deployments keep working."""
+    if _INTERNAL_API_TOKEN:
+        return {"Authorization": f"Bearer {_INTERNAL_API_TOKEN}"}
+    return {}
+
 
 def fetch_settings_from_api(timeout: int = 5, retries: int = 5, retry_delay: float = 2.0) -> Optional[Dict[str, Any]]:
     """
@@ -31,7 +45,7 @@ def fetch_settings_from_api(timeout: int = 5, retries: int = 5, retry_delay: flo
 
     for attempt in range(retries + 1):
         try:
-            response = requests.get(SETTINGS_API_ENDPOINT, timeout=timeout)
+            response = requests.get(SETTINGS_API_ENDPOINT, timeout=timeout, headers=_auth_headers())
             response.raise_for_status()
 
             response_data = response.json()
