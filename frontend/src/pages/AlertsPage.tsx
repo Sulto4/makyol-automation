@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDocuments, useDocumentDetails } from '../hooks/useDocuments';
 import DocumentsTable, {
   type SortField,
@@ -61,13 +62,49 @@ const TAB_CONFIGS: TabConfig[] = [
   },
 ];
 
+const VALID_TABS = new Set<AlertTab>(TAB_CONFIGS.map((t) => t.key));
+const DEFAULT_TAB: AlertTab = 'expirate';
+const DEFAULT_SORT_FIELD: SortField = 'uploaded_at';
+const DEFAULT_SORT_DIR: SortDirection = 'desc';
+const DEFAULT_PER_PAGE = 20;
+
 export default function AlertsPage() {
   const { data, isLoading, isError, error } = useDocuments();
-  const [activeTab, setActiveTab] = useState<AlertTab>('expirate');
-  const [sortField, setSortField] = useState<SortField>('uploaded_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeTab: AlertTab = (() => {
+    const t = searchParams.get('tab') as AlertTab | null;
+    return t && VALID_TABS.has(t) ? t : DEFAULT_TAB;
+  })();
+  const sortField = (searchParams.get('sort') as SortField) || DEFAULT_SORT_FIELD;
+  const sortDirection: SortDirection =
+    searchParams.get('dir') === 'asc' ? 'asc' : DEFAULT_SORT_DIR;
+  const currentPage = Math.max(1, Number(searchParams.get('page')) || 1);
+  const perPage = Math.max(1, Number(searchParams.get('per')) || DEFAULT_PER_PAGE);
+
+  // Helper that merges param updates while keeping the URL clean (drop defaults)
+  const updateParams = useCallback(
+    (next: Partial<Record<'tab' | 'sort' | 'dir' | 'page' | 'per', string>>) => {
+      setSearchParams(
+        (prev) => {
+          const merged = new URLSearchParams(prev);
+          for (const [k, v] of Object.entries(next)) {
+            if (v == null) merged.delete(k);
+            else merged.set(k, v);
+          }
+          // Drop defaults so URLs stay tidy
+          if (merged.get('tab') === DEFAULT_TAB) merged.delete('tab');
+          if (merged.get('sort') === DEFAULT_SORT_FIELD) merged.delete('sort');
+          if (merged.get('dir') === DEFAULT_SORT_DIR) merged.delete('dir');
+          if (merged.get('page') === '1') merged.delete('page');
+          if (merged.get('per') === String(DEFAULT_PER_PAGE)) merged.delete('per');
+          return merged;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   const allDocuments = useMemo(() => data?.documents ?? [], [data]);
 
@@ -176,6 +213,12 @@ export default function AlertsPage() {
     return sortedDocuments.slice(start, start + perPage);
   }, [sortedDocuments, currentPage, perPage]);
 
+  // Store sorted document IDs for prev/next navigation in detail view
+  useMemo(() => {
+    const ids = sortedDocuments.map((d) => d.id);
+    sessionStorage.setItem('docNavIds', JSON.stringify(ids));
+  }, [sortedDocuments]);
+
   // Extractions for visible rows
   const visibleExtractions = useMemo(() => {
     const map = new Map<number, ExtractionResult>();
@@ -189,19 +232,34 @@ export default function AlertsPage() {
   const handleSort = useCallback(
     (field: SortField) => {
       if (field === sortField) {
-        setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+        updateParams({ dir: sortDirection === 'asc' ? 'desc' : 'asc' });
       } else {
-        setSortField(field);
-        setSortDirection('asc');
+        updateParams({ sort: field, dir: 'asc' });
       }
     },
-    [sortField]
+    [sortField, sortDirection, updateParams],
   );
 
-  const handleTabChange = useCallback((tab: AlertTab) => {
-    setActiveTab(tab);
-    setCurrentPage(1);
-  }, []);
+  const handleTabChange = useCallback(
+    (tab: AlertTab) => {
+      updateParams({ tab, page: '1' });
+    },
+    [updateParams],
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      updateParams({ page: String(page) });
+    },
+    [updateParams],
+  );
+
+  const handlePerPageChange = useCallback(
+    (per: number) => {
+      updateParams({ per: String(per), page: '1' });
+    },
+    [updateParams],
+  );
 
   if (isLoading) {
     return (
@@ -279,8 +337,8 @@ export default function AlertsPage() {
             currentPage={currentPage}
             totalItems={sortedDocuments.length}
             perPage={perPage}
-            onPageChange={setCurrentPage}
-            onPerPageChange={setPerPage}
+            onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
           />
         </>
       )}
