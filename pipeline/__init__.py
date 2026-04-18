@@ -135,6 +135,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
         "extraction": {},
         "review_status": "FAILED",
         "used_vision": False,
+        "page_count": None,
         "error": None,
     }
 
@@ -171,6 +172,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
     # otherwise be paid serially between classification end and vision
     # call start.
     page_count = get_page_count(pdf_path)
+    result["page_count"] = page_count or None
     _render_executor: ThreadPoolExecutor | None = None
     images_future = None
     if use_vision:

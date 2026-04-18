@@ -77,6 +77,7 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
             </DataField>
             <DataField label="Metodă clasificare" value={doc.metoda_clasificare ?? 'N/A'} />
             <DataField label="Dimensiune" value={formatFileSize(doc.file_size)} />
+            <DataField label="Număr pagini" value={doc.page_count != null ? String(doc.page_count) : null} />
           </dl>
         </div>
 

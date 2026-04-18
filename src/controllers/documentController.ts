@@ -141,6 +141,7 @@ export class DocumentController {
       processing_status: ProcessingStatus.COMPLETED,
       processing_completed_at: new Date(),
       error_message: null,
+      page_count: pipelineResponse.page_count ?? null,
     }, owner);
 
     // Silence unused-parameter lint when actorUserId not needed yet (audit is in caller)
@@ -321,6 +322,7 @@ export class DocumentController {
         await this.documentModel.updateStatus(document.id, {
           processing_status: ProcessingStatus.COMPLETED,
           processing_completed_at: new Date(),
+          page_count: pipelineResponse.page_count ?? null,
         }, owner);
 
         try {

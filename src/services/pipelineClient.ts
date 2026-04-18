@@ -37,6 +37,7 @@ export interface PipelineResponse {
   review_status: string;
   review_reasons?: PipelineReviewReason[];
   used_vision: boolean;
+  page_count?: number | null;
   total_duration_ms?: number;
   error: string | null;
 }

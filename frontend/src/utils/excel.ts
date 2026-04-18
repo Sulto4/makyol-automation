@@ -31,6 +31,7 @@ export async function exportToExcel(
     'Companie',
     'Distribuitor',
     'Data Expirare',
+    'Pagini',
     'Încărcat La',
   ];
 
@@ -66,6 +67,7 @@ export async function exportToExcel(
       extraction?.companie ?? '',
       extraction?.distribuitor ?? '',
       dateExpirare === '—' ? '' : dateExpirare,
+      doc.page_count ?? '',
       dateUploaded === '—' ? '' : dateUploaded,
     ]);
   });

@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Download, FileSpreadsheet, Trash2, Archive } from 'lucide-react';
+import { Download, FileSpreadsheet, Trash2, Archive, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useDocuments, useDocumentDetails, useClearDocuments } from '../hooks/useDocuments';
+import { useDocuments, useDocumentDetails, useClearDocuments, useReprocessAll } from '../hooks/useDocuments';
 import { useFilterStore } from '../store/filterStore';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 import DocumentFilters from '../components/documents/DocumentFilters';
@@ -26,8 +26,10 @@ export default function DocumentsPage() {
   } = useFilterStore();
 
   const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showReprocessDialog, setShowReprocessDialog] = useState(false);
 
   const clearMutation = useClearDocuments();
+  const reprocessMutation = useReprocessAll();
 
   const allDocuments = useMemo(() => data?.documents ?? [], [data]);
 
@@ -81,6 +83,10 @@ export default function DocumentsPage() {
         case 'confidence':
           aVal = a.confidence ?? -1;
           bVal = b.confidence ?? -1;
+          break;
+        case 'page_count':
+          aVal = a.page_count ?? -1;
+          bVal = b.page_count ?? -1;
           break;
         case 'processing_status':
           aVal = a.processing_status;
@@ -173,6 +179,28 @@ export default function DocumentsPage() {
     });
   }
 
+  // Reprocess respects the active processing-status filter so the user can
+  // narrow to e.g. "failed" and retry only those, without touching the rest.
+  const reprocessOptions = processingStatus
+    ? { status: processingStatus }
+    : undefined;
+  const reprocessTargetCount = processingStatus
+    ? allDocuments.filter((d) => d.processing_status === processingStatus).length
+    : allDocuments.length;
+
+  function handleReprocessAll() {
+    reprocessMutation.mutate(reprocessOptions, {
+      onSuccess: (data) => {
+        toast.success(`Reprocesare pornită pentru ${data.total} document(e). Statusurile se vor actualiza automat.`);
+        setShowReprocessDialog(false);
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Eroare la pornirea reprocesării');
+        setShowReprocessDialog(false);
+      },
+    });
+  }
+
   function handleExportCSV() {
     const items = sortedDocuments.map((doc) => ({
       document: doc,
@@ -258,6 +286,16 @@ export default function DocumentsPage() {
             {isArchiving ? 'Se descarcă...' : 'Descarcă Arhivă ZIP'}
           </button>
           <button
+            onClick={() => setShowReprocessDialog(true)}
+            disabled={reprocessTargetCount === 0 || reprocessMutation.isPending}
+            className="inline-flex items-center gap-2 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${reprocessMutation.isPending ? 'animate-spin' : ''}`} />
+            {processingStatus
+              ? `Reprocesează (${processingStatus})`
+              : 'Reprocesează tot'}
+          </button>
+          <button
             onClick={() => setShowClearDialog(true)}
             disabled={allDocuments.length === 0 || clearMutation.isPending}
             className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -304,6 +342,21 @@ export default function DocumentsPage() {
         onConfirm={handleClearDocuments}
         onCancel={() => setShowClearDialog(false)}
         variant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={showReprocessDialog}
+        title="Reprocesează documente"
+        message={
+          processingStatus
+            ? `Vor fi reprocesate ${reprocessTargetCount} document(e) cu status "${processingStatus}". Procesarea rulează în fundal — statusurile se vor actualiza automat.`
+            : `Vor fi reprocesate toate cele ${reprocessTargetCount} document(e). Procesarea rulează în fundal — statusurile se vor actualiza automat.`
+        }
+        confirmLabel={reprocessMutation.isPending ? 'Se pornește...' : 'Reprocesează'}
+        cancelLabel="Anulează"
+        onConfirm={handleReprocessAll}
+        onCancel={() => setShowReprocessDialog(false)}
+        variant="warning"
       />
     </div>
   );

@@ -27,6 +27,7 @@ export function exportToCSV(
     'Companie',
     'Distribuitor',
     'Data Expirare',
+    'Pagini',
     'Încărcat La',
   ];
 
@@ -43,6 +44,7 @@ export function exportToCSV(
     extraction?.companie ?? '',
     extraction?.distribuitor ?? '',
     formatDate(extraction?.data_expirare ?? null),
+    doc.page_count != null ? String(doc.page_count) : '',
     formatDate(doc.uploaded_at),
   ]);
 

@@ -10,6 +10,7 @@ export type SortField =
   | 'companie'
   | 'distribuitor'
   | 'data_expirare'
+  | 'page_count'
   | 'confidence'
   | 'processing_status'
   | 'uploaded_at';
@@ -29,6 +30,7 @@ const COLUMNS: Column[] = [
   { key: 'companie', label: 'Companie' },
   { key: 'distribuitor', label: 'Distribuitor' },
   { key: 'data_expirare', label: 'Data expirare' },
+  { key: 'page_count', label: 'Pagini' },
   { key: 'confidence', label: 'Încredere' },
   { key: 'processing_status', label: 'Status procesare' },
   { key: 'uploaded_at', label: 'Data încărcare' },
@@ -51,7 +53,7 @@ export default function DocumentsTable({
 }: DocumentsTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      <table className="w-full min-w-[1460px] table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+      <table className="w-full min-w-[1540px] table-fixed divide-y divide-gray-200 dark:divide-gray-700">
         <colgroup>
           <col className="w-[200px]" /> {/* Fișier */}
           <col className="w-[180px]" /> {/* Categorie */}
@@ -60,6 +62,7 @@ export default function DocumentsTable({
           <col className="w-[130px]" /> {/* Companie */}
           <col className="w-[130px]" /> {/* Distribuitor */}
           <col className="w-[180px]" /> {/* Data expirare */}
+          <col className="w-[80px]" />  {/* Pagini */}
           <col className="w-[100px]" /> {/* Încredere */}
           <col className="w-[130px]" /> {/* Status procesare */}
           <col className="w-[130px]" /> {/* Data încărcare */}

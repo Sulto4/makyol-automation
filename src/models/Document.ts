@@ -40,6 +40,7 @@ export interface Document {
   review_status: ReviewStatus | null;
   relative_path: string | null;
   owner_user_id: string | null;
+  page_count: number | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -73,6 +74,7 @@ export interface UpdateDocumentStatusInput {
   confidence?: number;
   metoda_clasificare?: string;
   review_status?: ReviewStatus;
+  page_count?: number | null;
 }
 
 /**
@@ -209,6 +211,10 @@ export class DocumentModel {
     if (statusUpdate.processing_completed_at) {
       setClauses.push(`processing_completed_at = $${i++}`);
       values.push(statusUpdate.processing_completed_at);
+    }
+    if (statusUpdate.page_count !== undefined) {
+      setClauses.push(`page_count = $${i++}`);
+      values.push(statusUpdate.page_count);
     }
 
     let where = `WHERE id = $${i++}`;

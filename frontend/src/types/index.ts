@@ -62,6 +62,7 @@ export interface Document {
   review_status: ReviewStatus | null;
   error_message: string | null;
   relative_path: string | null;
+  page_count: number | null;
   uploaded_at: string;
   processing_started_at: string | null;
   processing_completed_at: string | null;
