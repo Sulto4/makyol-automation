@@ -14,7 +14,10 @@ export interface AppConfig {
   };
   api: {
     prefix: string;
-    corsOrigin: string;
+    corsOrigin: string[];
+  };
+  auth: {
+    registerEnabled: boolean;
   };
 }
 
@@ -27,6 +30,21 @@ const getEnvVar = (key: string, defaultValue?: string): string => {
     throw new Error(`Environment variable ${key} is not defined`);
   }
   return value;
+};
+
+const getEnvVarAsBool = (key: string, defaultValue: boolean): boolean => {
+  const value = process.env[key];
+  if (value === undefined) return defaultValue;
+  return /^(1|true|yes|on)$/i.test(value.trim());
+};
+
+const getEnvVarAsList = (key: string, defaultValue: string[]): string[] => {
+  const value = process.env[key];
+  if (value === undefined || value.trim() === '') return defaultValue;
+  return value
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
 };
 
 const getEnvVarAsNumber = (key: string, defaultValue?: number): number => {
@@ -54,7 +72,10 @@ export const appConfig: AppConfig = {
   },
   api: {
     prefix: getEnvVar('API_PREFIX', '/api'),
-    corsOrigin: getEnvVar('CORS_ORIGIN', 'http://localhost:3000'),
+    corsOrigin: getEnvVarAsList('CORS_ORIGIN', ['http://localhost:5173', 'http://localhost:3000']),
+  },
+  auth: {
+    registerEnabled: getEnvVarAsBool('REGISTER_ENABLED', false),
   },
 };
 

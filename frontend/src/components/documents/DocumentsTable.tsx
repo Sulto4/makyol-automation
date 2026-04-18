@@ -13,6 +13,7 @@ export type SortField =
   | 'page_count'
   | 'confidence'
   | 'processing_status'
+  | 'review_status'
   | 'uploaded_at';
 
 export type SortDirection = 'asc' | 'desc';

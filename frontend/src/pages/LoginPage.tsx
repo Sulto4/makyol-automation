@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
+const REGISTER_ENABLED = import.meta.env.VITE_REGISTER_ENABLED === 'true';
+
 interface LocationState {
   from?: { pathname?: string };
 }
@@ -82,12 +84,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
-          Nu ai cont?{' '}
-          <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
-            Înregistrează-te
-          </Link>
-        </p>
+        {REGISTER_ENABLED ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
+            Nu ai cont?{' '}
+            <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
+              Înregistrează-te
+            </Link>
+          </p>
+        ) : (
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-4">
+            Conturile sunt create de administrator.
+          </p>
+        )}
       </div>
     </div>
   );

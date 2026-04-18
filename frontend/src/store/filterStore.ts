@@ -2,7 +2,19 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DocumentCategory, ProcessingStatus, ReviewStatus } from '../types';
 
-type SortField = 'filename' | 'categorie' | 'confidence' | 'processing_status' | 'review_status' | 'uploaded_at';
+type SortField =
+  | 'filename'
+  | 'categorie'
+  | 'material'
+  | 'producator'
+  | 'companie'
+  | 'distribuitor'
+  | 'data_expirare'
+  | 'page_count'
+  | 'confidence'
+  | 'processing_status'
+  | 'review_status'
+  | 'uploaded_at';
 type SortDirection = 'asc' | 'desc';
 
 interface FilterState {
