@@ -1,11 +1,26 @@
 import type { Document, ExtractionResult } from '../types';
 import { getCategoryLabel } from './categories';
-import { formatDate } from './dates';
+import { formatDate, parseDataExpirare } from './dates';
 
 interface DocumentWithExtraction {
   document: Document;
   extraction: ExtractionResult | null;
 }
+
+// Same column order as Excel and the UI table. CSV can't carry per-row
+// formatting, so the expired-row highlight is Excel-only.
+const HEADERS = [
+  'Fișier',
+  'Categorie',
+  'Material',
+  'Producător',
+  'Companie',
+  'Distribuitor',
+  'Data expirare',
+  'Pagini',
+  'Adresă producător',
+  'Status procesare',
+];
 
 /**
  * Export filtered document data as a downloadable CSV file.
@@ -14,44 +29,31 @@ export function exportToCSV(
   items: DocumentWithExtraction[],
   filename: string = 'documente-makyol.csv'
 ): void {
-  const headers = [
-    'ID',
-    'Fișier Original',
-    'Categorie',
-    'Status Procesare',
-    'Status Review',
-    'Încredere',
-    'Metodă Clasificare',
-    'Material',
-    'Producător',
-    'Companie',
-    'Distribuitor',
-    'Data Expirare',
-    'Pagini',
-    'Încărcat La',
-  ];
+  const rows = items.map(({ document: doc, extraction }) => {
+    const dateExpirareRaw = extraction?.data_expirare ?? null;
+    const dateExpirareDisplay = formatDate(dateExpirareRaw);
+    const dateExpirareCell =
+      parseDataExpirare(dateExpirareRaw) === null
+        ? (dateExpirareRaw ?? '')
+        : dateExpirareDisplay;
 
-  const rows = items.map(({ document: doc, extraction }) => [
-    String(doc.id),
-    doc.original_filename,
-    getCategoryLabel(doc.categorie),
-    doc.processing_status,
-    doc.review_status ?? '',
-    doc.confidence != null ? (doc.confidence * 100).toFixed(1) + '%' : '',
-    doc.metoda_clasificare ?? '',
-    extraction?.material ?? '',
-    extraction?.producator ?? '',
-    extraction?.companie ?? '',
-    extraction?.distribuitor ?? '',
-    formatDate(extraction?.data_expirare ?? null),
-    doc.page_count != null ? String(doc.page_count) : '',
-    formatDate(doc.uploaded_at),
-  ]);
+    return [
+      doc.original_filename,
+      getCategoryLabel(doc.categorie),
+      extraction?.material ?? '',
+      extraction?.producator ?? '',
+      extraction?.companie ?? '',
+      extraction?.distribuitor ?? '',
+      dateExpirareCell,
+      doc.page_count != null ? String(doc.page_count) : '',
+      extraction?.adresa_producator ?? '',
+      doc.processing_status,
+    ];
+  });
 
-  const csvContent = [headers, ...rows]
+  const csvContent = [HEADERS, ...rows]
     .map((row) =>
       row.map((cell) => {
-        // Escape cells containing commas, quotes, or newlines
         if (/[",\n\r]/.test(cell)) {
           return '"' + cell.replace(/"/g, '""') + '"';
         }
@@ -60,7 +62,6 @@ export function exportToCSV(
     )
     .join('\n');
 
-  // Add BOM for proper UTF-8 handling in Excel
   const bom = '\uFEFF';
   const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

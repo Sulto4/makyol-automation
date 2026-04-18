@@ -1,15 +1,36 @@
 import ExcelJS from 'exceljs';
 import type { Document, ExtractionResult } from '../types';
 import { getCategoryLabel } from './categories';
-import { formatDate } from './dates';
+import { formatDate, parseDataExpirare, isExpired } from './dates';
 
 interface DocumentWithExtraction {
   document: Document;
   extraction: ExtractionResult | null;
 }
 
+// Column order mirrors DocumentsTable in the UI; status_procesare kept at the
+// end so the table reads as data-first, status-after.
+const HEADERS = [
+  'Fișier',
+  'Categorie',
+  'Material',
+  'Producător',
+  'Companie',
+  'Distribuitor',
+  'Data expirare',
+  'Pagini',
+  'Adresă producător',
+  'Status procesare',
+];
+
+// Excel "Bad" preset — light pink fill + dark red text. Stays readable.
+const EXPIRED_FILL_ARGB = 'FFFFC7CE';
+const EXPIRED_FONT_ARGB = 'FF9C0006';
+const ALT_ROW_FILL_ARGB = 'FFF2F2F2';
+
 /**
  * Export filtered document data as a downloadable Excel file with formatting.
+ * Rows whose data_expirare is past today get a red highlight.
  */
 export async function exportToExcel(
   items: DocumentWithExtraction[],
@@ -18,25 +39,7 @@ export async function exportToExcel(
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Documente Makyol');
 
-  const headers = [
-    'ID',
-    'Fișier Original',
-    'Categorie',
-    'Status Procesare',
-    'Status Review',
-    'Încredere',
-    'Metodă Clasificare',
-    'Material',
-    'Producător',
-    'Companie',
-    'Distribuitor',
-    'Data Expirare',
-    'Pagini',
-    'Încărcat La',
-  ];
-
-  // Add header row
-  const headerRow = worksheet.addRow(headers);
+  const headerRow = worksheet.addRow(HEADERS);
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     cell.fill = {
@@ -46,49 +49,61 @@ export async function exportToExcel(
     };
   });
 
-  // Freeze top row
   worksheet.views = [{ state: 'frozen' as const, ySplit: 1 }];
 
-  // Add data rows
   items.forEach(({ document: doc, extraction }) => {
-    const dateExpirare = formatDate(extraction?.data_expirare ?? null);
-    const dateUploaded = formatDate(doc.uploaded_at);
+    const dateExpirareRaw = extraction?.data_expirare ?? null;
+    const dateExpirareDate = parseDataExpirare(dateExpirareRaw);
+    const dateExpirareDisplay = formatDate(dateExpirareRaw);
+    const expired = isExpired(dateExpirareDate);
 
-    worksheet.addRow([
-      String(doc.id),
+    const row = worksheet.addRow([
       doc.original_filename,
       getCategoryLabel(doc.categorie),
-      doc.processing_status,
-      doc.review_status ?? '',
-      doc.confidence != null ? (doc.confidence * 100).toFixed(1) + '%' : '',
-      doc.metoda_clasificare ?? '',
       extraction?.material ?? '',
       extraction?.producator ?? '',
       extraction?.companie ?? '',
       extraction?.distribuitor ?? '',
-      dateExpirare === '—' ? '' : dateExpirare,
+      dateExpirareDisplay === '—' ? (dateExpirareRaw ?? '') : dateExpirareDisplay,
       doc.page_count ?? '',
-      dateUploaded === '—' ? '' : dateUploaded,
+      extraction?.adresa_producator ?? '',
+      doc.processing_status,
     ]);
+
+    if (expired) {
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: EXPIRED_FILL_ARGB },
+        };
+        cell.font = { color: { argb: EXPIRED_FONT_ARGB }, bold: true };
+      });
+    }
   });
 
-  // Alternating row colors (starting from row 2)
+  // Alternating row colors — only for non-expired rows so red highlight wins.
   for (let i = 2; i <= worksheet.rowCount; i++) {
     const row = worksheet.getRow(i);
+    const firstCell = row.getCell(1);
+    const isExpiredRow =
+      firstCell.fill &&
+      firstCell.fill.type === 'pattern' &&
+      (firstCell.fill as ExcelJS.FillPattern).fgColor?.argb === EXPIRED_FILL_ARGB;
+    if (isExpiredRow) continue;
     if (i % 2 === 0) {
       row.eachCell({ includeEmpty: true }, (cell) => {
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFF2F2F2' },
+          fgColor: { argb: ALT_ROW_FILL_ARGB },
         };
       });
     }
   }
 
-  // Auto-fit column widths
   worksheet.columns.forEach((column, index) => {
-    let maxLength = headers[index].length;
+    let maxLength = HEADERS[index].length;
     column.eachCell?.({ includeEmpty: false }, (cell) => {
       const cellValue = cell.value ? String(cell.value) : '';
       if (cellValue.length > maxLength) {
@@ -98,13 +113,11 @@ export async function exportToExcel(
     column.width = Math.max(10, Math.min(50, maxLength + 2));
   });
 
-  // Auto-filter on all columns
   worksheet.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: 1, column: headers.length },
+    to: { row: 1, column: HEADERS.length },
   };
 
-  // Generate and download
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
