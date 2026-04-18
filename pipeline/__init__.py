@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from pipeline.config import settings
 from pipeline.text_extraction import extract_text_from_pdf, get_page_count
 from pipeline.classification import classify_document
 from pipeline.date_normalizer import scan_filename_dates
@@ -236,7 +237,14 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             # extraction so category-specific rules (ISO material=None,
             # CUI merging, OCR/diacritics, truncation, nume_document) apply.
             extraction = normalize_extraction_result(vision_extraction, category, text)
-            extraction["extraction_model"] = "vision:" + (vision_extraction.get("extraction_model") or "gemini-2.0-flash")
+            # Label the extraction with the model actually invoked, not a
+             # frozen string. Prefer what vision_fallback reported; fall back
+             # to the live settings value so UI/UX reflect the hot-reloaded
+             # model instead of a stale "2.0-flash" from older builds.
+            extraction["extraction_model"] = "vision:" + (
+                vision_extraction.get("extraction_model")
+                or settings.ai_model.replace("google/", "")
+            )
         else:
             extraction = extract_document_data(text, category, filename=filename)
     except Exception as e:

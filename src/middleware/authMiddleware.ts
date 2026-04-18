@@ -44,6 +44,22 @@ export function createAuthMiddleware(authService: AuthService) {
       return;
     }
 
+    // Internal-service bearer: lets the Python pipeline (and any other
+    // container on the Docker network) read settings and other protected
+    // endpoints without a user JWT. Only active when INTERNAL_API_TOKEN
+    // is set in the env; value must be at least 16 chars so it doesn't
+    // collapse into a trivial shared secret.
+    const internalToken = process.env.INTERNAL_API_TOKEN;
+    if (internalToken && internalToken.length >= 16 && token === internalToken) {
+      req.user = {
+        id: '00000000-0000-0000-0000-000000000000',
+        email: 'internal@pipeline',
+        is_admin: true,
+      };
+      next();
+      return;
+    }
+
     try {
       const payload = authService.verifyJwt(token);
       req.user = {

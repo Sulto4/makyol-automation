@@ -334,6 +334,33 @@ def extract_with_vision(
         content = re.sub(r"\s*```$", "", content.strip())
 
         parsed = json.loads(content)
+
+        # Multi-certificate PDFs (e.g. combined ISO 14001 + 45001) sometimes
+        # trigger Gemini to reply with a JSON array of objects instead of the
+        # single object the downstream normalizer expects. Collapse by picking
+        # the first object and logging so the pattern is visible if it recurs.
+        if isinstance(parsed, list):
+            logger.warning(
+                "Vision returned a JSON array; taking first element",
+                extra={"extra_data": {
+                    "step": "vision_extract_array",
+                    "category": category,
+                    "array_length": len(parsed),
+                }},
+            )
+            parsed = parsed[0] if parsed and isinstance(parsed[0], dict) else {}
+
+        if not isinstance(parsed, dict):
+            logger.error(
+                "Vision returned unexpected JSON type; treating as empty",
+                extra={"extra_data": {
+                    "step": "vision_extract_bad_type",
+                    "category": category,
+                    "type": type(parsed).__name__,
+                }},
+            )
+            return None
+
         non_null = [k for k, v in parsed.items() if v is not None]
         logger.info(
             "Vision extraction parsed",
