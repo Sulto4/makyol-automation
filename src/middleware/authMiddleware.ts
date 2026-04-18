@@ -65,3 +65,23 @@ export function createAuthMiddleware(authService: AuthService) {
     }
   };
 }
+
+/**
+ * Requires the caller to be authenticated AND flagged is_admin.
+ * Must be mounted AFTER createAuthMiddleware so req.user is populated.
+ */
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({
+      error: { name: 'AuthError', message: 'Autentificare necesară', code: 'MISSING_TOKEN' },
+    });
+    return;
+  }
+  if (!req.user.is_admin) {
+    res.status(403).json({
+      error: { name: 'AuthError', message: 'Acces interzis — necesită admin', code: 'ADMIN_REQUIRED' },
+    });
+    return;
+  }
+  next();
+}

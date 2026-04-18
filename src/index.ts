@@ -10,7 +10,9 @@ import { createDocumentRoutes } from './routes/documents';
 import { createAuditLogRoutes } from './routes/auditLogs';
 import { createSettingsRoutes } from './routes/settings';
 import { createAuthRoutes } from './routes/auth';
+import { createAdminUsersRoutes } from './routes/adminUsers';
 import { createAuthMiddleware } from './middleware/authMiddleware';
+import { authLimiter, apiLimiter } from './middleware/rateLimiter';
 import { AuthService } from './services/authService';
 
 /**
@@ -59,6 +61,11 @@ async function runMigrations(pool: Pool): Promise<void> {
 function createApp(pool: Pool): Express {
   const app = express();
 
+  // Behind nginx + Cloudflare Tunnel, the real client IP arrives in X-Forwarded-For.
+  // Trust exactly one proxy hop (nginx) so rate limiters key by the right IP and
+  // we don't accept spoofed hops from untrusted sources.
+  app.set('trust proxy', 1);
+
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -90,6 +97,14 @@ function createApp(pool: Pool): Express {
     });
   });
 
+  // Rate limiters — attach BEFORE routes so they run first for matching paths.
+  // authLimiter is stricter (5/min) on login/register; apiLimiter is a global
+  // 100/min guard on the whole /api surface. /health is already registered
+  // above so uptime probes are not rate-limited.
+  app.use(`${appConfig.api.prefix}/auth/login`, authLimiter);
+  app.use(`${appConfig.api.prefix}/auth/register`, authLimiter);
+  app.use(appConfig.api.prefix, apiLimiter);
+
   // Auth: public routes + middleware factory shared with protected routers
   const authService = new AuthService(pool);
   const requireAuth = createAuthMiddleware(authService);
@@ -109,6 +124,9 @@ function createApp(pool: Pool): Express {
   app.use(`${appConfig.api.prefix}/documents`, authGuard, createDocumentRoutes(pool));
   app.use(`${appConfig.api.prefix}/audit-logs`, authGuard, createAuditLogRoutes(pool));
   app.use(`${appConfig.api.prefix}/settings`, authGuard, createSettingsRoutes(pool));
+
+  // Admin-only user management (createAdminUsersRoutes applies requireAuth + requireAdmin internally)
+  app.use(`${appConfig.api.prefix}/auth/admin/users`, createAdminUsersRoutes(pool));
 
   // 404 handler (must be after all routes)
   app.use(notFoundHandler);

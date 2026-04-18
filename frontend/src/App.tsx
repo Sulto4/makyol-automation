@@ -10,7 +10,10 @@ import AlertsPage from './pages/AlertsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import { useAuthStore } from './store/authStore';
+
+const REGISTER_ENABLED = import.meta.env.VITE_REGISTER_ENABLED === 'true';
 
 export default function App() {
   const refreshUser = useAuthStore((s) => s.refreshUser);
@@ -26,7 +29,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {REGISTER_ENABLED && <Route path="/register" element={<RegisterPage />} />}
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
@@ -36,6 +39,12 @@ export default function App() {
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute adminOnly />}>
+        <Route element={<Layout />}>
+          <Route path="/admin/users" element={<AdminUsersPage />} />
         </Route>
       </Route>
     </Routes>

@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Upload, AlertTriangle, Settings, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, FileText, Upload, AlertTriangle, Settings, Moon, Sun, Users } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuthStore } from '../../store/authStore';
 import UserMenu from './UserMenu';
 
 const navItems = [
@@ -14,6 +15,7 @@ const navItems = [
 export default function Sidebar() {
   const { resolvedTheme, setMode } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const isAdmin = useAuthStore((s) => s.user?.is_admin ?? false);
 
   const toggleTheme = () => {
     setMode(isDark ? 'light' : 'dark');
@@ -43,6 +45,21 @@ export default function Sidebar() {
             {label}
           </NavLink>
         ))}
+        {isAdmin && (
+          <NavLink
+            to="/admin/users"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+              }`
+            }
+          >
+            <Users size={18} />
+            Utilizatori
+          </NavLink>
+        )}
       </nav>
       <div className="border-t border-gray-200 dark:border-gray-700 py-2">
         <UserMenu />

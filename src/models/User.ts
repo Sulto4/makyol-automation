@@ -82,6 +82,29 @@ export class UserModel {
       [id],
     );
   }
+
+  async listAll(): Promise<User[]> {
+    const res: QueryResult<User> = await this.pool.query(
+      'SELECT * FROM users ORDER BY created_at ASC',
+    );
+    return res.rows;
+  }
+
+  async setActive(id: string, isActive: boolean): Promise<User | null> {
+    const res: QueryResult<User> = await this.pool.query(
+      'UPDATE users SET is_active = $2 WHERE id = $1 RETURNING *',
+      [id, isActive],
+    );
+    return res.rows[0] || null;
+  }
+
+  async updatePassword(id: string, passwordHash: string): Promise<User | null> {
+    const res: QueryResult<User> = await this.pool.query(
+      'UPDATE users SET password_hash = $2 WHERE id = $1 RETURNING *',
+      [id, passwordHash],
+    );
+    return res.rows[0] || null;
+  }
 }
 
 export default UserModel;
