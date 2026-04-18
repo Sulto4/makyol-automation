@@ -18,14 +18,17 @@ interface SettingsFormProps {
 }
 
 // Options mirror the backend validator in src/services/settingsService.ts.
+// Restricted to vision-capable models only — the pipeline uses the same
+// model for classification, text extraction AND vision fallback, so a
+// text-only model would fail on vision requests.
 // Ordered roughly by quality-per-dollar on the 20-hard-doc benchmark.
 const AI_MODEL_OPTIONS = [
   { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash — rapid, cost minim (baseline)' },
+  { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (Latest) — vision, echilibru preț/calitate' },
   { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash Preview — +15% calitate, ~5× cost' },
   { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro — scump și mai puțin stabil pe prompturi JSON' },
   { value: 'anthropic/claude-haiku-4.5', label: 'Claude Haiku 4.5' },
   { value: 'anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5' },
-  { value: 'openai/gpt-5.4-nano', label: 'GPT-5.4 Nano — cel mai ieftin OpenAI' },
   { value: 'openai/gpt-5.4-mini', label: 'GPT-5.4 Mini — locul 2 la calitate în benchmark' },
   { value: 'openai/gpt-4o', label: 'GPT-4o' },
   { value: 'qwen/qwen3-vl-235b-a22b-instruct', label: 'Qwen3-VL 235B — cost/quality win, dar lent' },

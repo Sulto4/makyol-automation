@@ -34,7 +34,7 @@ interface SettingsState {
 
 const defaultSettings = {
   openrouter_api_key: '',
-  ai_model: 'google/gemini-2.0-flash-001',
+  ai_model: 'google/gemini-2.5-flash',
   ai_temperature: 0.0,
   tesseract_path: 'D:\\Tesseract-OCR\\tesseract.exe',
   vision_max_pages: 3,

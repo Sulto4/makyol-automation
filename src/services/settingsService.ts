@@ -7,7 +7,7 @@ import { logger } from '../utils/logger';
  * Default values for settings
  */
 export const DEFAULT_SETTINGS: Record<string, SettingValue> = {
-  [SettingKey.AI_MODEL]: 'google/gemini-2.0-flash-001',
+  [SettingKey.AI_MODEL]: 'google/gemini-2.5-flash',
   [SettingKey.AI_TEMPERATURE]: 0.0,
   [SettingKey.TESSERACT_PATH]: 'D:\\Tesseract-OCR\\tesseract.exe',
   [SettingKey.VISION_MAX_PAGES]: 3,
@@ -33,16 +33,17 @@ const VALIDATION_RULES: Record<string, ValidationRule> = {
   [SettingKey.AI_MODEL]: {
     required: true,
     type: 'string',
-    // Options reflect the benchmark (20 hard docs × 9 models) and include
-    // only models we confirmed work end-to-end with the vision + JSON
-    // prompt. Ordering roughly matches quality-per-dollar on the corpus.
+    // Restricted to vision-capable models only — the pipeline uses the
+    // same model for classification, text extraction AND vision fallback,
+    // so a text-only model would fail on vision requests. Ordering
+    // roughly matches quality-per-dollar on the 20-hard-doc benchmark.
     options: [
       'google/gemini-2.0-flash-001',
+      'google/gemini-2.5-flash',
       'google/gemini-3-flash-preview',
       'google/gemini-2.5-pro',
       'anthropic/claude-haiku-4.5',
       'anthropic/claude-sonnet-4.5',
-      'openai/gpt-5.4-nano',
       'openai/gpt-5.4-mini',
       'openai/gpt-4o',
       'qwen/qwen3-vl-235b-a22b-instruct',

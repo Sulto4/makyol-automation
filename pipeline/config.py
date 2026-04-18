@@ -143,7 +143,7 @@ class _PipelineSettings:
                 "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",
             ),
         )
-        self.ai_model = _get_setting("ai_model", "google/gemini-2.0-flash-001")
+        self.ai_model = _get_setting("ai_model", "google/gemini-2.5-flash")
         self.ai_temperature = _get_setting("ai_temperature", 0.0)
         self.vision_max_pages = _get_setting("vision_max_pages", 3)
 
