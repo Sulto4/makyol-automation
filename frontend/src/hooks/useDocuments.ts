@@ -1,6 +1,6 @@
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listDocuments, getDocument, getDocumentStats, clearAllDocuments, reviewDocument } from '../api/documents';
-import type { ClearAllResponse, DocumentWithExtraction } from '../types';
+import { listDocuments, getDocument, getDocumentStats, clearAllDocuments, reviewDocument, reprocessAll } from '../api/documents';
+import type { ClearAllResponse, DocumentWithExtraction, ReprocessAllResponse } from '../types';
 
 /**
  * Fetch all documents for client-side pagination / filtering.
@@ -66,6 +66,23 @@ export function useClearDocuments() {
 
   return useMutation<ClearAllResponse, Error, void>({
     mutationFn: clearAllDocuments,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ['document-stats'] });
+    },
+  });
+}
+
+/**
+ * Mutation to batch-reprocess documents through the pipeline.
+ * Backend runs the work asynchronously and returns 202 immediately;
+ * the documents list will auto-poll while statuses flip to processing.
+ */
+export function useReprocessAll() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ReprocessAllResponse, Error, { status?: string; limit?: number } | undefined>({
+    mutationFn: (options) => reprocessAll(options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       queryClient.invalidateQueries({ queryKey: ['document-stats'] });

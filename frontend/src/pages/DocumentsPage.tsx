@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Download, FileSpreadsheet, Trash2, Archive, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDocuments, useDocumentDetails, useClearDocuments, useReprocessAll } from '../hooks/useDocuments';
 import { useFilterStore } from '../store/filterStore';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
@@ -13,9 +14,9 @@ import LoadingSpinner from '../components/shared/LoadingSpinner';
 import EmptyState from '../components/shared/EmptyState';
 import { exportToCSV } from '../utils/csv';
 import { exportToExcel } from '../utils/excel';
-import { downloadArchive } from '../api/documents';
+import { downloadArchive, getDocument } from '../api/documents';
 import { getCategoryLabel } from '../utils/categories';
-import type { ExtractionResult } from '../types';
+import type { Document, ExtractionResult } from '../types';
 
 export default function DocumentsPage() {
   const { data, isLoading, isError, error } = useDocuments();
@@ -27,9 +28,11 @@ export default function DocumentsPage() {
 
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showReprocessDialog, setShowReprocessDialog] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const clearMutation = useClearDocuments();
   const reprocessMutation = useReprocessAll();
+  const queryClient = useQueryClient();
 
   const allDocuments = useMemo(() => data?.documents ?? [], [data]);
 
@@ -158,12 +161,51 @@ export default function DocumentsPage() {
     [sortField, sortDirection, setSortField, setSortDirection]
   );
 
-  function handleExportExcel() {
-    const items = sortedDocuments.map((doc) => ({
+  /**
+   * Build the full export dataset by pulling extraction details for every
+   * filtered document — not just the page that's currently visible. Visible
+   * rows hit the React Query cache; the rest fetches once and caches for
+   * future operations.
+   */
+  async function buildExportItems(
+    docs: Document[],
+  ): Promise<{ document: Document; extraction: ExtractionResult | null }[]> {
+    const detailsById = new Map<number, ExtractionResult | null>();
+
+    await Promise.all(
+      docs.map(async (doc) => {
+        try {
+          const detail = await queryClient.fetchQuery({
+            queryKey: ['documents', doc.id],
+            queryFn: () => getDocument(doc.id),
+            staleTime: 10_000,
+          });
+          detailsById.set(doc.id, detail.extraction ?? null);
+        } catch {
+          detailsById.set(doc.id, null);
+        }
+      }),
+    );
+
+    return docs.map((doc) => ({
       document: doc,
-      extraction: extractions.get(doc.id) ?? null,
+      extraction: detailsById.get(doc.id) ?? null,
     }));
-    exportToExcel(items);
+  }
+
+  async function handleExportExcel() {
+    if (isExporting) return;
+    setIsExporting(true);
+    const toastId = toast.loading(`Se pregătesc datele pentru ${sortedDocuments.length} document(e)...`);
+    try {
+      const items = await buildExportItems(sortedDocuments);
+      await exportToExcel(items);
+      toast.success('Excel exportat', { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Eroare la export Excel', { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   function handleClearDocuments() {
@@ -201,12 +243,19 @@ export default function DocumentsPage() {
     });
   }
 
-  function handleExportCSV() {
-    const items = sortedDocuments.map((doc) => ({
-      document: doc,
-      extraction: extractions.get(doc.id) ?? null,
-    }));
-    exportToCSV(items);
+  async function handleExportCSV() {
+    if (isExporting) return;
+    setIsExporting(true);
+    const toastId = toast.loading(`Se pregătesc datele pentru ${sortedDocuments.length} document(e)...`);
+    try {
+      const items = await buildExportItems(sortedDocuments);
+      exportToCSV(items);
+      toast.success('CSV exportat', { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Eroare la export CSV', { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   const [isArchiving, setIsArchiving] = useState(false);
@@ -263,19 +312,19 @@ export default function DocumentsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportExcel}
-            disabled={sortedDocuments.length === 0}
+            disabled={sortedDocuments.length === 0 || isExporting}
             className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileSpreadsheet className="h-4 w-4" />
-            Export Excel
+            {isExporting ? 'Se exportă...' : 'Export Excel'}
           </button>
           <button
             onClick={handleExportCSV}
-            disabled={sortedDocuments.length === 0}
+            disabled={sortedDocuments.length === 0 || isExporting}
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            Export CSV
+            {isExporting ? 'Se exportă...' : 'Export CSV'}
           </button>
           <button
             onClick={handleExportArchive}

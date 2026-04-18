@@ -45,6 +45,49 @@ function formatDateValue(value: string | Date | null | undefined): string {
 }
 
 /**
+ * Try to parse a data_expirare value as a real date.
+ * Accepts ISO ("2027-06-15"), Romanian (DD.MM.YYYY / DD/MM/YYYY / DD-MM-YYYY)
+ * and yyyy/MM/dd. Returns null for duration phrases like "Pe durata
+ * contractului" so we don't redden rows we don't actually know are expired.
+ */
+function parseExpirareDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+
+  const iso = new Date(trimmed);
+  if (!isNaN(iso.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(trimmed)) return iso;
+
+  const m = trimmed.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  const m2 = trimmed.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (m2) {
+    const [, yyyy, mm, dd] = m2;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  return null;
+}
+
+function isExpired(date: Date | null): boolean {
+  if (!date) return false;
+  // Compare at start-of-day so "today's expiry" is still considered valid.
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return date.getTime() < now.getTime();
+}
+
+const EXPIRED_FILL_ARGB = 'FFFFC7CE';
+const EXPIRED_FONT_ARGB = 'FF9C0006';
+const ALT_ROW_FILL_ARGB = 'FFF2F2F2';
+
+/**
  * URL-encode special characters in a path segment for Excel HYPERLINK formula
  */
 function encodeHyperlinkPath(relativePath: string): string {
@@ -103,29 +146,27 @@ export class ArchiveService {
   }
 
   /**
-   * Build the Excel workbook with the 13-column schema and hyperlinks.
+   * Build the Excel workbook. Column order mirrors the frontend table and
+   * the standalone Excel/CSV exports. Filename (col A) becomes a HYPERLINK
+   * pointing to the PDF inside the ZIP. Expired rows get a red highlight.
    */
   private buildWorkbook(records: ArchiveDocumentRecord[]): ExcelJS.Workbook {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Documente Makyol');
 
     const headers = [
-      'ID',
-      'Fișier Original',
+      'Fișier',
       'Categorie',
-      'Status Procesare',
-      'Status Review',
-      'Încredere',
-      'Metodă Clasificare',
       'Material',
       'Producător',
       'Companie',
       'Distribuitor',
-      'Data Expirare',
-      'Încărcat La',
+      'Data expirare',
+      'Pagini',
+      'Adresă producător',
+      'Status procesare',
     ];
 
-    // Add header row
     const headerRow = worksheet.addRow(headers);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -136,30 +177,35 @@ export class ArchiveService {
       };
     });
 
-    // Freeze top row
     worksheet.views = [{ state: 'frozen' as const, ySplit: 1 }];
 
-    // Add data rows
+    const expiredRowNumbers = new Set<number>();
+
     for (const { document: doc, extraction, relativePath } of records) {
+      const dateExpirareRaw = extraction?.data_expirare ?? null;
+      const parsedDate = parseExpirareDate(dateExpirareRaw);
+      // For real dates, render via Romanian locale; for duration phrases we
+      // pass the raw string through so the cell still shows context.
+      const dateDisplay = parsedDate
+        ? formatDateValue(parsedDate)
+        : (dateExpirareRaw ?? '');
+
       const row = worksheet.addRow([
-        String(doc.id),
         doc.original_filename,
         getCategoryLabel(doc.categorie),
-        doc.processing_status,
-        doc.review_status ?? '',
-        doc.confidence != null ? (doc.confidence * 100).toFixed(1) + '%' : '',
-        doc.metoda_clasificare ?? '',
         extraction?.material ?? '',
         extraction?.producator ?? '',
         extraction?.companie ?? '',
         extraction?.distribuitor ?? '',
-        formatDateValue(extraction?.data_expirare),
-        formatDateValue(doc.uploaded_at),
+        dateDisplay,
+        doc.page_count ?? '',
+        extraction?.adresa_producator ?? '',
+        doc.processing_status,
       ]);
 
-      // Replace column B with HYPERLINK formula
+      // Filename is now in column A — point the hyperlink there.
       const encodedPath = encodeHyperlinkPath(relativePath.replace(/\\/g, '/'));
-      const filenameCell = row.getCell(2);
+      const filenameCell = row.getCell(1);
       filenameCell.value = {
         formula: `HYPERLINK("./${encodedPath}","${doc.original_filename.replace(/"/g, '""')}")`,
       } as ExcelJS.CellFormulaValue;
@@ -167,32 +213,44 @@ export class ArchiveService {
         color: { argb: 'FF0563C1' },
         underline: true,
       };
-    }
 
-    // Alternating row colors (starting from row 2)
-    for (let i = 2; i <= worksheet.rowCount; i++) {
-      const row = worksheet.getRow(i);
-      if (i % 2 === 0) {
+      if (isExpired(parsedDate)) {
+        expiredRowNumbers.add(row.number);
         row.eachCell({ includeEmpty: true }, (cell) => {
-          // Preserve hyperlink font styling on column B
-          if (cell.address.startsWith('B')) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF2F2F2' },
-            };
-            return;
-          }
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFF2F2F2' },
+            fgColor: { argb: EXPIRED_FILL_ARGB },
+          };
+          // Keep hyperlink underline but switch its colour to dark red so
+          // the cell stays readable on the pink fill.
+          cell.font = { color: { argb: EXPIRED_FONT_ARGB }, bold: true };
+        });
+        // Re-apply hyperlink underline (the eachCell loop above replaces it)
+        filenameCell.font = {
+          color: { argb: EXPIRED_FONT_ARGB },
+          underline: true,
+          bold: true,
+        };
+      }
+    }
+
+    // Alternating row colours — skip rows already coloured red so the expiry
+    // highlight wins.
+    for (let i = 2; i <= worksheet.rowCount; i++) {
+      if (expiredRowNumbers.has(i)) continue;
+      const row = worksheet.getRow(i);
+      if (i % 2 === 0) {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: ALT_ROW_FILL_ARGB },
           };
         });
       }
     }
 
-    // Auto-fit column widths
     worksheet.columns.forEach((column, index) => {
       let maxLength = headers[index].length;
       column.eachCell?.({ includeEmpty: false }, (cell) => {
@@ -204,7 +262,6 @@ export class ArchiveService {
       column.width = Math.max(10, Math.min(50, maxLength + 2));
     });
 
-    // Auto-filter on all columns
     worksheet.autoFilter = {
       from: { row: 1, column: 1 },
       to: { row: 1, column: headers.length },
