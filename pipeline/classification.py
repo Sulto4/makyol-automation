@@ -12,6 +12,8 @@ import re
 import json
 import logging
 
+import requests
+
 from pipeline.http_client import get_session
 from pipeline.config import (
     OPENROUTER_URL,

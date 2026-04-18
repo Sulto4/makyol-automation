@@ -13,6 +13,7 @@ import logging
 import re
 
 import fitz  # PyMuPDF
+import requests
 
 from pipeline.http_client import get_session
 from pipeline.config import (

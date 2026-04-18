@@ -11,6 +11,8 @@ import json
 import logging
 from datetime import datetime, timedelta
 
+import requests
+
 from pipeline.http_client import get_session
 
 from pipeline.config import (
