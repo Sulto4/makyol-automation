@@ -75,6 +75,11 @@ REGULI GENERALE PER CAMP:
 - **adresa_producator** — adresa completa (strada, numar, oras, judet, cod postal).
   - Maxim {max_address} caractere.
 
+- **adresa_distribuitor** — adresa completa a distribuitorului autorizat, DOAR daca este explicit mentionata.
+  - Returneaza null daca documentul nu identifica un distribuitor distinct cu adresa proprie.
+  - NU copia adresa producatorului aici. Aceste doua campuri pot fi diferite (distribuitor local, producator in strainatate) sau identice in unele documente.
+  - Cel mai des intalnit in AUTORIZATIE_DISTRIBUTIE. Maxim {max_address} caractere.
+
 - **nume_document** — titlul oficial al documentului (max 40 caractere, fara numere/date/coduri).
   - Exemple: "Agrement Tehnic", "Aviz Sanitar", "Certificat CE PED",
     "Certificat ISO 9001", "Certificat de Inregistrare", "Fisa Tehnica Produs",
@@ -97,6 +102,7 @@ Format raspuns (include TOATE campurile — pune null unde nu se aplica):
     "producator": "Numele Producatorului" sau null,
     "distribuitor": "Numele Distribuitorului" sau null,
     "adresa_producator": "Adresa completa" sau null,
+    "adresa_distribuitor": "Adresa completa a distribuitorului" sau null,
     "nume_document": "Titlul documentului" sau null,
     "cui_number": "cod CUI" sau null,
     "standard_iso": "ISO 9001:2015" sau null

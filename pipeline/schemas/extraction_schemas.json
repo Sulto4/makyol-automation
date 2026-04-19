@@ -15,7 +15,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -30,6 +30,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -44,7 +47,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -60,6 +63,9 @@
         },
         "adresa_producator": {
           "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
         }
       }
     },
@@ -72,7 +78,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -84,6 +90,9 @@
           "not_generic": true
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -98,7 +107,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -113,6 +122,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -127,7 +139,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -142,6 +154,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -156,7 +171,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -171,6 +186,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -185,7 +203,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -200,6 +218,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -214,7 +235,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -230,6 +251,9 @@
         },
         "adresa_producator": {
           "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
         }
       }
     },
@@ -242,7 +266,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -254,6 +278,9 @@
         },
         "adresa_producator": {
           "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
         }
       }
     },
@@ -262,7 +289,8 @@
         "companie"
       ],
       "optional_fields": [
-        "adresa_producator"
+        "adresa_producator",
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -270,6 +298,9 @@
           "no_comma_lists": true
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -284,7 +315,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -299,6 +330,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }
@@ -313,7 +347,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -329,6 +363,9 @@
         },
         "adresa_producator": {
           "max_length": 250
+        },
+        "adresa_distribuitor": {
+          "max_length": 250
         }
       }
     },
@@ -342,7 +379,7 @@
         "producator",
         "distribuitor",
         "adresa_producator",
-        "adresa_producator"
+        "adresa_distribuitor"
       ],
       "validation_rules": {
         "companie": {
@@ -357,6 +394,9 @@
           "format": "DD.MM.YYYY"
         },
         "adresa_producator": {
+          "max_length": 250
+        },
+        "adresa_distribuitor": {
           "max_length": 250
         }
       }

@@ -391,7 +391,7 @@ def process_document(pdf_path: str, filename: str = "") -> dict:
             )
             extraction["companie"] = extraction["producator"]
 
-        for field in ("adresa_producator",):
+        for field in ("adresa_producator", "adresa_distribuitor"):
             raw = extraction.get(field)
             if raw and raw.strip():
                 # Hallucination check: verify address actually appears in document text

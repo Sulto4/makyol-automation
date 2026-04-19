@@ -15,6 +15,7 @@ from pipeline.config import (
     MAX_ADDRESS_LENGTH,
     MAX_RETRIES,
 )
+from pipeline.country_detector import detect_address_country
 from pipeline.date_normalizer import normalize_data_expirare
 
 logger = logging.getLogger(__name__)
@@ -211,6 +212,7 @@ _REASON_PATTERNS = [
     (re.compile(r"^material is too generic"), "material_generic"),
     (re.compile(r"^material appears to be Chinese-only"), "material_chinese"),
     (re.compile(r"^(\w+) contains repeated segments"), "repeated_segments"),
+    (re.compile(r"^(adresa_distribuitor) is not a Romanian address"), "distribuitor_not_romanian"),
 ]
 
 
@@ -250,9 +252,18 @@ def _collect_issues(result: Dict[str, Any]) -> List[str]:
             issues.extend(_check_date(value, field))
 
     # Address checks
-    for field in ("adresa_producator",):
+    for field in ("adresa_producator", "adresa_distribuitor"):
         value = result.get(field, "")
         if value:
             issues.extend(_check_address(value, field))
+
+    # Country check for distributor address: non-Romanian addresses are flagged
+    # for human review. Producer address is not checked — foreign producers are
+    # expected and legitimate (many CE/PED certs come from Italy/Germany/China).
+    distribuitor_addr = result.get("adresa_distribuitor") or ""
+    if distribuitor_addr:
+        country = detect_address_country(distribuitor_addr)
+        if country == "OTHER":
+            issues.append("adresa_distribuitor is not a Romanian address")
 
     return issues
