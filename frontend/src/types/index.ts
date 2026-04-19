@@ -68,6 +68,11 @@ export interface Document {
   processing_completed_at: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * Joined from extraction_results for list views — may be absent for other fetch paths.
+   * Stored as DD.MM.YYYY (pipeline normalizer output) or ISO for legacy rows.
+   */
+  data_expirare?: string | null;
 }
 
 /**

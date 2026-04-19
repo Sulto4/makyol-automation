@@ -9,6 +9,7 @@ import Pagination from '../components/shared/Pagination';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import EmptyState from '../components/shared/EmptyState';
 import ProcessingBanner from '../components/shared/ProcessingBanner';
+import { parseDataExpirare, isExpired, isExpiringSoon } from '../utils/dates';
 import type { Document, ExtractionResult } from '../types';
 
 type AlertTab =
@@ -21,29 +22,19 @@ type AlertTab =
 interface TabConfig {
   key: AlertTab;
   label: string;
-  filter: (doc: Document, extraction?: ExtractionResult) => boolean;
+  filter: (doc: Document) => boolean;
 }
 
 const TAB_CONFIGS: TabConfig[] = [
   {
     key: 'expirate',
     label: 'Expirate',
-    filter: (_doc, extraction) => {
-      if (!extraction?.data_expirare) return false;
-      return new Date(extraction.data_expirare) < new Date();
-    },
+    filter: (doc) => isExpired(parseDataExpirare(doc.data_expirare ?? null)),
   },
   {
     key: 'expira_curand',
     label: 'Expiră curând',
-    filter: (_doc, extraction) => {
-      if (!extraction?.data_expirare) return false;
-      const expDate = new Date(extraction.data_expirare);
-      const today = new Date();
-      const in30Days = new Date();
-      in30Days.setDate(in30Days.getDate() + 30);
-      return expDate > today && expDate < in30Days;
-    },
+    filter: (doc) => isExpiringSoon(parseDataExpirare(doc.data_expirare ?? null), 30),
   },
   {
     key: 'esuate',
@@ -109,21 +100,8 @@ export default function AlertsPage() {
 
   const allDocuments = useMemo(() => data?.documents ?? [], [data]);
 
-  // Fetch extraction details for all documents to enable expiration filtering
-  const allIds = useMemo(() => allDocuments.map((d) => d.id), [allDocuments]);
-  const detailQueries = useDocumentDetails(allIds);
-
-  const extractionsMap = useMemo(() => {
-    const map = new Map<number, ExtractionResult>();
-    detailQueries.forEach((q) => {
-      if (q.data?.extraction) {
-        map.set(q.data.document.id, q.data.extraction);
-      }
-    });
-    return map;
-  }, [detailQueries]);
-
-  // Compute counts for each tab
+  // Compute counts for each tab — all filters read only from Document fields
+  // (including data_expirare joined into the list response), so no N+1 fetch.
   const tabCounts = useMemo(() => {
     const counts: Record<AlertTab, number> = {
       expirate: 0,
@@ -133,23 +111,20 @@ export default function AlertsPage() {
       necesita_review: 0,
     };
     for (const doc of allDocuments) {
-      const extraction = extractionsMap.get(doc.id);
       for (const tab of TAB_CONFIGS) {
-        if (tab.filter(doc, extraction)) {
+        if (tab.filter(doc)) {
           counts[tab.key]++;
         }
       }
     }
     return counts;
-  }, [allDocuments, extractionsMap]);
+  }, [allDocuments]);
 
   // Filter documents for active tab
   const activeConfig = TAB_CONFIGS.find((t) => t.key === activeTab)!;
   const filteredDocuments = useMemo(() => {
-    return allDocuments.filter((doc) =>
-      activeConfig.filter(doc, extractionsMap.get(doc.id))
-    );
-  }, [allDocuments, activeConfig, extractionsMap]);
+    return allDocuments.filter((doc) => activeConfig.filter(doc));
+  }, [allDocuments, activeConfig]);
 
   // Sorting
   const sortedDocuments = useMemo(() => {
@@ -176,10 +151,8 @@ export default function AlertsPage() {
           bVal = b.review_status ?? '';
           break;
         case 'data_expirare': {
-          const aExt = extractionsMap.get(a.id);
-          const bExt = extractionsMap.get(b.id);
-          aVal = aExt?.data_expirare ?? null;
-          bVal = bExt?.data_expirare ?? null;
+          aVal = parseDataExpirare(a.data_expirare ?? null)?.getTime() ?? null;
+          bVal = parseDataExpirare(b.data_expirare ?? null)?.getTime() ?? null;
           break;
         }
         case 'uploaded_at':
@@ -199,14 +172,14 @@ export default function AlertsPage() {
     // For "expirate" tab, sort by data_expirare desc (most recent first) by default
     if (activeTab === 'expirate' && sortField === 'uploaded_at') {
       sorted.sort((a, b) => {
-        const aExp = extractionsMap.get(a.id)?.data_expirare ?? '';
-        const bExp = extractionsMap.get(b.id)?.data_expirare ?? '';
-        return bExp.localeCompare(aExp);
+        const aExp = parseDataExpirare(a.data_expirare ?? null)?.getTime() ?? 0;
+        const bExp = parseDataExpirare(b.data_expirare ?? null)?.getTime() ?? 0;
+        return bExp - aExp;
       });
     }
 
     return sorted;
-  }, [filteredDocuments, sortField, sortDirection, activeTab, extractionsMap]);
+  }, [filteredDocuments, sortField, sortDirection, activeTab]);
 
   // Pagination
   const paginatedDocuments = useMemo(() => {
@@ -220,15 +193,23 @@ export default function AlertsPage() {
     sessionStorage.setItem('docNavIds', JSON.stringify(ids));
   }, [sortedDocuments]);
 
-  // Extractions for visible rows
+  // Extraction details only for the paginated rows — avoids N+1 fan-out across
+  // the whole list while keeping material/companie/producator visible in the table.
+  const visibleIds = useMemo(
+    () => paginatedDocuments.map((d) => d.id),
+    [paginatedDocuments],
+  );
+  const detailQueries = useDocumentDetails(visibleIds);
+
   const visibleExtractions = useMemo(() => {
     const map = new Map<number, ExtractionResult>();
-    for (const doc of paginatedDocuments) {
-      const ext = extractionsMap.get(doc.id);
-      if (ext) map.set(doc.id, ext);
-    }
+    detailQueries.forEach((q) => {
+      if (q.data?.extraction) {
+        map.set(q.data.document.id, q.data.extraction);
+      }
+    });
     return map;
-  }, [paginatedDocuments, extractionsMap]);
+  }, [detailQueries]);
 
   const handleSort = useCallback(
     (field: SortField) => {
