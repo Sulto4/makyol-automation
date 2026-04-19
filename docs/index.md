@@ -61,6 +61,7 @@ Hartă centrală a documentației. Fiecare intrare spune ce acoperă doc-ul și 
 | Setez mediul de dezvoltare | [development.md](./development.md) + [configuration.md](./configuration.md) |
 | Pornesc/opresc tunelul Cloudflare | [runbook.md](./runbook.md#cloudflare-tunnel) |
 | Fac backup la baza de date | [runbook.md](./runbook.md#backup-restore) |
+| Operez pe host Mac Mini (macOS) | [runbook.md](./runbook.md#host-mac-mini) + [deployment.md](./deployment.md#deployment-on-macos-mac-mini-production-host) |
 | Adaug un doc nou | [CONTRIBUTING-DOCS.md](./CONTRIBUTING-DOCS.md) + copiază [\_template.md](./_template.md) |
 
 ## Glosar
@@ -92,6 +93,8 @@ Hartă centrală a documentației. Fiecare intrare spune ce acoperă doc-ul și 
 **Reprocess-all** — endpoint `POST /api/documents/reprocess-all` care re-rulează pipeline-ul pe documente existente. Concurență limitată de setarea `batch_concurrency` (clamped `[1..10]`), citită la fiecare apel.
 
 **Settings hot-reload** — backend-ul apelează `POST /api/pipeline/reload-settings` fire-and-forget (5s timeout, erori înghițite) după fiecare upsert din `/api/settings/:key`. Pipeline re-citește din backend. Vezi [configuration.md](./configuration.md#hot-reload).
+
+**Host producție** — Mac Mini (macOS), runtime Docker: OrbStack. Istoric: prima desfășurare live 2026-04-18 pe PC Windows + Docker Desktop, migrată ulterior pe Mac Mini pentru uptime always-on. Ambele variante descrise în [deployment.md](./deployment.md).
 
 ## Convenții de contribuție
 

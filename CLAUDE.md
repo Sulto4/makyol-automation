@@ -2,6 +2,8 @@
 
 Acest fișier e prima lectură pentru orice agent AI care lucrează pe codebase-ul Makyol Automation.
 
+**Host producție:** Mac Mini (macOS, OrbStack). Dezvoltarea inițială s-a făcut pe Windows PC — vezi [`docs/deployment.md`](./docs/deployment.md) pentru ambele variante și [`docs/runbook.md#host-mac-mini`](./docs/runbook.md#host-mac-mini) pentru proceduri ops Mac.
+
 ## Unde găsești documentația
 
 Toată documentația proiectului e în [`docs/`](./docs/). Nu există docs dispersate prin cod.

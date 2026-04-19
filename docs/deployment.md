@@ -95,6 +95,103 @@ Fișierul `.vbs` din Startup folder lansează `cloudflared.exe` ascuns la fiecar
 
 > **De ce VBS în Startup în loc de `cloudflared service install`:** shell-ul Claude Code nu are permisiuni să creeze Windows services sau scheduled tasks (`schtasks` → Access Denied). VBS în Startup folder e user-level, nu necesită elevare. Trade-off acceptat.
 
+## Deployment on macOS (Mac Mini, production host)
+
+Stack-ul e portabil complet — Dockerfile-urile și compose file-ul nu au dependențe Windows. Pentru host `always-on` fără dependență de user session, se folosește un Mac Mini (macOS). Această secțiune descrie diferențele față de secțiunea Windows de mai sus.
+
+### Prerequisites
+
+```bash
+# Homebrew (dacă nu există)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+brew install git cloudflared
+brew install --cask orbstack
+```
+
+OrbStack e preferat față de Docker Desktop: pornește ca background service (fără user logged in), consum RAM ~500 MB vs 2-4 GB, file-sharing mai rapid pe bind mounts. CLI `docker`/`docker compose` identic.
+
+### Sistem
+
+- `System Settings → Users & Groups → Automatic login` — activat (user principal).
+- `System Settings → Energy` — **"Start up automatically after power failure"** ON, **"Prevent automatic sleeping"** ON, **"Wake for network access"** ON.
+- `System Settings → Sharing → Remote Login (SSH)` — ON, pentru mentenanță.
+- OrbStack: **Settings → General → Start at login** ON.
+
+### Clone + build
+
+```bash
+mkdir -p ~/apps && cd ~/apps
+git clone <repo> makyol-automation
+cd makyol-automation
+git checkout deploy/closed-beta-hardening
+
+cp .env.example .env
+# Editează: JWT_SECRET (openssl rand -hex 32), OPENROUTER_API_KEY, INTERNAL_API_TOKEN,
+# CORS_ORIGIN=https://makyol.voostvision.ro, PUBLIC_URL=https://makyol.voostvision.ro,
+# REGISTER_ENABLED=false, AUTH_DISABLED=false
+
+docker compose build     # 10-15 min prima dată pe ARM64 nativ
+docker compose up -d
+curl http://localhost/health
+```
+
+### Cloudflare Tunnel (macOS)
+
+Tunel nou per host (evită conflict cu tunelul Windows). Files stay în `~/.cloudflared/`.
+
+```bash
+cloudflared tunnel login      # browser — pick zone voostvision.ro
+cloudflared tunnel create makyol-mac
+cloudflared tunnel route dns makyol-mac makyol.voostvision.ro
+
+cat > ~/.cloudflared/config.yml <<'EOF'
+tunnel: <NEW-TUNNEL-ID>
+credentials-file: /Users/<user>/.cloudflared/<NEW-TUNNEL-ID>.json
+ingress:
+  - hostname: makyol.voostvision.ro
+    service: http://localhost:80
+  - service: http_status:404
+EOF
+
+# Test foreground
+cloudflared tunnel --config ~/.cloudflared/config.yml run makyol-mac
+
+# Install ca LaunchDaemon (rulează la boot, fără user logged in)
+sudo cloudflared service install
+sudo launchctl list | grep cloudflared
+```
+
+Spre deosebire de Windows VBS: LaunchDaemon rulează `root`-level, supraviețuiește logoff. Asta rezolvă constraintul "Docker Desktop cere sesiune logată".
+
+### Restore DB din dump (la migrare din Windows)
+
+```bash
+docker compose down
+docker volume rm makyol-automation_postgres_data
+docker compose up -d postgres
+sleep 10
+docker compose exec -T postgres pg_restore -U postgres -d postgres --clean --create < makyol-db.dump
+
+# Fix tesseract_path (Windows default în settings table)
+docker compose exec -T postgres psql -U postgres -d pdfextractor -c \
+  "UPDATE settings SET value = '\"/usr/bin/tesseract\"' WHERE key = 'tesseract_path';"
+
+docker compose up -d
+```
+
+### Fișiere (toate în afara repo-ului, pe Mac)
+
+| Ce | Unde |
+|----|------|
+| Binar `cloudflared` | `/opt/homebrew/bin/cloudflared` (brew) |
+| Config tunel | `~/.cloudflared/config.yml` |
+| Credentiale tunel | `~/.cloudflared/<tunnel-id>.json` + `cert.pem` |
+| Auto-start | `/Library/LaunchDaemons/com.cloudflare.cloudflared.plist` (generat de `service install`) |
+| Repo local | `~/apps/makyol-automation/` |
+
+Pentru proceduri ops (start/stop/restart OrbStack, tunnel, backup) vezi [runbook.md#host-mac-mini](./runbook.md#host-mac-mini).
+
 ## Dockerfile-uri
 
 ### Backend (`./Dockerfile`) — multi-stage

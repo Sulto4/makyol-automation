@@ -353,6 +353,124 @@ curl -s http://localhost:8001/api/pipeline/stats
 
 ---
 
+## Host: Mac Mini (macOS) {#host-mac-mini}
+
+Proceduri ops pe host macOS, alternative la cele Windows de mai sus. Path: `~/apps/makyol-automation/`.
+
+### Start / stop / restart stack
+
+```bash
+cd ~/apps/makyol-automation
+
+# Restart complet
+docker compose restart
+
+# Rebuild după update cod
+git pull && docker compose up -d --build
+
+# Status
+docker compose ps
+docker compose logs --tail=50 -f
+```
+
+### OrbStack
+
+```bash
+# Status
+orb status
+# Oprit? Pornește:
+open -a OrbStack
+
+# Restart complet (rareori necesar)
+osascript -e 'quit app "OrbStack"' && sleep 3 && open -a OrbStack
+```
+
+OrbStack rulează ca LaunchAgent per user. Pentru full headless (zero user sessions), conversia la LaunchDaemon — post-migrare, nu necesar pentru început.
+
+### Tunelul Cloudflare (macOS)
+
+```bash
+# Status (ca LaunchDaemon)
+sudo launchctl list | grep cloudflared
+# Running dacă apare cu PID numeric (nu "-")
+
+# Restart tunel
+sudo launchctl kickstart -k system/com.cloudflare.cloudflared
+
+# Stop temporar (pentru debug)
+sudo launchctl unload /Library/LaunchDaemons/com.cloudflare.cloudflared.plist
+# Start înapoi:
+sudo launchctl load /Library/LaunchDaemons/com.cloudflare.cloudflared.plist
+
+# Test
+curl -sI https://makyol.voostvision.ro/health
+```
+
+### Seed admin pe Mac
+
+Exact aceeași comandă ca pe Windows (vezi [#seed-admin](#seed-admin)) — inline `docker compose exec backend node -e "..."`. Scriptul `scripts/create-admin.ts` tot nu e în imagine.
+
+### Backup nightly (launchd)
+
+```bash
+mkdir -p ~/backups
+cat > ~/Library/LaunchAgents/com.makyol.backup.plist <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.makyol.backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd ~/apps/makyol-automation && docker compose exec -T postgres pg_dump -U postgres -Fc pdfextractor > ~/backups/pdfextractor-$(date +\%Y\%m\%d).dump</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>/tmp/makyol-backup.log</string>
+  <key>StandardErrorPath</key><string>/tmp/makyol-backup.err</string>
+</dict></plist>
+EOF
+
+launchctl load ~/Library/LaunchAgents/com.makyol.backup.plist
+```
+
+Rulare manuală pentru test: `launchctl start com.makyol.backup`. Log: `tail /tmp/makyol-backup.log`.
+
+Retenție simplă (șterge backup-uri >30 zile):
+```bash
+find ~/backups -name 'pdfextractor-*.dump' -mtime +30 -delete
+```
+
+Pentru remote backup opțional (B2/R2), adaugă `rclone copy ~/backups/ remote:makyol-backups` în scriptul de sus.
+
+### Verificare OrbStack + stack după reboot
+
+```bash
+# Simulare: reboot Mac Mini, fără user logged in
+sudo reboot
+
+# După boot, cu user auto-login:
+# - OrbStack pornește (LaunchAgent) ~10-30s
+# - Containerele pornesc (restart: unless-stopped)
+# - Tunel pornește (LaunchDaemon, nu depinde de user session)
+
+# Verify:
+docker compose ps
+curl https://makyol.voostvision.ro/health
+```
+
+### Troubleshooting rapid
+
+| Simptom | Verifică | Fix |
+|---------|----------|-----|
+| `curl localhost/health` eșuează | `docker compose ps` | `docker compose up -d` |
+| `curl makyol.voostvision.ro/health` eșuează dar local merge | `sudo launchctl list | grep cloudflared` | `sudo launchctl kickstart -k system/com.cloudflare.cloudflared` |
+| Toate pe Mac sunt jos după reboot | OrbStack pornit? `orb status` | `open -a OrbStack`, apoi `docker compose up -d` |
+| Build Docker se plângă de `linux/arm64` missing | Imagine cu suport limitat | Adaugă `platform: linux/arm64` în compose la serviciul afectat |
+
+---
+
 ## Verify freshness
 
 ```bash
