@@ -90,6 +90,17 @@ export class DocumentController {
     owner: OwnerFilter,
     actorUserId: string | null,
   ): Promise<void> {
+    // Flip to PROCESSING before the pipeline call so the frontend's
+    // status-driven auto-poll lights up and the user sees a "Procesare"
+    // badge + spinner while the AI is working. The caller previously
+    // only saw the terminal flip to COMPLETED, making reprocess feel
+    // like nothing was happening.
+    await this.documentModel.updateStatus(document.id, {
+      processing_status: ProcessingStatus.PROCESSING,
+      processing_started_at: new Date(),
+      error_message: null,
+    }, owner);
+
     const pipelineResponse = await this.pipelineClient.processDocument(document.file_path, document.original_filename);
     logger.info(`Pipeline reprocessed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
 

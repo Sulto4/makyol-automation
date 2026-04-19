@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useDocuments, useDocumentDetails, useClearDocuments, useReprocessAll } from '../hooks/useDocuments';
 import { useFilterStore } from '../store/filterStore';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
+import ProcessingBanner from '../components/shared/ProcessingBanner';
 import DocumentFilters from '../components/documents/DocumentFilters';
 import DocumentsTable, {
   type SortField,
@@ -354,6 +355,8 @@ export default function DocumentsPage() {
           </button>
         </div>
       </div>
+
+      <ProcessingBanner documents={allDocuments} />
 
       <DocumentFilters />
 
