@@ -172,6 +172,7 @@ export class ArchiveService {
       'Data expirare',
       'Pagini',
       'Adresă producător',
+      'Adresă distribuitor',
       'Status procesare',
     ];
 
@@ -219,7 +220,7 @@ export class ArchiveService {
       if (showSeparators && folder !== currentFolder) {
         const label = folder === '' ? ROOT_FOLDER_LABEL : folder;
         const separatorRow = worksheet.addRow([
-          label, '', '', '', '', '', '', '', '', '',
+          label, '', '', '', '', '', '', '', '', '', '',
         ]);
         worksheet.mergeCells(
           separatorRow.number, 1,
@@ -255,6 +256,7 @@ export class ArchiveService {
         dateDisplay,
         doc.page_count ?? '',
         extraction?.adresa_producator ?? '',
+        extraction?.adresa_distribuitor ?? '',
         doc.processing_status,
       ]);
       dataRowIndex++;

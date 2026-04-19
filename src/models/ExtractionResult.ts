@@ -42,6 +42,7 @@ export interface ExtractionResult {
   producator: string | null;
   distribuitor: string | null;
   adresa_producator: string | null;
+  adresa_distribuitor: string | null;
   extraction_model: string | null;
   owner_user_id: string | null;
   created_at: Date;
@@ -61,6 +62,7 @@ export interface CreateExtractionResultInput {
   producator?: string | null;
   distribuitor?: string | null;
   adresa_producator?: string | null;
+  adresa_distribuitor?: string | null;
   extraction_model?: string | null;
   owner_user_id?: string | null;
 }
@@ -77,6 +79,7 @@ export interface UpdateExtractionResultInput {
   producator?: string | null;
   distribuitor?: string | null;
   adresa_producator?: string | null;
+  adresa_distribuitor?: string | null;
   extraction_model?: string | null;
 }
 
@@ -92,8 +95,8 @@ export class ExtractionResultModel {
       INSERT INTO extraction_results (
         document_id, extracted_text, metadata, confidence_score, extraction_status,
         error_details, material, data_expirare, companie, producator,
-        distribuitor, adresa_producator, extraction_model, owner_user_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        distribuitor, adresa_producator, adresa_distribuitor, extraction_model, owner_user_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `;
 
@@ -110,6 +113,7 @@ export class ExtractionResultModel {
       input.producator || null,
       input.distribuitor || null,
       input.adresa_producator || null,
+      input.adresa_distribuitor || null,
       input.extraction_model || null,
       input.owner_user_id || null,
     ];
@@ -210,6 +214,7 @@ export class ExtractionResultModel {
     if (updateData.producator !== undefined) push('producator', updateData.producator);
     if (updateData.distribuitor !== undefined) push('distribuitor', updateData.distribuitor);
     if (updateData.adresa_producator !== undefined) push('adresa_producator', updateData.adresa_producator);
+    if (updateData.adresa_distribuitor !== undefined) push('adresa_distribuitor', updateData.adresa_distribuitor);
     if (updateData.extraction_model !== undefined) push('extraction_model', updateData.extraction_model);
 
     return { setClauses, values, nextIndex: i };

@@ -136,6 +136,7 @@ export class DocumentController {
       producator: extraction.producator ?? null,
       distribuitor: extraction.distribuitor ?? null,
       adresa_producator: extraction.adresa_producator ?? null,
+      adresa_distribuitor: extraction.adresa_distribuitor ?? null,
       extraction_model: extraction.extraction_model ?? null,
       owner_user_id: document.owner_user_id,
     };
@@ -252,7 +253,7 @@ export class DocumentController {
         logger.info(`Pipeline processed document ${document.id}: type=${pipelineResponse.classification}, confidence=${pipelineResponse.confidence}`);
 
         const extraction = pipelineResponse.extraction || {};
-        const extractionFields = ['material', 'data_expirare', 'companie', 'producator', 'distribuitor', 'adresa_producator', 'extraction_model'];
+        const extractionFields = ['material', 'data_expirare', 'companie', 'producator', 'distribuitor', 'adresa_producator', 'adresa_distribuitor', 'extraction_model'];
         const extractedFields = extractionFields.filter(f => extraction[f] != null && extraction[f] !== '');
         const nullFields = extractionFields.filter(f => extraction[f] == null || extraction[f] === '');
         logger.info(`Document processing summary for ${document.id}`, {
@@ -323,6 +324,7 @@ export class DocumentController {
           producator: extraction.producator ?? null,
           distribuitor: extraction.distribuitor ?? null,
           adresa_producator: extraction.adresa_producator ?? null,
+          adresa_distribuitor: extraction.adresa_distribuitor ?? null,
           extraction_model: extraction.extraction_model ?? null,
           owner_user_id: ownerUserId,
         };
