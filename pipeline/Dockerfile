@@ -18,9 +18,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy pipeline package (preserving directory structure)
 COPY pipeline/ ./pipeline/
 
-# Create non-root user
+# Create non-root user and writable /app/logs (bind-mounted from host)
 RUN addgroup --system --gid 1001 pipeline && \
     adduser --system --uid 1001 --ingroup pipeline pipeline && \
+    mkdir -p /app/logs && \
     chown -R pipeline:pipeline /app
 
 USER pipeline

@@ -1,14 +1,17 @@
 """Structured logging configuration for the pipeline.
 
-Provides JSON-formatted log output to stdout and suppresses
-noisy third-party libraries at WARNING level.
+Provides JSON-formatted log output to stdout AND a daily-rotated file under
+LOG_DIR (default ``/app/logs`` inside the container, bind-mounted to the
+host's ``./logs/pipeline`` so entries survive container rebuilds).
 """
 
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from logging.handlers import TimedRotatingFileHandler
+from typing import Any, Dict
 
 
 class StructuredFormatter(logging.Formatter):
@@ -53,8 +56,32 @@ _NOISY_LIBRARIES = [
 ]
 
 
+def _resolve_log_dir() -> str:
+    """Return a writable log directory, falling back to ./logs/pipeline locally."""
+    candidate = os.environ.get("LOG_DIR", "/app/logs")
+    try:
+        os.makedirs(candidate, exist_ok=True)
+        # Probe writability: open for append and immediately close.
+        probe = os.path.join(candidate, ".write_probe")
+        with open(probe, "a", encoding="utf-8"):
+            pass
+        try:
+            os.remove(probe)
+        except OSError:
+            pass
+        return candidate
+    except (OSError, PermissionError):
+        fallback = os.path.join(os.getcwd(), "logs", "pipeline")
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
+
+
 def setup_logging(level: int = logging.INFO) -> logging.Logger:
     """Configure structured JSON logging for the 'pipeline' namespace.
+
+    Attaches two handlers: a StreamHandler on stdout (captured by Docker)
+    and a TimedRotatingFileHandler rotated at UTC midnight with 7 days
+    of backups (``pipeline.log``, ``pipeline.log.2026-04-19`` etc.).
 
     Args:
         level: Minimum log level for pipeline loggers.
@@ -62,15 +89,28 @@ def setup_logging(level: int = logging.INFO) -> logging.Logger:
     Returns:
         The configured 'pipeline' root logger.
     """
-    # Configure pipeline namespace
     pipeline_logger = logging.getLogger("pipeline")
     pipeline_logger.setLevel(level)
 
     # Avoid duplicate handlers on repeated calls
     if not pipeline_logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(StructuredFormatter())
-        pipeline_logger.addHandler(handler)
+        formatter = StructuredFormatter()
+
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setFormatter(formatter)
+        pipeline_logger.addHandler(stdout_handler)
+
+        log_dir = _resolve_log_dir()
+        file_handler = TimedRotatingFileHandler(
+            filename=os.path.join(log_dir, "pipeline.log"),
+            when="midnight",
+            interval=1,
+            backupCount=7,
+            encoding="utf-8",
+            utc=True,
+        )
+        file_handler.setFormatter(formatter)
+        pipeline_logger.addHandler(file_handler)
 
     # Suppress noisy libraries
     for lib_name in _NOISY_LIBRARIES:
