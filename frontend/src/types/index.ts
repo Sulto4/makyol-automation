@@ -111,6 +111,7 @@ export interface ExtractionResult {
   producator: string | null;
   distribuitor: string | null;
   adresa_producator: string | null;
+  adresa_distribuitor: string | null;
   metadata: CertificateMetadata;
   confidence_score: number | null;
   extraction_status: ExtractionStatus;

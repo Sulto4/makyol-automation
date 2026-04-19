@@ -10,6 +10,7 @@ import ExpirationWarning from '../shared/ExpirationWarning';
 import RejectionModal from './RejectionModal';
 import { useReviewDocument } from '../../hooks/useDocuments';
 import { reprocessDocument } from '../../api/documents';
+import { isRomanianAddress } from '../../utils/countryDetector';
 
 interface DocumentDetailProps {
   data: DocumentWithExtraction;
@@ -91,6 +92,23 @@ export default function DocumentDetail({ data }: DocumentDetailProps) {
               <DataField label="Producător" value={extraction.producator} />
               <DataField label="Distribuitor" value={extraction.distribuitor} />
               <DataField label="Adresă producător" value={extraction.adresa_producator} />
+              <DataField label="Adresă distribuitor">
+                {extraction.adresa_distribuitor ? (
+                  <span className="flex flex-wrap items-center justify-end gap-2">
+                    <span>{extraction.adresa_distribuitor}</span>
+                    {isRomanianAddress(extraction.adresa_distribuitor) === false && (
+                      <span
+                        className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                        title="Adresa distribuitorului nu pare să fie din România"
+                      >
+                        Non-RO
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 dark:text-gray-500">N/A</span>
+                )}
+              </DataField>
               <DataField label="Data expirare">
                 <ExpirationWarning dataExpirare={extraction.data_expirare} />
               </DataField>

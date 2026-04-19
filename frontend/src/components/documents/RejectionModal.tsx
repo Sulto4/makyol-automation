@@ -21,8 +21,10 @@ const EXTRACTION_FIELDS = [
   { key: 'material', label: 'Material' },
   { key: 'companie', label: 'Companie' },
   { key: 'producator', label: 'Producator' },
+  { key: 'distribuitor', label: 'Distribuitor' },
   { key: 'data_expirare', label: 'Data expirare' },
   { key: 'adresa_producator', label: 'Adresa producator' },
+  { key: 'adresa_distribuitor', label: 'Adresa distribuitor' },
 ] as const;
 
 export default function RejectionModal({

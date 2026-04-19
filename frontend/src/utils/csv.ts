@@ -19,6 +19,7 @@ const HEADERS = [
   'Data expirare',
   'Pagini',
   'Adresă producător',
+  'Adresă distribuitor',
   'Status procesare',
 ];
 
@@ -47,6 +48,7 @@ export function exportToCSV(
       dateExpirareCell,
       doc.page_count != null ? String(doc.page_count) : '',
       extraction?.adresa_producator ?? '',
+      extraction?.adresa_distribuitor ?? '',
       doc.processing_status,
     ];
   });

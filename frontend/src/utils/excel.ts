@@ -20,6 +20,7 @@ const HEADERS = [
   'Data expirare',
   'Pagini',
   'Adresă producător',
+  'Adresă distribuitor',
   'Status procesare',
 ];
 
@@ -67,6 +68,7 @@ export async function exportToExcel(
       dateExpirareDisplay === '—' ? (dateExpirareRaw ?? '') : dateExpirareDisplay,
       doc.page_count ?? '',
       extraction?.adresa_producator ?? '',
+      extraction?.adresa_distribuitor ?? '',
       doc.processing_status,
     ]);
 
