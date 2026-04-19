@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Download, FileSpreadsheet, Trash2, Archive, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -120,6 +120,14 @@ export default function DocumentsPage() {
     });
     return sorted;
   }, [filteredDocuments, sortField, sortDirection]);
+
+  // Clamp currentPage when the list shrinks (e.g. after bulk delete or filter
+  // change) so a persisted page beyond the new total doesn't produce an empty
+  // slice and render a blank table body while the toolbar still looks populated.
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(sortedDocuments.length / perPage));
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [sortedDocuments.length, perPage, currentPage, setCurrentPage]);
 
   // Pagination
   const paginatedDocuments = useMemo(() => {
