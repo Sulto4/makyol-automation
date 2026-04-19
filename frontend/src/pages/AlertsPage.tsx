@@ -8,6 +8,7 @@ import DocumentsTable, {
 import Pagination from '../components/shared/Pagination';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import EmptyState from '../components/shared/EmptyState';
+import ProcessingBanner from '../components/shared/ProcessingBanner';
 import type { Document, ExtractionResult } from '../types';
 
 type AlertTab =
@@ -284,6 +285,8 @@ export default function AlertsPage() {
   return (
     <div className="space-y-4 p-6">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Alerte</h1>
+
+      <ProcessingBanner documents={allDocuments} />
 
       {/* Tab navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700">

@@ -35,6 +35,8 @@ export function useDocument(id: number) {
 /**
  * Batch-fetch details for visible page rows (e.g. in a table).
  * Uses useQueries so each row's detail is cached independently.
+ * Each row auto-polls every 3s while its document is processing so
+ * extraction fields appear live without a page refresh.
  */
 export function useDocumentDetails(ids: number[]) {
   return useQueries({
@@ -42,7 +44,11 @@ export function useDocumentDetails(ids: number[]) {
       queryKey: ['documents', id],
       queryFn: () => getDocument(id),
       enabled: id > 0,
-      staleTime: 10_000, // 10s — short so extraction data appears after background processing
+      staleTime: 3_000,
+      refetchInterval: (query: { state: { data?: DocumentWithExtraction } }) => {
+        const status = query.state.data?.document?.processing_status;
+        return status === 'processing' || status === 'pending' ? 3000 : false;
+      },
     })),
   });
 }
