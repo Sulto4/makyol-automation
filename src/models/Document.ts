@@ -43,6 +43,7 @@ export interface Document {
   page_count: number | null;
   created_at: Date;
   updated_at: Date;
+  data_expirare?: string | null;
 }
 
 /**
@@ -171,9 +172,15 @@ export class DocumentModel {
       values.push(status);
     }
 
-    let query = 'SELECT * FROM documents';
-    if (clauses.length) query += ` WHERE ${clauses.join(' AND ')}`;
-    query += ' ORDER BY uploaded_at DESC';
+    let query =
+      'SELECT documents.*, er.data_expirare ' +
+      'FROM documents ' +
+      'LEFT JOIN extraction_results er ON er.document_id = documents.id';
+    if (clauses.length) {
+      const scoped = clauses.map((c) => c.replace(/^(owner_user_id|processing_status)/, 'documents.$1'));
+      query += ` WHERE ${scoped.join(' AND ')}`;
+    }
+    query += ' ORDER BY documents.uploaded_at DESC';
 
     if (limit) {
       query += ` LIMIT $${i++}`;
