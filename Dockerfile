@@ -39,8 +39,9 @@ COPY --from=builder /app/dist ./dist
 # Copy migrations for auto-apply on startup
 COPY migrations ./migrations
 
-# Create uploads directory
-RUN mkdir -p ./uploads && chown -R nodejs:nodejs ./uploads
+# Create uploads and logs directories (logs dir is bind-mounted from host in
+# docker-compose so rotated files survive container rebuilds).
+RUN mkdir -p ./uploads ./logs && chown -R nodejs:nodejs ./uploads ./logs
 
 # Switch to non-root user
 USER nodejs

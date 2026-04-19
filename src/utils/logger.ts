@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
 import { appConfig } from '../config/app';
 
 /**
@@ -10,9 +14,6 @@ export enum LogLevel {
   DEBUG = 'debug',
 }
 
-/**
- * Log level priority mapping
- */
 const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   [LogLevel.ERROR]: 0,
   [LogLevel.WARN]: 1,
@@ -20,112 +21,103 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   [LogLevel.DEBUG]: 3,
 };
 
-/**
- * Logger service for structured application logging
- */
-class Logger {
-  private logLevel: LogLevel;
-  private isDevelopment: boolean;
-
-  constructor() {
-    this.logLevel = this.parseLogLevel(appConfig.logLevel);
-    this.isDevelopment = appConfig.nodeEnv === 'development';
+function parseLogLevel(level: string): LogLevel {
+  const normalized = (level ?? '').toLowerCase();
+  if (Object.values(LogLevel).includes(normalized as LogLevel)) {
+    return normalized as LogLevel;
   }
+  return LogLevel.INFO;
+}
 
-  /**
-   * Parse log level from string configuration
-   */
-  private parseLogLevel(level: string): LogLevel {
-    const normalized = level.toLowerCase();
-    if (Object.values(LogLevel).includes(normalized as LogLevel)) {
-      return normalized as LogLevel;
-    }
-    return LogLevel.INFO;
-  }
-
-  /**
-   * Check if a log level should be emitted based on configured log level
-   */
-  private shouldLog(level: LogLevel): boolean {
-    return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[this.logLevel];
-  }
-
-  /**
-   * Format log message with timestamp and level
-   */
-  private formatMessage(level: LogLevel, message: string, meta?: any): string {
-    const timestamp = new Date().toISOString();
-    const baseMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-
-    if (meta) {
-      if (this.isDevelopment) {
-        // Pretty print in development
-        return `${baseMessage}\n${JSON.stringify(meta, null, 2)}`;
-      } else {
-        // Single line JSON in production
-        return JSON.stringify({
-          timestamp,
-          level,
-          message,
-          ...meta,
-        });
-      }
-    }
-
-    return this.isDevelopment ? baseMessage : JSON.stringify({
-      timestamp,
-      level,
-      message,
-    });
-  }
-
-  /**
-   * Log error message
-   */
-  error(message: string, error?: Error | any): void {
-    if (!this.shouldLog(LogLevel.ERROR)) return;
-
-    const meta = error ? {
-      error: error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        ...(error as any).details,
-      } : error,
-    } : undefined;
-
-    // eslint-disable-next-line no-console
-    console.error(this.formatMessage(LogLevel.ERROR, message, meta));
-  }
-
-  /**
-   * Log warning message
-   */
-  warn(message: string, meta?: any): void {
-    if (!this.shouldLog(LogLevel.WARN)) return;
-    // eslint-disable-next-line no-console
-    console.warn(this.formatMessage(LogLevel.WARN, message, meta));
-  }
-
-  /**
-   * Log info message
-   */
-  info(message: string, meta?: any): void {
-    if (!this.shouldLog(LogLevel.INFO)) return;
-    // eslint-disable-next-line no-console
-    console.log(this.formatMessage(LogLevel.INFO, message, meta));
-  }
-
-  /**
-   * Log debug message
-   */
-  debug(message: string, meta?: any): void {
-    if (!this.shouldLog(LogLevel.DEBUG)) return;
-    // eslint-disable-next-line no-console
-    console.debug(this.formatMessage(LogLevel.DEBUG, message, meta));
+function resolveLogDir(): string {
+  const candidate = process.env.LOG_DIR || '/app/logs';
+  try {
+    fs.mkdirSync(candidate, { recursive: true });
+    return candidate;
+  } catch {
+    const fallback = path.join(process.cwd(), 'logs', 'backend');
+    fs.mkdirSync(fallback, { recursive: true });
+    return fallback;
   }
 }
 
-// Export singleton instance
+const consoleFormatter = winston.format.printf((info) => {
+  const { timestamp, level, message, stack, ...rest } = info;
+  const levelUpper = String(level).toUpperCase();
+  const base = `[${timestamp}] [${levelUpper}] ${stack ?? message}`;
+  const meta = Object.keys(rest).length ? rest : undefined;
+  if (!meta) return base;
+  if (appConfig.nodeEnv === 'development') {
+    return `${base}\n${JSON.stringify(meta, null, 2)}`;
+  }
+  return JSON.stringify({ timestamp, level, message: stack ?? message, ...rest });
+});
+
+const fileFormatter = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.errors({ stack: true }),
+  winston.format.json(),
+);
+
+const logLevel = parseLogLevel(appConfig.logLevel);
+const logDir = resolveLogDir();
+
+const winstonLogger = winston.createLogger({
+  level: logLevel,
+  levels: LOG_LEVEL_PRIORITY,
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.errors({ stack: true }),
+        consoleFormatter,
+      ),
+    }),
+    new DailyRotateFile({
+      dirname: logDir,
+      filename: 'backend-%DATE%.log',
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '7d',
+      utc: true,
+      format: fileFormatter,
+    }),
+  ],
+});
+
+/**
+ * Public logger API — preserved from the previous custom implementation so
+ * that the ~90 existing call sites (logger.info / .warn / .error / .debug)
+ * keep working without changes. Internals now fan out to both the console
+ * and a daily-rotated file under /app/logs (bind-mounted to host ./logs/backend
+ * so entries survive container rebuilds).
+ */
+class Logger {
+  error(message: string, error?: Error | unknown): void {
+    if (error instanceof Error) {
+      winstonLogger.error(message, { error: { name: error.name, message: error.message, stack: error.stack, ...(error as any).details } });
+    } else if (error !== undefined) {
+      winstonLogger.error(message, { error });
+    } else {
+      winstonLogger.error(message);
+    }
+  }
+
+  warn(message: string, meta?: unknown): void {
+    if (meta !== undefined) winstonLogger.warn(message, meta as object);
+    else winstonLogger.warn(message);
+  }
+
+  info(message: string, meta?: unknown): void {
+    if (meta !== undefined) winstonLogger.info(message, meta as object);
+    else winstonLogger.info(message);
+  }
+
+  debug(message: string, meta?: unknown): void {
+    if (meta !== undefined) winstonLogger.debug(message, meta as object);
+    else winstonLogger.debug(message);
+  }
+}
+
 export const logger = new Logger();
 export default logger;
