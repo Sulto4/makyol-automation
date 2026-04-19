@@ -86,6 +86,14 @@ function isExpired(date: Date | null): boolean {
 const EXPIRED_FILL_ARGB = 'FFFFC7CE';
 const EXPIRED_FONT_ARGB = 'FF9C0006';
 const ALT_ROW_FILL_ARGB = 'FFF2F2F2';
+const SEPARATOR_FILL_ARGB = 'FF4472C4';
+const ROOT_FOLDER_LABEL = '(rădăcină)';
+
+function folderOf(relativePath: string): string {
+  const normalized = relativePath.replace(/\\/g, '/');
+  const idx = normalized.lastIndexOf('/');
+  return idx === -1 ? '' : normalized.slice(0, idx);
+}
 
 /**
  * URL-encode special characters in a path segment for Excel HYPERLINK formula
@@ -179,9 +187,56 @@ export class ArchiveService {
 
     worksheet.views = [{ state: 'frozen' as const, ySplit: 1 }];
 
-    const expiredRowNumbers = new Set<number>();
+    // Sort records by [folder, filename] (locale-aware) so that documents
+    // coming from the same uploaded subfolder are grouped contiguously.
+    const sortedRecords = records.slice().sort((a, b) => {
+      const folderCmp = folderOf(a.relativePath).localeCompare(
+        folderOf(b.relativePath),
+        'ro',
+        { numeric: true, sensitivity: 'base' }
+      );
+      if (folderCmp !== 0) return folderCmp;
+      return a.document.original_filename.localeCompare(
+        b.document.original_filename,
+        'ro',
+        { numeric: true, sensitivity: 'base' }
+      );
+    });
 
-    for (const { document: doc, extraction, relativePath } of records) {
+    // Only emit folder-separator rows when the export actually spans a folder
+    // structure. Flat uploads (single file or all-at-root) stay unchanged.
+    const showSeparators = sortedRecords.some(
+      (r) => folderOf(r.relativePath) !== ''
+    );
+
+    const expiredRowNumbers = new Set<number>();
+    let currentFolder: string | null = null;
+    let dataRowIndex = 0;
+
+    for (const { document: doc, extraction, relativePath } of sortedRecords) {
+      const folder = folderOf(relativePath);
+
+      if (showSeparators && folder !== currentFolder) {
+        const label = folder === '' ? ROOT_FOLDER_LABEL : folder;
+        const separatorRow = worksheet.addRow([
+          label, '', '', '', '', '', '', '', '', '',
+        ]);
+        worksheet.mergeCells(
+          separatorRow.number, 1,
+          separatorRow.number, headers.length
+        );
+        const labelCell = separatorRow.getCell(1);
+        labelCell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        labelCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: SEPARATOR_FILL_ARGB },
+        };
+        labelCell.alignment = { vertical: 'middle', horizontal: 'left' };
+        separatorRow.height = 22;
+        currentFolder = folder;
+      }
+
       const dateExpirareRaw = extraction?.data_expirare ?? null;
       const parsedDate = parseExpirareDate(dateExpirareRaw);
       // For real dates, render via Romanian locale; for duration phrases we
@@ -202,6 +257,7 @@ export class ArchiveService {
         extraction?.adresa_producator ?? '',
         doc.processing_status,
       ]);
+      dataRowIndex++;
 
       // Filename is now in column A — point the hyperlink there.
       const encodedPath = encodeHyperlinkPath(relativePath.replace(/\\/g, '/'));
@@ -232,15 +288,9 @@ export class ArchiveService {
           underline: true,
           bold: true,
         };
-      }
-    }
-
-    // Alternating row colours — skip rows already coloured red so the expiry
-    // highlight wins.
-    for (let i = 2; i <= worksheet.rowCount; i++) {
-      if (expiredRowNumbers.has(i)) continue;
-      const row = worksheet.getRow(i);
-      if (i % 2 === 0) {
+      } else if (dataRowIndex % 2 === 0) {
+        // Alternating zebra stripe — indexed by data-row position so that
+        // separator rows inserted between groups don't break the pattern.
         row.eachCell({ includeEmpty: true }, (cell) => {
           cell.fill = {
             type: 'pattern',

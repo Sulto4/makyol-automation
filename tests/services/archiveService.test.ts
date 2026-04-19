@@ -39,6 +39,9 @@ function makeDocument(overrides: Partial<Document> = {}): Document {
     confidence: 0.95,
     metoda_clasificare: 'vision',
     review_status: null,
+    relative_path: null,
+    owner_user_id: null,
+    page_count: null,
     created_at: new Date('2024-03-15'),
     updated_at: new Date('2024-03-15'),
     ...overrides,
@@ -247,6 +250,129 @@ describe('ArchiveService', () => {
       const headerRow = worksheet.getRow(1);
       expect(headerRow.getCell(1).value).toBe('ID');
       expect(headerRow.getCell(13).value).toBe('Încărcat La');
+    });
+  });
+
+  describe('buildWorkbook - folder separators', () => {
+    function firstCellValues(worksheet: ExcelJS.Worksheet): string[] {
+      const values: string[] = [];
+      for (let i = 2; i <= worksheet.rowCount; i++) {
+        const cell = worksheet.getRow(i).getCell(1);
+        const v = cell.value;
+        if (v && typeof v === 'object' && 'formula' in v) {
+          // HYPERLINK formula — extract display text between the last pair of quotes
+          const m = (v as ExcelJS.CellFormulaValue).formula!.match(/,"([^"]*)"\)$/);
+          values.push(m ? m[1] : String(v));
+        } else {
+          values.push(v == null ? '' : String(v));
+        }
+      }
+      return values;
+    }
+
+    it('does not insert separators when all files are at root', () => {
+      const records: ArchiveDocumentRecord[] = [
+        makeRecord({ relativePath: 'a.pdf', document: makeDocument({ id: 1, original_filename: 'a.pdf' }) }),
+        makeRecord({ relativePath: 'b.pdf', document: makeDocument({ id: 2, original_filename: 'b.pdf' }) }),
+      ];
+      const workbook = buildWorkbook(service, records);
+      const worksheet = workbook.getWorksheet('Documente Makyol')!;
+
+      expect(worksheet.rowCount).toBe(3); // header + 2 data rows
+      expect(firstCellValues(worksheet)).toEqual(['a.pdf', 'b.pdf']);
+    });
+
+    it('inserts a (rădăcină) separator and a subfolder separator for a mixed upload', () => {
+      const records: ArchiveDocumentRecord[] = [
+        makeRecord({ relativePath: 'root.pdf', document: makeDocument({ id: 1, original_filename: 'root.pdf' }) }),
+        makeRecord({ relativePath: 'Sub/a.pdf', document: makeDocument({ id: 2, original_filename: 'a.pdf' }) }),
+        makeRecord({ relativePath: 'Sub/b.pdf', document: makeDocument({ id: 3, original_filename: 'b.pdf' }) }),
+      ];
+      const workbook = buildWorkbook(service, records);
+      const worksheet = workbook.getWorksheet('Documente Makyol')!;
+
+      expect(firstCellValues(worksheet)).toEqual([
+        '(rădăcină)',
+        'root.pdf',
+        'Sub',
+        'a.pdf',
+        'b.pdf',
+      ]);
+    });
+
+    it('styles separator rows with the separator fill and bold white font', () => {
+      const records: ArchiveDocumentRecord[] = [
+        makeRecord({ relativePath: 'Certificat/file.pdf', document: makeDocument({ original_filename: 'file.pdf' }) }),
+      ];
+      const workbook = buildWorkbook(service, records);
+      const worksheet = workbook.getWorksheet('Documente Makyol')!;
+
+      const separatorCell = worksheet.getRow(2).getCell(1);
+      expect(separatorCell.value).toBe('Certificat');
+      expect((separatorCell.fill as ExcelJS.FillPattern).fgColor?.argb).toBe('FF4472C4');
+      expect(separatorCell.font?.bold).toBe(true);
+      expect(separatorCell.font?.color?.argb).toBe('FFFFFFFF');
+    });
+
+    it('sorts records by [folder, filename] before inserting separators', () => {
+      const records: ArchiveDocumentRecord[] = [
+        makeRecord({ relativePath: 'B/x.pdf', document: makeDocument({ id: 1, original_filename: 'x.pdf' }) }),
+        makeRecord({ relativePath: 'A/y.pdf', document: makeDocument({ id: 2, original_filename: 'y.pdf' }) }),
+        makeRecord({ relativePath: 'A/x.pdf', document: makeDocument({ id: 3, original_filename: 'x.pdf' }) }),
+      ];
+      const workbook = buildWorkbook(service, records);
+      const worksheet = workbook.getWorksheet('Documente Makyol')!;
+
+      expect(firstCellValues(worksheet)).toEqual([
+        'A',
+        'x.pdf',
+        'y.pdf',
+        'B',
+        'x.pdf',
+      ]);
+    });
+
+    it('uses the full nested path as the separator label', () => {
+      const records: ArchiveDocumentRecord[] = [
+        makeRecord({ relativePath: 'A/B/C/file.pdf', document: makeDocument({ original_filename: 'file.pdf' }) }),
+      ];
+      const workbook = buildWorkbook(service, records);
+      const worksheet = workbook.getWorksheet('Documente Makyol')!;
+
+      expect(worksheet.getRow(2).getCell(1).value).toBe('A/B/C');
+    });
+
+    it('keeps zebra stripes aligned to data rows, not to absolute row numbers', () => {
+      // Use a far-future expiration so expired-row styling doesn't mask zebra.
+      const future = makeExtraction({ data_expirare: '2099-12-31' });
+      const records: ArchiveDocumentRecord[] = [
+        // "a" group: 1 file — first data row (odd → no fill)
+        makeRecord({
+          relativePath: 'a/one.pdf',
+          document: makeDocument({ id: 1, original_filename: 'one.pdf' }),
+          extraction: future,
+        }),
+        // "b" group: 1 file — second data row (even → alt fill) even though
+        // a separator row was inserted in between.
+        makeRecord({
+          relativePath: 'b/two.pdf',
+          document: makeDocument({ id: 2, original_filename: 'two.pdf' }),
+          extraction: future,
+        }),
+      ];
+      const workbook = buildWorkbook(service, records);
+      const worksheet = workbook.getWorksheet('Documente Makyol')!;
+
+      // Layout: row 1 header, row 2 "a" separator, row 3 one.pdf (data #1),
+      // row 4 "b" separator, row 5 two.pdf (data #2 → should get alt fill).
+      const firstDataRow = worksheet.getRow(3);
+      const secondDataRow = worksheet.getRow(5);
+
+      const firstDataFill = firstDataRow.getCell(2).fill as ExcelJS.FillPattern | undefined;
+      const secondDataFill = secondDataRow.getCell(2).fill as ExcelJS.FillPattern | undefined;
+
+      expect(firstDataFill?.fgColor?.argb).not.toBe('FFF2F2F2');
+      expect(secondDataFill?.fgColor?.argb).toBe('FFF2F2F2');
     });
   });
 
